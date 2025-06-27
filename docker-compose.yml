@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     ports:
-      - 5173:25000
+      - 25000:5173
     networks:
       - app-net
 
