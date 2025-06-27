@@ -4,5 +4,5 @@ WORKDIR /frontend
 COPY package.json .
 RUN npm install
 COPY . .
-EXPOSE 25000
+EXPOSE 5137
 CMD [ "npm", "run", "dev" ]
