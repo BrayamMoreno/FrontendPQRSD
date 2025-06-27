@@ -6,9 +6,6 @@ services:
       dockerfile: Dockerfile.prod
     ports:
       - 5173:25000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - app-net
 
