@@ -1,171 +1,72 @@
-import { useState } from "react"
-import { FaComments, FaExclamationTriangle, FaEye, FaFileAlt, FaFilter, FaSearch, FaThumbsUp } from "react-icons/fa"
-import Slidebar from "../components/Slidebar"
+import { useEffect, useState } from "react"
+import { UndoIcon } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import apiServiceWrapper from "../api/ApiService"
+
+import { LoadingSpinner } from "../components/LoadingSpinner"
+
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table"
-import { UndoIcon } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-
-// Datos de ejemplo para el dashboard
-const mockPqrsdf = [
-	{
-		id: 1,
-		tipo: "Petición",
-		asunto: "Solicitud de información",
-		estado: "Pendiente",
-		fecha: "2023-05-15",
-		prioridad: "Media",
-	},
-	{
-		id: 2,
-		tipo: "Queja",
-		asunto: "Problema con el servicio",
-		estado: "En proceso",
-		fecha: "2023-05-10",
-		prioridad: "Alta",
-	},
-	{
-		id: 3,
-		tipo: "Reclamo",
-		asunto: "Facturación incorrecta",
-		estado: "Resuelto",
-		fecha: "2023-05-05",
-		prioridad: "Alta",
-	},
-	{
-		id: 4,
-		tipo: "Sugerencia",
-		asunto: "Mejora del portal web",
-		estado: "Pendiente",
-		fecha: "2023-05-01",
-		prioridad: "Baja",
-	},
-	{
-		id: 5,
-		tipo: "Denuncia",
-		asunto: "Irregularidad en proceso",
-		estado: "En proceso",
-		fecha: "2023-04-28",
-		prioridad: "Alta",
-	},
-	{
-		id: 6,
-		tipo: "Felicitación",
-		asunto: "Excelente atención",
-		estado: "Cerrado",
-		fecha: "2023-04-25",
-		prioridad: "Baja",
-	},
-]
 
 const Dashboard: React.FC = () => {
 
-	const navigate = useNavigate();
+	const navigate = useNavigate()
+	const api = apiServiceWrapper
 
-	const [searchTerm, setSearchTerm] = useState("")
-	const [filteredData, setFilteredData] = useState(mockPqrsdf)
-	const [selectedTipo, setSelectedTipo] = useState<string | undefined>(undefined)
-	const [selectedEstado, setSelectedEstado] = useState<string | undefined>(undefined)
+	const [solicitudes, setSolicitudes] = useState<any[]>([])
+	const [currentPage, setCurrentPage] = useState(1)
 
-	// Estadísticas
-	const stats = {
-		total: mockPqrsdf.length,
-		pendientes: mockPqrsdf.filter((item) => item.estado === "Pendiente").length,
-		enProceso: mockPqrsdf.filter((item) => item.estado === "En proceso").length,
-		resueltos: mockPqrsdf.filter((item) => item.estado === "Resuelto" || item.estado === "Cerrado").length,
-	}
+	const [iniciales, setIniciales] = useState<any[]>([])
 
-	const getUsername = () => {
-		const storeUsername = sessionStorage.getItem("persona")
-		const persona = JSON.parse(storeUsername || "{}")
+	const itemsPerPage = 10
+	const [hasMore, setHasMore] = useState(true)
+	const [totalCount, setTotalCount] = useState(0)
+	const [totalPages, setTotalPages] = useState(0)
 
-		return persona.nombre || "Usuario"
-	}
+	const [isLoading, setIsLoading] = useState<boolean>(false)
 
-	const getUserletter = () => {
-		const storeUsername = sessionStorage.getItem("persona")
-		const persona = JSON.parse(storeUsername || "{}")
+	const fecthSolicitudes = async () => {
 
-		return persona.nombre ? persona.nombre.charAt(0).toUpperCase() : "U"
-	}
-	// Filtrar datos
-	const handleFilter = () => {
-		let filtered = mockPqrsdf
+		setIsLoading(true)
 
-		if (searchTerm) {
-			filtered = filtered.filter(
-				(item) =>
-					item.asunto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-					item.tipo.toLowerCase().includes(searchTerm.toLowerCase()),
-			)
-		}
+		try {
+			const rawId = sessionStorage.getItem("persona_id")
+			const solicitanteId = rawId ? Number(rawId) : null
 
-		if (selectedTipo) {
-			filtered = filtered.filter((item) => item.tipo === selectedTipo)
-		}
+			const response = await api.get("/pqs/mis_pqs", {
+				solicitanteId,
+				page: currentPage - 1,
+				size: itemsPerPage
+			})
 
-		if (selectedEstado) {
-			filtered = filtered.filter((item) => item.estado === selectedEstado)
-		}
+			setSolicitudes(response.data)
+			setTotalCount(response.total_count ?? 0)
+			setHasMore(response.has_more ?? false)
 
-		setFilteredData(filtered)
-	}
-
-	// Resetear filtros
-	const resetFilters = () => {
-		setSearchTerm("")
-		setSelectedTipo(undefined)
-		setSelectedEstado(undefined)
-		setFilteredData(mockPqrsdf)
-	}
-
-
-	// Obtener el color de la badge según el estado
-	const getStatusColor = (estado: string) => {
-		switch (estado) {
-			case "Pendiente":
-				return "bg-yellow-500 text-white"
-			case "En proceso":
-				return "bg-blue-500 text-white"
-			case "Resuelto":
-				return "bg-green-500 text-white"
-			case "Cerrado":
-				return "bg-gray-500 text-white"
-			default:
-				return "bg-gray-500 text-white"
+			const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
+			setTotalPages(totalPages)
+		} catch (error) {
+			console.error("Error al obtener las solicitudes:", error)
+		} finally {
+			setIsLoading(false)
 		}
 	}
 
-	// Obtener el icono según el tipo de PQRSDF
-	const getTipoIcon = (tipo: string) => {
-		switch (tipo) {
-			case "Petición":
-				return <FaFileAlt className="text-blue-500" />
-			case "Queja":
-				return <FaExclamationTriangle className="text-red-500" />
-			case "Reclamo":
-				return <FaExclamationTriangle className="text-orange-500" />
-			case "Sugerencia":
-				return <FaComments className="text-purple-500" />
-			case "Denuncia":
-				return <FaExclamationTriangle className="text-red-700" />
-			case "Felicitación":
-				return <FaThumbsUp className="text-green-500" />
-			default:
-				return <FaFileAlt className="text-gray-500" />
-		}
+	const fetchInitials = async () => {
+		setIniciales(sessionStorage.getItem("persona_nombre")?.split(" ").map(name => name.charAt(0).toUpperCase()) || [])
 	}
+
+	useEffect(() => {
+		fetchInitials()
+		fecthSolicitudes()
+	}, [currentPage])
 
 	return (
 		<div className="flex min-h-screen w-screen bg-gray-100 z-15">
-			
-
-			{/* Contenido principal */}
 			<div className="ml-14 w-full">
 				<div className="max-w-7xl mx-auto p-6">
+
 					{/* Header */}
 					<div className="flex justify-between items-center mb-6">
 						<h1 className="text-2xl font-bold text-blue-900">Panel de PQRSDF</h1>
@@ -173,20 +74,17 @@ const Dashboard: React.FC = () => {
 							<span className="text-sm">
 								Bienvenido, {`${sessionStorage.getItem("persona_nombre") ?? ""} ${sessionStorage.getItem("persona_apellido") ?? ""}`}
 							</span>
-
-							<div className="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center text-white">{`${sessionStorage.getItem("persona_nombre") ?? ""} ${sessionStorage.getItem("persona_apellido") ?? ""}`}</div>
+							<div className="w-8 h-8 rounded-full bg-blue-900 flex items-center justify-center text-white">
+								{iniciales}
+							</div>
 						</div>
 					</div>
 
-					{/* Botón para radicar una petición */}
+					{/* Botón para radicar petición */}
 					<div className="flex justify-end mb-4">
 						<Button
 							className="bg-blue-600 text-white hover:bg-blue-700"
-							onClick={() => {
-								navigate("/dashboard/crear_pq")
-								// Aquí puedes redirigir a un formulario o abrir un modal
-								console.log("Radicar nueva petición")
-							}}
+							onClick={() => navigate("/dashboard/crear_pq")}
 						>
 							+ Radicar Petición
 						</Button>
@@ -194,95 +92,83 @@ const Dashboard: React.FC = () => {
 
 					{/* Tarjetas de estadísticas */}
 					<div className="grid grid-cols-4 gap-4 mb-6">
-						<Card className="bg-white shadow-sm">
-							<CardContent className="p-4">
-								<div className="text-sm text-gray-600">Total PQRSDF</div>
-								<div className="text-2xl font-bold">{stats.total}</div>
-							</CardContent>
-						</Card>
-
-						<Card className="bg-white shadow-sm">
-							<CardContent className="p-4">
-								<div className="text-sm text-gray-600">Pendientes</div>
-								<div className="text-2xl font-bold text-yellow-500">{stats.pendientes}</div>
-							</CardContent>
-						</Card>
-
-						<Card className="bg-white shadow-sm">
-							<CardContent className="p-4">
-								<div className="text-sm text-gray-600">En Proceso</div>
-								<div className="text-2xl font-bold text-blue-500">{stats.enProceso}</div>
-							</CardContent>
-						</Card>
-
-						<Card className="bg-white shadow-sm">
-							<CardContent className="p-4">
-								<div className="text-sm text-gray-600">Resueltos</div>
-								<div className="text-2xl font-bold text-green-500">{stats.resueltos}</div>
-							</CardContent>
-						</Card>
+						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Total PQRSDF</div><div className="text-2xl font-bold">{isLoading ? (
+									<div className="flex justify-center py-10">
+										<LoadingSpinner />
+									</div>
+								): totalCount}</div></CardContent></Card>
+						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Pendientes</div><div className="text-2xl font-bold text-yellow-500"></div></CardContent></Card>
+						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">En Proceso</div><div className="text-2xl font-bold text-blue-500"></div></CardContent></Card>
+						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Resueltos</div><div className="text-2xl font-bold text-green-500"></div></CardContent></Card>
 					</div>
 
-					{/* Tabla de PQRSDF */}
+					{/* Listado de PQRSDF */}
 					<Card className="bg-white shadow-sm">
-						<CardContent className="p-4">
-							<h2 className="text-lg font-semibold mb-4">Listado de PQRSDF</h2>
+						<CardContent className="p-2">
+							<h2 className="text-lg mb-2">Listado de PQRSDF</h2>
 
-							<div className="overflow-x-auto">
-								<Table>
-									<TableHeader>
-										<TableRow>
-											<TableHead className="font-semibold">ID</TableHead>
-											<TableHead className="font-semibold">Tipo</TableHead>
-											<TableHead className="font-semibold">Asunto</TableHead>
-											<TableHead className="font-semibold">Estado</TableHead>
-											<TableHead className="font-semibold">Fecha</TableHead>
-											<TableHead className="font-semibold">Prioridad</TableHead>
-											<TableHead className="font-semibold">Acciones</TableHead>
-										</TableRow>
-									</TableHeader>
-									<TableBody>
-										{filteredData.map((item) => (
-											<TableRow key={item.id}>
-												<TableCell>{item.id}</TableCell>
-												<TableCell>
-													<div className="flex items-center gap-2">
-														{getTipoIcon(item.tipo)}
-														{item.tipo}
-													</div>
-												</TableCell>
-												<TableCell>{item.asunto}</TableCell>
-												<TableCell>
-													<Badge className={getStatusColor(item.estado)}>{item.estado}</Badge>
-												</TableCell>
-												<TableCell>{item.fecha}</TableCell>
-												<TableCell>
-													<Badge
-														variant="outline"
-														className={
-															item.prioridad === "Alta"
-																? "border-red-500 text-red-500"
-																: item.prioridad === "Media"
-																	? "border-yellow-500 text-yellow-500"
-																	: "border-green-500 text-green-500"
-														}
-													>
-														{item.prioridad}
-													</Badge>
-												</TableCell>
-												<TableCell>
-													<Button
-														size="sm"
-														className="bg-black text-white hover:bg-gray-800 rounded-md"
-													>
-														<FaEye className="mr-1" /> Ver
-													</Button>
-												</TableCell>
-											</TableRow>
-										))}
-									</TableBody>
-								</Table>
+							<div className="space-y-2">
+								{isLoading ? (
+									<div className="flex justify-center py-10">
+										<LoadingSpinner />
+									</div>
+								): solicitudes.map((solicitud: any) => (
+									<Card key={solicitud.id} className="border border-gray-200 shadow-sm hover:shadow-md transition duration-200">
+										<CardContent className="p-2 space-y-1">
+											<div className="flex justify-between items-center">
+												<h3 className="text-md font-bold text-blue-800">
+													#{solicitud.numeroRadicado ?? solicitud.id} - {solicitud.tipoPQ?.nombre}
+												</h3>
+												<Badge className="bg-gray-200 text-gray-800">{solicitud.nombreUltimoEstado}</Badge>
+											</div>
+
+											<div className="text-sm text-gray-700 grid grid-cols-3 gap-x-10">
+												<span><strong>Asunto:</strong> {solicitud.detalleAsunto}</span>
+												<span><strong>Fecha:</strong> {new Date(solicitud.fechaRadicacion).toLocaleDateString()}</span>
+												<span><strong>Hora:</strong> {new Date(`1970-01-01T${solicitud.horaRadicacion}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+
+												<span><strong>Responsable:</strong> {solicitud.detalleAsunto}</span>
+												<span><strong>Resolución Estimada:</strong> {solicitud.fechaResolucionEstimada ? new Date(solicitud.fechaResolucionEstimada).toLocaleDateString() : "Sin fecha estimada"}</span>
+												<span><strong>Resolución:</strong> {solicitud.fechaResolucion ? new Date(solicitud.fechaResolucion).toLocaleDateString() : "Sin resolución"}</span>
+											</div>
+
+
+											<div className="flex justify-end">
+												<Button
+													variant="outline"
+													className="text-blue-600 hover:text-blue-800 py-0.1 px-2 text-xs"
+													onClick={() => navigate(`/dashboard/editar_pq/${solicitud.id}`)}
+												>
+													<UndoIcon className="w-3 h-3 mr-1" />
+													Ver
+												</Button>
+											</div>
+										</CardContent>
+									</Card>
+								))}
 							</div>
+
+							{/* Paginación */}
+							<div className="flex justify-center mt-4 gap-4 items-center">
+								<Button
+									variant="outline"
+									disabled={currentPage === 0}
+									onClick={() => setCurrentPage(prev => prev - 1)}
+								>
+									Anterior
+								</Button>
+								<span className="text-sm">
+									Página {currentPage} de {totalPages}
+								</span>
+								<Button
+									variant="outline"
+									disabled={currentPage === totalPages}
+									onClick={() => setCurrentPage(prev => prev + 1)}
+								>
+									Siguiente
+								</Button>
+							</div>
+
 						</CardContent>
 					</Card>
 				</div>
@@ -291,4 +177,4 @@ const Dashboard: React.FC = () => {
 	)
 }
 
-export default Dashboard;
+export default Dashboard

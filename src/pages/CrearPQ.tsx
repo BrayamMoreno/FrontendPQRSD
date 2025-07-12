@@ -14,30 +14,25 @@ import { Badge } from "../components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
 import type { TipoPQ } from "../models/TipoPQ"
-
-interface FormData {
-  tipo: string
-  asunto: string
-  descripcion: string
-  prioridad: string
-  archivos: File[]
-}
+import type { PQ } from "../models/PQ"
+import { FormProvider } from "react-hook-form"
 
 const CrearPQRSDF: React.FC = () => {
-  const [formData, setFormData] = useState<FormData>({
-    tipo: "",
-    asunto: "",
-    descripcion: "",
-    prioridad: "",
-    archivos: [],
-  })
 
   const navigate = useNavigate()
   const api = apiServiceWrapper
 
   const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
 
-  const [errors, setErrors] = useState<Partial<FormData>>({})
+  const [formPeticion, setFormPeticion] = useState<PQ>({
+    tipo_pq_id: "",
+    solicitante_id: "",
+    detalleAsunto: "",
+    detalleDescripcion: "",
+    lista_documentos: []
+  })
+
+  const [errors, setErrors] = useState<Partial<PQ>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const fetchAllData = async () => {
@@ -64,26 +59,28 @@ const CrearPQRSDF: React.FC = () => {
     fetchAllData()
   }, [])
 
-
-  // Validar formulario
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {}
+    const newErrors: Partial<PQ> = {}
 
-    if (!formData.tipo) newErrors.tipo = "El tipo es requerido"
-    if (!formData.asunto.trim()) newErrors.asunto = "El asunto es requerido"
-    if (!formData.descripcion.trim()) newErrors.descripcion = "La descripción es requerida"
-    if (!formData.prioridad) newErrors.prioridad = "La prioridad es requerida"
- 
+    if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
+    if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
+    if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  // Manejar cambios en los inputs
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    // Limpiar error del campo cuando el usuario empiece a escribir
+
+  const handleInputChange = (field: keyof PQ, value: string) => {
+    setFormPeticion((prev) => ({
+      ...prev!,
+      [field]: value
+    }))
     if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
+      setErrors((prev) => ({
+        ...prev,
+        [field]: undefined
+      }))
     }
   }
 
@@ -91,18 +88,18 @@ const CrearPQRSDF: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const usuarioId = sessionStorage.getItem("persona_id");
+    formPeticion.solicitante_id = usuarioId ? usuarioId : "0";
+
+    console.log("Peticion", formPeticion)
+
     if (!validateForm()) return
 
     setIsSubmitting(true)
 
     try {
-      // Simular envío del formulario
-      await new Promise((resolve) => setTimeout(resolve, 2000))
-
-      console.log("Datos del formulario:", formData)
-      alert("PQRSDF enviada exitosamente")
-
-     
+      const data = await api.post("/pqs/radicar_pq", formPeticion)
+      console.log("Response:", data)
     } catch (error) {
       console.error("Error al enviar:", error)
       alert("Error al enviar la PQRSDF")
@@ -111,38 +108,32 @@ const CrearPQRSDF: React.FC = () => {
     }
   }
 
-  // Manejar selección de archivos
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     addFiles(files)
   }
 
-  // Manejar drop de archivos
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     const files = Array.from(e.dataTransfer.files)
     addFiles(files)
   }
 
-  // Manejar drag over
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
   }
 
-  // Manejar drag leave
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
   }
 
-  // Remover archivo
   const removeFile = (index: number) => {
-    setFormData((prev) => ({
+    setFormPeticion((prev) => ({
       ...prev,
-      archivos: prev.archivos.filter((_, i) => i !== index),
+      archivos: prev.lista_documentos.filter((_, i) => i !== index),
     }))
   }
 
-  // Agregar archivos validando tamaño y tipo
   const addFiles = (files: File[]) => {
     const validFiles = files.filter((file) => {
       const validTypes = [
@@ -168,12 +159,12 @@ const CrearPQRSDF: React.FC = () => {
       return true
     })
 
-    setFormData((prev) => ({
+    setFormPeticion((prev) => ({
       ...prev,
-      archivos: [...prev.archivos, ...validFiles],
+      archivos: [...prev.lista_documentos, ...validFiles],
     }))
   }
-  // Formatear tamaño de archivo
+
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 Bytes"
     const k = 1024
@@ -228,22 +219,26 @@ const CrearPQRSDF: React.FC = () => {
                     <Label htmlFor="tipo" className="text-sm font-medium">
                       Tipo de PQRSDF <span className="text-red-500">*</span>
                     </Label>
-                    <Select value={formData.tipo} onValueChange={(value) => handleInputChange("tipo", value)}>
-                      <SelectTrigger className={errors.tipo ? "border-red-500" : ""}>
+                    <Select
+                      value={formPeticion.tipo_pq_id}
+                      onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
+                    >
+                      <SelectTrigger className={errors.tipo_pq_id ? "border-red-500" : ""}>
                         <SelectValue placeholder="Seleccione el tipo" />
                       </SelectTrigger>
                       <SelectContent>
                         {tipoPQ.map((tipo) => (
-                          <SelectItem key={tipo.id} value={tipo.nombre}>
+                          <SelectItem key={tipo.id} value={String(tipo.id)}>
                             <div className="flex items-center gap-2">
-
                               <span>{tipo.nombre}</span>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.tipo && <p className="text-sm text-red-500">{errors.tipo}</p>}
+                    {errors.tipo_pq_id && (
+                      <p className="text-sm text-red-500">{errors.tipo_pq_id}</p>
+                    )}
                   </div>
 
                 </div>
@@ -257,11 +252,11 @@ const CrearPQRSDF: React.FC = () => {
                     id="asunto"
                     type="text"
                     placeholder="Ingrese el asunto de su PQRSDF"
-                    value={formData.asunto}
-                    onChange={(e) => handleInputChange("asunto", e.target.value)}
-                    className={errors.asunto ? "border-red-500" : ""}
+                    value={formPeticion.detalleAsunto}
+                    onChange={(e) => handleInputChange("detalleAsunto", e.target.value)}
+                    className={errors.detalleAsunto ? "border-red-500" : ""}
                   />
-                  {errors.asunto && <p className="text-sm text-red-500">{errors.asunto}</p>}
+                  {errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
                 </div>
 
                 {/* Descripción */}
@@ -272,14 +267,14 @@ const CrearPQRSDF: React.FC = () => {
                   <Textarea
                     id="descripcion"
                     placeholder="Describa detalladamente su solicitud ..."
-                    value={formData.descripcion}
-                    onChange={(e) => handleInputChange("descripcion", e.target.value)}
-                    className={`min-h-32 ${errors.descripcion ? "border-red-500" : ""}`}
+                    value={formPeticion.detalleDescripcion}
+                    onChange={(e) => handleInputChange("detalleDescripcion", e.target.value)}
+                    className={`min-h-32 ${errors.detalleDescripcion ? "border-red-500" : ""}`}
                   />
-                  {errors.descripcion && <p className="text-sm text-red-500">{errors.descripcion}</p>}
+                  {errors.detalleDescripcion && <p className="text-sm text-red-500">{errors.detalleDescripcion}</p>}
                 </div>
 
-               {/* Zona de archivos */}
+                {/* Zona de archivos */}
                 <div className="border-t pt-6">
                   <h3 className="text-lg font-semibold text-blue-900 mb-4">Archivos adjuntos (opcional)</h3>
 
@@ -322,7 +317,8 @@ const CrearPQRSDF: React.FC = () => {
                       />
                     </div>
 
-                    {/* Lista de archivos seleccionados */}
+
+                    {/* Lista de archivos seleccionados 
                     {formData.archivos.length > 0 && (
                       <div className="space-y-2">
                         <h4 className="font-medium text-gray-700">Archivos seleccionados:</h4>
@@ -370,7 +366,7 @@ const CrearPQRSDF: React.FC = () => {
                           ))}
                         </div>
                       </div>
-                    )}
+                    )}*/}
                   </div>
                 </div>
 
