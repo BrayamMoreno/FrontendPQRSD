@@ -36,12 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const data = await response.json();
 
-      // Guardar valores individuales
       sessionStorage.setItem("isAuthenticated", data.logged.toString());
       sessionStorage.setItem("jwt", data.jwt);
       sessionStorage.setItem("username", data.username);
 
-      // Guardar usuario y persona desglosado
       saveToSessionStorage("usuario", data.usuario);
       saveToSessionStorage("persona", data.persona);
 
@@ -69,10 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ) {
         sessionStorage.setItem(storageKey, value.toString());
       } else if (typeof value === "object" && !Array.isArray(value)) {
-        // Recursivo: guardar subpropiedades
         saveToSessionStorage(storageKey, value);
       }
-      // Arrays se ignoran (puedes manejarlo si necesitas)
     }
   };
 

@@ -12,5 +12,6 @@ export interface RegisterForm {
     municipioId: "",
     correo: "",
     contraseña: ""
+    aceptaTratamientoDatos: true
     }
 }

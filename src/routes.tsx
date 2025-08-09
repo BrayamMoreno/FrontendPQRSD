@@ -5,9 +5,10 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./context/PrivateRoute";
 import Test from "./pages/Test";
-import RegisterTest from "./pages/RegisterTest";
 import CrearPQ from "./pages/CrearPQ";
 import DashboardLayout from "./layouts/DashboardLayout";
+import MostrarPerfil from "./pages/MostrarPerfil";
+import DetallePQ from "./pages/DetallePQ";
 
 export default function App() {
   return (
@@ -23,6 +24,8 @@ export default function App() {
         <Route  path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="crear_pq" element={<CrearPQ />} />
+          <Route path="mostrar_perfil" element={<MostrarPerfil />} />
+          <Route path="detalle_pq/:id" element={<DetallePQ />} />
         </Route>
 
         {/* Rutas Privadas con Layout */}
