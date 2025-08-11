@@ -91,40 +91,29 @@ export default function UsuariosPage() {
         }
     }
 
-    const handleDisableCount = async (u: any) => {
+    const handleStatusAccount = async (id: number, isEnable: boolean) => {
         try {
-            api.post('/usuarios/disableCount', { id: u.id })
-        } catch (e) {
-            console.error(e)
-        }
-    }
+            const action = isEnable ? 'disable-account' : 'enable-account';
+            await api.post(`/usuarios/${action}/${id}`, {});
 
-    const toggleEstado = async (u: any) => {
-        try {
-            const res = await fetch('/api/users / ${ u.id }', {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ estado: u.estado === "ACTIVO" ? "INACTIVO" : "ACTIVO" }),
-            })
-            const json = await res.json()
-            if (!res.ok) throw new Error(json?.error || "Error")
-            setData((prev) => prev.map((x) => (x.id === u.id ? json.data : x)))
+            await fetchUsers();
         } catch (e) {
-            console.error(e)
+            console.error("Error actualizando estado de cuenta:", e);
         }
-    }
+    };
 
-    const deleteUser = async (u: any) => {
+    const deleteUser = async (id: number) => {
         try {
-            const res = await fetch('/api/users / ${ u.id }', { method: "DELETE" })
-            if (!res.ok) throw new Error("Error eliminando")
-            setData((prev) => prev.filter((x) => x.id !== u.id))
+            await api.delete(`/usuarios/${id}`, {})
+
+            await fetchUsers()
         } catch (e) {
             console.error(e)
         } finally {
             setToDelete(null)
         }
     }
+
     return (
         <div className="flex min-h-screen w-screen bg-gray-100 z-15">
             <div className="ml-14 w-full">
@@ -254,7 +243,7 @@ export default function UsuariosPage() {
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handleDisableCount(u.idw     )}
+                                                            onClick={() => handleStatusAccount(u.id, u.isEnable)}
                                                             className={`min-w-[90px] h-9 flex justify-center items-center
                                                                 ${u.isEnable
                                                                     ? "border-yellow-500 text-yellow-700"
@@ -278,12 +267,18 @@ export default function UsuariosPage() {
                                                                     <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
                                                                     <AlertDialogDescription>
                                                                         Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
-
                                                                     </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => deleteUser(u)}>Eliminar</AlertDialogAction>
+                                                                    <AlertDialogCancel className="">Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                        onClick={() => deleteUser(u.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Eliminar
+                                                                    </AlertDialogAction>
+
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
                                                         </AlertDialog>

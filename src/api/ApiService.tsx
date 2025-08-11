@@ -48,8 +48,8 @@
     patch: (endpoint: string, data: any) =>
       handleRequest(apiService.patch(endpoint, data)),
 
-    delete: (endpoint: string, id: number | string) =>
-      handleRequest(apiService.delete(`${endpoint}/${id}`)),
+    delete: (endpoint: string, data: any) =>
+      handleRequest(apiService.delete(endpoint, data)),
   };
 
   export default apiServiceWrapper;
