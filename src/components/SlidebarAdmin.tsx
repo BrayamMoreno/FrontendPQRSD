@@ -10,7 +10,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider"; // 👈 Importa el hook
 
-const Slidebar: React.FC = () => {
+const SlidebarAdmin: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth(); // 👈 Obtén el método logout
   const [menuOpen, setMenuOpen] = useState(false);
@@ -33,10 +33,11 @@ const Slidebar: React.FC = () => {
 
   // En vez de usar path con {auth}, aquí definimos qué hacer
   const menuItems = [
-    { label: "Dashboard", icon: <FaFileAlt />, action: () => navigate("/dashboard") },
+    { label: "Dashboard", icon: <FaFileAlt />, action: () => navigate("/admin/dashboard") },
+    { label: "Administrar Usuarios", icon: <FaUser />, action: () => navigate("/admin/dashboard/gestion_usuarios") },
     { label: "Faqs", icon: <FaQuestion />, action: () => navigate("/faqs") },
     { label: "Perfil", icon: <FaUser />, action: () => navigate("/dashboard/mostrar_perfil") },
-    { label: "Salir", icon: <FaSignOutAlt />, action: logout }, // 👈 Llamar directamente a logout
+    { label: "Salir", icon: <FaSignOutAlt />, action: logout },
   ];
 
   const userInfo = {
@@ -120,4 +121,4 @@ const Slidebar: React.FC = () => {
   );
 };
 
-export default Slidebar;
+export default SlidebarAdmin;

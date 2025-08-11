@@ -48,7 +48,6 @@ const Login: React.FC = () => {
 	const handleLogin = async () => {
 		try {
 			await login(loginForm.correo, loginForm.contrasena);
-			navigate("/dashboard");
 		} catch (error) {
 			setError("Error al iniciar sesión. Verifica tus credenciales.");
 			console.error("Error al iniciar sesión:", error);

@@ -3,7 +3,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 import Slidebar from "../components/Slidebar"; // ajusta la ruta
 
-const DashboardLayout: React.FC = () => {
+const DashboardLayoutUsuarios: React.FC = () => {
   return (
     <div className="flex">
       <Slidebar />
@@ -14,4 +14,4 @@ const DashboardLayout: React.FC = () => {
   );
 };
 
-export default DashboardLayout;
+export default DashboardLayoutUsuarios;

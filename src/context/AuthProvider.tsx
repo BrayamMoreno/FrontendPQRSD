@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import config from "../config";
+import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const apiBaseUrl: string = config.apiBaseUrl;
+  const navigate = useNavigate();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => sessionStorage.getItem("isAuthenticated") === "true"
@@ -34,17 +36,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Error en el login");
       }
 
+
+
       const data = await response.json();
 
       sessionStorage.setItem("isAuthenticated", data.logged.toString());
       sessionStorage.setItem("jwt", data.jwt);
       sessionStorage.setItem("username", data.username);
-
       saveToSessionStorage("usuario", data.usuario);
       saveToSessionStorage("persona", data.persona);
-
       setIsAuthenticated(true);
       setUser(data.usuario);
+
+      if(data.usuario.rol.nombre === "Admin") {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/usuario/dashboard");
+      }
     } catch (error) {
       console.error("Error en el login:", error);
       throw error;
@@ -73,7 +81,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      const tokenjwt = sessionStorage.getItem("jwt");
+      const response = await fetch(`${apiBaseUrl}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tokenjwt }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Error al cerrar sesión");
+      }
+
+      if(response.status === 200){
+        sessionStorage.clear();
+        navigate("/login");
+      }
+
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    }
+    
+
     sessionStorage.removeItem("isAuthenticated");
     sessionStorage.removeItem("usuario");
     sessionStorage.removeItem("persona");

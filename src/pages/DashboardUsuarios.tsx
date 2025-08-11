@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
 import { UndoIcon } from "lucide-react"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Await, useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
@@ -8,7 +8,6 @@ import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Badge } from "../components/ui/badge"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
-import { FaEye, FaFileAlt } from "react-icons/fa"
 
 const Dashboard: React.FC = () => {
 
@@ -29,7 +28,8 @@ const Dashboard: React.FC = () => {
 	const [totalPages, setTotalPages] = useState(0)
 
 	const [isLoading, setIsLoading] = useState<boolean>(false)
-	const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false)
+	const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(true)
+	const [isLoadingDocuments, setIsLoadingDocuments] = useState<boolean>(true)
 
 	const fecthSolicitudes = async () => {
 		setIsLoading(true)
@@ -61,29 +61,47 @@ const Dashboard: React.FC = () => {
 		fecthSolicitudes()
 	}, [currentPage])
 
-	const handleSetHistorialEstados = (id: number | string) => {
-		api.get(`/historial_estados/GetByPqId?pqId=${id}`)
-			.then(response => {
-				const historial = response.data; // accede a .data si el array está ahí
-				const mappedData = historial.map((item: any) => ({
-					id: item.id,
-					nombre: item.estado?.nombre || "Sin nombre",
-					fecha: item.fechaCambio,
-					observacion: item.observacion || "Sin observación"
-				}));
-				setHistorialEstados(mappedData);
-				console.log("Historial de estados (mapeado):", mappedData);
-			})
-			.catch(error => {
-				console.error("Error al obtener el historial de estados:", error);
-			});
+	const handleSetHistorialEstados = async (id: number | string) => {
+		setIsLoadingDetails(true); // Empieza a cargar
+		try {
+			const response = await api.get(`/historial_estados/GetByPqId?pqId=${id}`);
+			const historial = response.data;
+			const mappedData = historial.map((item: any) => ({
+				id: item.id,
+				nombre: item.estado?.nombre || "Sin nombre",
+				fecha: item.fechaCambio,
+				observacion: item.observacion || "Sin observación"
+			}));
+			setHistorialEstados(mappedData);
+			console.log("Historial de estados (mapeado):", mappedData);
+		} catch (error) {
+			console.error("Error al obtener el historial de estados:", error);
+		} finally {
+			setIsLoadingDetails(false); // Finaliza la carga siempre
+		}
 	};
 
-	const handleSetDocumentos = (id: number | string) => {
+
+	const handleSetDocumentos = async (id: number | string) => {
+		setIsLoadingDocuments(true); // Empieza a cargar
+
+		try {
+			const response = await api.get(`/adjuntosPq/GetByPqId?pqId=${id}`);
+
+			console.log("Documentos obtenidos:", response);
+			setDocumentos(response.data);
+		}catch (error) {
+			console.error("Error al obtener los documentos:", error);
+		} finally {
+			setIsLoadingDocuments(false); // Finaliza la carga siempre
+		}
+
+
+
 		api.get(`/adjuntosPq/GetByPqId?pqId=${id}`)
 			.then(response => {
 				console.log("Documentos obtenidos:", response);
-				setDocumentos(response.data)
+		
 				console.log("Documentos:", response.data);
 			})
 			.catch(error => {
@@ -92,14 +110,25 @@ const Dashboard: React.FC = () => {
 	};
 
 
-	const handleVerClick = (solicitud: any) => {
-		setIsLoadingDetails(true);
-		setSelectedSolicitud(solicitud)
-		handleSetHistorialEstados(solicitud.id)
-		handleSetDocumentos(solicitud.id)
+	const handleVerClick = async (solicitud: any) => {
 		setModalOpen(true)
-		setIsLoadingDetails(false)
+		setSelectedSolicitud(solicitud)
+
+		await Promise.all([
+			handleSetHistorialEstados(solicitud.id),
+			handleSetDocumentos(solicitud.id)
+		])
+		console.log("Historial de estados:", historialEstados)
 	}
+
+
+	const handleCloseModal = () => {
+		setSelectedSolicitud(null)
+		setHistorialEstados([])
+		setDocumentos([])
+		setModalOpen(false)
+	}
+
 
 
 	return (
@@ -398,38 +427,46 @@ const Dashboard: React.FC = () => {
 								<h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
 									Documentos Enviados
 								</h3>
-								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
-									{documentos && documentos.length > 0 ? (
-										<ul className="text-sm text-blue-600 space-y-2">
-											{documentos.map((archivo: any, i: number) => (
-												<li key={i} className="flex items-center gap-2">
-													{/* Ícono del archivo */}
-													<span className="text-lg">📄</span>
-													{/* Enlace para ver/descargar el archivo */}
-													<a
-														href={`https://TU_DOMINIO_O_STORAGE/${archivo.rutaArchivo}`}
-														download
-														className="hover:underline break-all"
-													>
-														{archivo.nombreArchivo}
-													</a>
-													{/* Fecha opcional */}
-													<span className="text-[10px] text-gray-500 ml-auto">
-														{new Date(archivo.createdAt).toLocaleDateString()}
-													</span>
-												</li>
-											))}
-										</ul>
-									) : (
-										<p className="text-sm text-gray-500">No hay documentos cargados.</p>
-									)}
-								</div>
+
+								{isLoadingDocuments ? (
+									// Mientras carga
+									<div className="flex justify-center py-10">
+										<LoadingSpinner />
+									</div>
+								) : (
+									<div className="bg-gray-50 p-4 rounded-lg space-y-4">
+										{documentos && documentos.length > 0 ? (
+											<ul className="text-sm text-blue-600 space-y-2">
+												{documentos.map((archivo: any, i: number) => (
+													<li key={i} className="flex items-center gap-2">
+														{/* Ícono del archivo */}
+														<span className="text-lg">📄</span>
+														{/* Enlace para ver/descargar el archivo */}
+														<a
+															href={`https://TU_DOMINIO_O_STORAGE/${archivo.rutaArchivo}`}
+															download
+															className="hover:underline break-all"
+														>
+															{archivo.nombreArchivo}
+														</a>
+														{/* Fecha opcional */}
+														<span className="text-[10px] text-gray-500 ml-auto">
+															{new Date(archivo.createdAt).toLocaleDateString()}
+														</span>
+													</li>
+												))}
+											</ul>
+										) : (
+											<p className="text-sm text-gray-500">No hay documentos cargados.</p>
+										)}
+									</div>
+								)}
 							</div>
 
 						</div>
 
 						{/* Footer del Modal */}
-						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center">
+						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center sticky bottom-0">
 							<div className="text-sm text-gray-500">
 								ID: {selectedSolicitud.id} | Creado:{" "}
 								{new Date(selectedSolicitud.fechaRadicacion).toLocaleDateString()}
@@ -438,22 +475,15 @@ const Dashboard: React.FC = () => {
 								<Button
 									variant="outline"
 									onClick={() => {
-										// Liberar variables / resetear estados
-										setSelectedSolicitud(null);
-										setHistorialEstados([]);
-										setDocumentos([]);
-										setIsLoading(false);
-
-										// Cerrar modal
-										setModalOpen(false);
+										handleCloseModal();
 									}}
 									className="bg-gray-600 text-white hover:bg-gray-700 border-gray-600"
 								>
 									Cerrar
 								</Button>
-
 							</div>
 						</div>
+
 					</div>
 				</div>
 			)}
