@@ -1,4 +1,4 @@
-import React from "react";
+import React, { use, useEffect, useState } from "react";
 import {
     BarChart, Bar, LineChart, Line, PieChart, Pie,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
@@ -29,21 +29,65 @@ const peticionesPorDepartamento = [
     { departamento: "Bolívar", cantidad: 5 },
 ];
 
-const proximasAVencer = [
-    { nombre: "PQ-001", dias: 2 },
-    { nombre: "PQ-002", dias: 4 },
-    { nombre: "PQ-003", dias: 1 },
-];
-
-const ultimasPeticiones = [
-    { codigo: "PQ-010", tipo: "Queja", fecha: "2025-08-05" },
-    { codigo: "PQ-011", tipo: "Petición", fecha: "2025-08-06" },
-    { codigo: "PQ-012", tipo: "Reclamo", fecha: "2025-08-07" },
-];
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
+import apiServiceWrapper from "../api/ApiService";
+
 const DashboardAdmin: React.FC = () => {
+
+    const api = apiServiceWrapper
+    const [ultimasSolicitudes, setUltimasSolicitudes] = useState<any | []>([]);
+    const [proximasAVencer, setProximasAVencer] = useState<any | []>([]);
+    const [tendenciasDiarias, setTendenciasDiarias] = useState<any[]>([]);
+    const [peticionesPorTipo, setPeticionesPorTipo] = useState<any[]>([]);
+    const [peticionesPorDepartamento, setPeticionesPorDepartamento] = useState<any[]>([]);
+
+    const [totalSolicitudes, setTotalSolicitudes] = useState(0);
+    const [totalProximasAVencer, setTotalProximasAVencer] = useState(0);
+
+    const fetchData = async (
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<any[]>>,
+        setterNumberData: React.Dispatch<React.SetStateAction<number>>) => {
+        try {
+            const response = await api.get(endpoint)
+            const data = await response.data.data
+            setter(data || [])
+            setterNumberData(response.data.total_count || 0)
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error)
+        }
+    }
+
+    const fetchEstadisticas = async (
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<any[]>>,) => {
+        try {
+            const response = await api.get(endpoint)
+            const data = await response.data
+            setter(data || [])
+            console.log(data)
+        } catch (error) {
+            console.error("Error al obtener las tendencias diarias:", error)
+        }
+    }
+
+
+    const fetchAllData = async () => {
+        await Promise.all([
+            fetchData("/pqs", setUltimasSolicitudes, setTotalSolicitudes),
+            fetchData("/pqs/proximas_a_vencer", setProximasAVencer, setTotalProximasAVencer),
+            fetchEstadisticas("/pqs/ultimos_7_dias", setTendenciasDiarias),
+            fetchEstadisticas("/pqs/contar_por_tipo_mes", setPeticionesPorTipo)
+        ])
+    }
+
+    useEffect(() => {
+        fetchAllData()
+    }, []);
+
+
     return (
         <div className="flex min-h-screen w-screen bg-gray-100 z-15">
             <div className="ml-10 w-full">
@@ -55,7 +99,7 @@ const DashboardAdmin: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
                         <div className="bg-white rounded-lg p-4 shadow text-center">
                             <p className="text-sm text-gray-500">Total de Peticiones</p>
-                            <p className="text-2xl font-bold">120</p>
+                            <p className="text-2xl font-bold">{totalSolicitudes}</p>
                         </div>
                         <div className="bg-white rounded-lg p-4 shadow text-center">
                             <p className="text-sm text-gray-500">Peticiones Resueltas</p>
@@ -67,7 +111,7 @@ const DashboardAdmin: React.FC = () => {
                         </div>
                         <div className="bg-white rounded-lg p-4 shadow text-center">
                             <p className="text-sm text-gray-500">Próximas a Vencer</p>
-                            <p className="text-2xl font-bold">{proximasAVencer.length}</p>
+                            <p className="text-2xl font-bold">{totalProximasAVencer}</p>
                         </div>
                         <div className="bg-white rounded-lg p-4 shadow text-center">
                             <p className="text-sm text-gray-500">Tiempo Prom. Resolución</p>
@@ -98,12 +142,12 @@ const DashboardAdmin: React.FC = () => {
 
                         {/* Peticiones por tipo */}
                         <div className="bg-white rounded-lg shadow p-4">
-                            <h2 className="text-lg font-semibold mb-4">Peticiones por Tipo</h2>
+                            <h2 className="text-lg font-semibold mb-4">Peticiones Mensuales por Tipo</h2>
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
                                     <Pie
                                         data={peticionesPorTipo}
-                                        dataKey="valor"
+                                        dataKey="cantidad"
                                         nameKey="tipo"
                                         cx="50%"
                                         cy="50%"
@@ -146,14 +190,25 @@ const DashboardAdmin: React.FC = () => {
                                 <thead>
                                     <tr className="bg-gray-200">
                                         <th className="p-2 text-left">Código</th>
+                                        <th className="p-2 text-left">Fecha de Resolución Estimada</th>
                                         <th className="p-2 text-left">Días Restantes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {proximasAVencer.map((pq, idx) => (
-                                        <tr key={idx} className="border-b">
-                                            <td className="p-2">{pq.nombre}</td>
-                                            <td className="p-2">{pq.dias}</td>
+                                    {proximasAVencer.map((solicitud: any) => (
+                                        <tr key={solicitud.id} className="border-b">
+                                            <td className="p-2">{solicitud.id}</td>
+                                            <td className="p-2">{solicitud.fechaResolucionEstimada}</td>
+                                            <td className="p-2">
+                                                {(() => {
+                                                    const hoy = new Date();
+                                                    const fechaEstimada = new Date(solicitud.fechaResolucionEstimada);
+                                                    const diffMs = fechaEstimada.getTime() - hoy.getTime(); // ahora sí es number
+                                                    const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                                                    return diffDias < 0 ? "Vencida" : `${diffDias} días`;
+                                                })()}
+                                            </td>
+
                                         </tr>
                                     ))}
                                 </tbody>
@@ -168,15 +223,17 @@ const DashboardAdmin: React.FC = () => {
                                     <tr className="bg-gray-200">
                                         <th className="p-2 text-left">Código</th>
                                         <th className="p-2 text-left">Tipo</th>
-                                        <th className="p-2 text-left">Fecha</th>
+                                        <th className="p-2 text-left">Ultimo Estado</th>
+                                        <th className="p-2 text-left">Fecha de Radicación</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {ultimasPeticiones.map((pq, idx) => (
-                                        <tr key={idx} className="border-b">
-                                            <td className="p-2">{pq.codigo}</td>
-                                            <td className="p-2">{pq.tipo}</td>
-                                            <td className="p-2">{pq.fecha}</td>
+                                    {ultimasSolicitudes.map((solicitud: any) => (
+                                        <tr key={solicitud.id} className="border-b">
+                                            <td className="p-2">{solicitud.id}</td>
+                                            <td className="p-2">{solicitud.tipoPQ.nombre}</td>
+                                            <td className="p-2">{solicitud.nombreUltimoEstado}</td>
+                                            <td className="p-2">{new Date(solicitud.fechaRadicacion).toLocaleDateString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>

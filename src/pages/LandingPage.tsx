@@ -93,51 +93,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Servicios */}
-      <section id="servicios" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">Nuestros Servicios</h2>
-            <p className="mt-4 text-xl text-gray-600">
-              La Secretaría de Tránsito ofrece diversos servicios para los ciudadanos
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={<FaIdCard className="text-blue-500" />}
-              title="Licencias de Conducción"
-              description="Trámites relacionados con expedición, renovación y duplicados de licencias."
-            />
-            <FeatureCard
-              icon={<FaCar className="text-red-500" />}
-              title="Registro de Vehículos"
-              description="Matrículas, traspasos, cancelaciones y otros trámites vehiculares."
-            />
-            <FeatureCard
-              icon={<FaExclamationTriangle className="text-yellow-500" />}
-              title="Infracciones y Comparendos"
-              description="Consulta y pago de multas e infracciones de tránsito."
-            />
-            <FeatureCard
-              icon={<FaRoad className="text-green-500" />}
-              title="Señalización y Vías"
-              description="Solicitudes relacionadas con señalización, semáforos y estado de las vías."
-            />
-            <FeatureCard
-              icon={<FaClipboardList className="text-indigo-500" />}
-              title="Cursos y Capacitaciones"
-              description="Información sobre cursos de seguridad vial y capacitaciones."
-            />
-            <FeatureCard
-              icon={<FaFileAlt className="text-gray-700" />}
-              title="Sistema PQRSDF"
-              description="Gestión de Peticiones, Quejas, Reclamos, Sugerencias, Denuncias y Felicitaciones."
-            />
-          </div>
-        </div>
-      </section>
-
       {/* Cómo funciona */}
       <section id="como-funciona" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -168,57 +123,9 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* Trámites */}
-      <section id="tramites" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">Trámites Frecuentes</h2>
-            <p className="mt-4 text-xl text-gray-600">Conozca los trámites más solicitados en nuestra Secretaría</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <TramiteCard
-              title="Expedición de Licencia"
-              description="Obtenga su licencia de conducción por primera vez."
-              tiempoEstimado="15 días hábiles"
-              costo="$150.000"
-            />
-            <TramiteCard
-              title="Renovación de Licencia"
-              description="Renueve su licencia de conducción vencida o próxima a vencer."
-              tiempoEstimado="10 días hábiles"
-              costo="$100.000"
-            />
-            <TramiteCard
-              title="Matrícula de Vehículo"
-              description="Registre su vehículo nuevo en la Secretaría de Tránsito."
-              tiempoEstimado="20 días hábiles"
-              costo="$250.000"
-            />
-            <TramiteCard
-              title="Traspaso de Vehículo"
-              description="Realice el cambio de propietario de un vehículo."
-              tiempoEstimado="15 días hábiles"
-              costo="$200.000"
-            />
-            <TramiteCard
-              title="Impugnación de Comparendo"
-              description="Presente su recurso contra una infracción de tránsito."
-              tiempoEstimado="30 días hábiles"
-              costo="Sin costo"
-            />
-            <TramiteCard
-              title="Certificado de Tradición"
-              description="Obtenga el historial de su vehículo."
-              tiempoEstimado="5 días hábiles"
-              costo="$50.000"
-            />
-          </div>
-        </div>
-      </section>
-
+  
       {/* FAQ */}
-      <section id="faq" className="py-20 bg-gray-50">
+      <section id="faq" className="py-20 bg-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900">Preguntas frecuentes</h2>

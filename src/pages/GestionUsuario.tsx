@@ -19,6 +19,7 @@ import {
 import { Edit3, Plus, RefreshCw, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../api/ApiService"
+import UsuarioForm from "../components/UsuarioForm"
 
 export default function UsuariosPage() {
 
@@ -36,26 +37,44 @@ export default function UsuariosPage() {
     const [editing, setEditing] = useState<any | null>(null)
     const [toDelete, setToDelete] = useState<any | null>(null)
 
-    const fetchUsers = async () => {
-        setLoading(true)
-
-        const page = 0
+    const fetchAllUsers = async () => {
+        setLoading(true);
+        let allUsers: any[] = [];
+        let page = 0;
+        const pageSize = 20; // ajusta según tu API
+        let hasMore = true;
 
         try {
-            const response = await api.get('/usuarios')
-            if (response.data.ok) throw new Error(response.data.error || "Error al obtener usuarios")
-            setData(Array.isArray(response.data.data) ? response.data.data : [])
+            while (hasMore) {
+                const response = await api.get(`/usuarios?page=${page}&size=${pageSize}`);
+
+                if (!response.data || !Array.isArray(response.data.data)) {
+                    throw new Error("Error en la respuesta del servidor");
+                }
+
+                const users = response.data.data;
+                allUsers = [...allUsers, ...users];
+
+                if (response.data.hasMore === false || users.length < pageSize) {
+                    hasMore = false;
+                } else {
+                    page++;
+                }
+            }
+
+            setData(allUsers);
         } catch (e) {
-            console.error(e)
-            setData([])
+            console.error("Error cargando usuarios:", e);
+            setData([]);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
+
 
 
     useEffect(() => {
-        fetchUsers()
+        fetchAllUsers()
         fetchRoles()
     }, [])
 
@@ -96,7 +115,7 @@ export default function UsuariosPage() {
             const action = isEnable ? 'disable-account' : 'enable-account';
             await api.post(`/usuarios/${action}/${id}`, {});
 
-            await fetchUsers();
+            await fetchAllUsers();
         } catch (e) {
             console.error("Error actualizando estado de cuenta:", e);
         }
@@ -106,7 +125,7 @@ export default function UsuariosPage() {
         try {
             await api.delete(`/usuarios/${id}`, {})
 
-            await fetchUsers()
+            await fetchAllUsers()
         } catch (e) {
             console.error(e)
         } finally {
@@ -121,10 +140,6 @@ export default function UsuariosPage() {
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-2xl font-bold text-blue-900">Gestión de Usuarios</h1>
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={fetchUsers} disabled={loading}>
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Refrescar
-                            </Button>
                             <Button onClick={() => setFormOpen(true)}>
                                 <Plus className="mr-2 h-4 w-4" />
                                 Nuevo usuario
@@ -191,7 +206,7 @@ export default function UsuariosPage() {
                                         <TableRow>
                                             <TableHead>Id</TableHead>
                                             <TableHead>Nombre</TableHead>
-                                            <TableHead>Documento</TableHead>
+                                            <TableHead>Numero de Documento</TableHead>
                                             <TableHead>Correo</TableHead>
                                             <TableHead>Rol</TableHead>
                                             <TableHead>Estado de Cuenta</TableHead>
@@ -218,7 +233,7 @@ export default function UsuariosPage() {
                                                 <TableCell>{u.correo}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline">
-                                                        {u.rol === "ADMIN" ? "Administrador" : u.rol === "AGENTE" ? "Agente" : "Ciudadano"}
+                                                        {u.rol.nombre}
                                                     </Badge>
                                                 </TableCell>
                                                 <TableCell>
@@ -230,9 +245,11 @@ export default function UsuariosPage() {
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
+                                                        {/* Editar */}
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
+                                                            className="h-9 min-w-[100px] flex items-center justify-center"
                                                             onClick={() => {
                                                                 setEditing(u)
                                                                 setFormOpen(true)
@@ -240,25 +257,33 @@ export default function UsuariosPage() {
                                                         >
                                                             <Edit3 className="h-4 w-4 mr-1" /> Editar
                                                         </Button>
+
+                                                        {/* Activar / Desactivar */}
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            onClick={() => handleStatusAccount(u.id, u.isEnable)}
-                                                            className={`min-w-[90px] h-9 flex justify-center items-center
+                                                            className={`h-9 min-w-[100px] flex items-center justify-center
                                                                 ${u.isEnable
                                                                     ? "border-yellow-500 text-yellow-700"
                                                                     : "border-green-600 text-green-700"
                                                                 }`}
+                                                            onClick={() => handleStatusAccount(u.id, u.isEnable)}
                                                         >
                                                             {u.isEnable ? "Desactivar" : "Activar"}
                                                         </Button>
 
+                                                        {/* Eliminar */}
                                                         <AlertDialog
                                                             open={toDelete?.id === u.id}
                                                             onOpenChange={(open: any) => !open && setToDelete(null)}
                                                         >
                                                             <AlertDialogTrigger asChild>
-                                                                <Button variant="destructive" size="sm" onClick={() => setToDelete(u)}>
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    className="h-9 min-w-[100px] flex items-center justify-center"
+                                                                    onClick={() => setToDelete(u)}
+                                                                >
                                                                     <Trash2 className="h-4 w-4 mr-1" /> Eliminar
                                                                 </Button>
                                                             </AlertDialogTrigger>
@@ -278,7 +303,6 @@ export default function UsuariosPage() {
                                                                         <Trash2 className="h-4 w-4 mr-1" />
                                                                         Eliminar
                                                                     </AlertDialogAction>
-
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
                                                         </AlertDialog>
@@ -293,6 +317,34 @@ export default function UsuariosPage() {
                     </Card>
                 </div>
             </div>
+
+
+            {formOpen && (
+                <UsuarioForm
+                    user={editing}
+                    roles={roles}
+                    onClose={() => {
+                        setFormOpen(false)
+                        setEditing(null)
+                    }}
+                    onSave={async (payload: any) => {
+                        try {
+                            if (editing) {
+                                await api.put(`/usuarios/${editing.id}`, payload)
+                            } else {
+                                await api.post(`/usuarios`, payload)
+                            }
+                            await fetchAllUsers()
+                            setFormOpen(false)
+                            setEditing(null)
+                        } catch (e) {
+                            console.error("Error guardando usuario:", e)
+                        }
+                    }}
+                />
+            )}
         </div>
     )
 }
+
+

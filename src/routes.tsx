@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/DashboardAdmin";
 import DashboardLayoutUsuarios from "./layouts/DashboardLayoutUsuarios";
 import DashboardLayoutAdmin from "./layouts/DashboardLayoutAdmin";
 import GestionUsuarios from "./pages/GestionUsuario";
+import GestionRoles from "./pages/GestionRoles";
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
         <Route  path="/admin/dashboard" element={<DashboardLayoutAdmin />}>
           <Route index element={<AdminDashboard />} />
           <Route path="gestion_usuarios" element={<GestionUsuarios />} />
+          <Route path="roles" element={<GestionRoles   />} />
           <Route path="crear_pq" element={<CrearPQ />} />
           <Route path="mostrar_perfil" element={<MostrarPerfil />} />
         </Route>

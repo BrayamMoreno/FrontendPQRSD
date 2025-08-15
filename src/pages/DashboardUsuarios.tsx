@@ -1,22 +1,35 @@
 import { UndoIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Await, useNavigate } from "react-router-dom"
-import apiServiceWrapper from "../api/ApiService"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
 
-import { Badge } from "../components/ui/badge"
+import { FaArrowLeft, FaFileAlt, FaExclamationTriangle, FaComments, FaThumbsUp } from "react-icons/fa"
 import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { Textarea } from "../components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Badge } from "../components/ui/badge"
+import { useNavigate } from "react-router-dom"
+import apiServiceWrapper from "../api/ApiService"
+import type { TipoPQ } from "../models/TipoPQ"
+import type { PQ } from "../models/PQ"
+import { FormProvider } from "react-hook-form"
+import axios from "axios"
+
+
 
 const Dashboard: React.FC = () => {
 
 	const navigate = useNavigate()
+
 	const api = apiServiceWrapper
 
 	const [solicitudes, setSolicitudes] = useState<any[]>([])
 
 	const [modalOpen, setModalOpen] = useState(false)
+
 	const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
 	const [historialEstados, setHistorialEstados] = useState<any[]>([])
 	const [documentos, setDocumentos] = useState<any[]>([])
@@ -30,6 +43,8 @@ const Dashboard: React.FC = () => {
 	const [isLoading, setIsLoading] = useState<boolean>(false)
 	const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(true)
 	const [isLoadingDocuments, setIsLoadingDocuments] = useState<boolean>(true)
+
+	const [modalRadicarSolicitud, setModalRadicarSolicitud] = useState(false)
 
 	const fecthSolicitudes = async () => {
 		setIsLoading(true)
@@ -90,7 +105,7 @@ const Dashboard: React.FC = () => {
 
 			console.log("Documentos obtenidos:", response);
 			setDocumentos(response.data);
-		}catch (error) {
+		} catch (error) {
 			console.error("Error al obtener los documentos:", error);
 		} finally {
 			setIsLoadingDocuments(false); // Finaliza la carga siempre
@@ -101,14 +116,13 @@ const Dashboard: React.FC = () => {
 		api.get(`/adjuntosPq/GetByPqId?pqId=${id}`)
 			.then(response => {
 				console.log("Documentos obtenidos:", response);
-		
+
 				console.log("Documentos:", response.data);
 			})
 			.catch(error => {
 				console.error("Error al obtener el historial de estados:", error);
 			});
 	};
-
 
 	const handleVerClick = async (solicitud: any) => {
 		setModalOpen(true)
@@ -129,6 +143,191 @@ const Dashboard: React.FC = () => {
 		setModalOpen(false)
 	}
 
+	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
+
+	const [formPeticion, setFormPeticion] = useState<PQ>({
+		tipo_pq_id: "",
+		solicitante_id: "",
+		detalleAsunto: "",
+		detalleDescripcion: "",
+		lista_documentos: []
+	})
+
+	const [errors, setErrors] = useState<Partial<PQ>>({})
+	const [isSubmitting, setIsSubmitting] = useState(false)
+
+	const fetchAllData = async () => {
+		try {
+			await Promise.all([
+				fetchData("tipos_pqs", setTipoPQ),
+			])
+		} catch (error) {
+			console.error("Error al cargar datos iniciales:", error)
+		}
+	}
+
+	const fetchData = async (endpoint: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
+		try {
+			const response = await api.get(`/${endpoint}`)
+			const data = await response.data
+			setter(data.data || [])
+		} catch (error) {
+			console.error(`Error al obtener los datos de ${endpoint}:`, error)
+		}
+	}
+
+
+	const validateForm = (): boolean => {
+		const newErrors: Partial<PQ> = {}
+
+		if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
+		if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
+		if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
+
+		setErrors(newErrors)
+		return Object.keys(newErrors).length === 0
+	}
+
+
+	const handleInputChange = (field: keyof PQ, value: string) => {
+		setFormPeticion((prev) => ({
+			...prev!,
+			[field]: value
+		}))
+		if (errors[field]) {
+			setErrors((prev) => ({
+				...prev,
+				[field]: undefined
+			}))
+		}
+	}
+
+	// Enviar formulario
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		const usuarioId = sessionStorage.getItem("persona_id");
+		formPeticion.solicitante_id = usuarioId ?? "0";
+
+		if (!validateForm()) return;
+
+		setIsSubmitting(true);
+
+		try {
+			const documentosBase64 = await Promise.all(
+				formPeticion.lista_documentos.map(async (file) => {
+					const base64 = await fileToBase64(file);
+					return {
+						Nombre: file.name,
+						Tipo: file.type,
+						Contenido: base64
+					};
+				})
+			);
+
+			const payload = {
+				tipo_pq_id: formPeticion.tipo_pq_id,
+				solicitante_id: formPeticion.solicitante_id,
+				detalleAsunto: formPeticion.detalleAsunto,
+				detalleDescripcion: formPeticion.detalleDescripcion,
+				lista_documentos: documentosBase64
+			};
+			const response = await api.post("/pqs/radicar_pq", payload);
+
+			console.log(response.status)
+
+			if (response.status === 201) {
+				navigate("/dashboard");
+			}
+
+		} catch (error) {
+			console.error("Error al enviar:", error);
+			alert("Error al enviar la PQRSDF");
+		} finally {
+			setIsSubmitting(false);
+		}
+	};
+
+	const fileToBase64 = (file: File): Promise<string> => {
+		return new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file); // O reader.readAsBinaryString(file)
+			reader.onload = () => {
+				const result = reader.result as string;
+				const base64 = result.split(",")[1]; // Quita el "data:..." al inicio
+				resolve(base64);
+			};
+			reader.onerror = reject;
+		});
+	};
+
+
+
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const files = Array.from(e.target.files || [])
+		addFiles(files)
+	}
+
+	const handleDrop = (e: React.DragEvent) => {
+		e.preventDefault()
+		const files = Array.from(e.dataTransfer.files)
+		addFiles(files)
+	}
+
+	const handleDragOver = (e: React.DragEvent) => {
+		e.preventDefault()
+	}
+
+	const handleDragLeave = (e: React.DragEvent) => {
+		e.preventDefault()
+	}
+
+	const removeFile = (index: number) => {
+		setFormPeticion((prev) => ({
+			...prev,
+			lista_documentos: prev.lista_documentos.filter((_, i) => i !== index),
+		}))
+	}
+
+	const addFiles = (files: File[]) => {
+		const validFiles = files.filter((file) => {
+			const validTypes = [
+				"application/pdf",
+				"application/msword",
+				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				"image/jpeg",
+				"image/jpg",
+				"image/png",
+			]
+			const maxSize = 10 * 1024 * 1024 // 10MB
+
+			if (!validTypes.includes(file.type)) {
+				alert(`El archivo ${file.name} no tiene un formato válido`)
+				return false
+			}
+
+			if (file.size > maxSize) {
+				alert(`El archivo ${file.name} es demasiado grande (máximo 10MB)`)
+				return false
+			}
+
+			return true
+		})
+
+		setFormPeticion((prev: any) => ({
+			...prev,
+			lista_documentos: [...prev.lista_documentos, ...validFiles],
+		}))
+
+	}
+
+	const formatFileSize = (bytes: number): string => {
+		if (bytes === 0) return "0 Bytes"
+		const k = 1024
+		const sizes = ["Bytes", "KB", "MB", "GB"]
+		const i = Math.floor(Math.log(bytes) / Math.log(k))
+		return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+	}
 
 
 	return (
@@ -141,11 +340,11 @@ const Dashboard: React.FC = () => {
 						<h1 className="text-2xl font-bold text-blue-900">Panel de PQRSDF</h1>
 					</div>
 
-					{/* Botón para radicar petición */}
 					<div className="flex justify-end mb-4">
+						{/* Botón para abrir el modal */}
 						<Button
 							className="bg-blue-600 text-white hover:bg-blue-700"
-							onClick={() => navigate("/dashboard/crear_pq")}
+							onClick={() => setModalRadicarSolicitud(true)}
 						>
 							+ Radicar Petición
 						</Button>
@@ -162,58 +361,65 @@ const Dashboard: React.FC = () => {
 						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">En Proceso</div><div className="text-2xl font-bold text-blue-500"></div></CardContent></Card>
 						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Resueltos</div><div className="text-2xl font-bold text-green-500"></div></CardContent></Card>
 					</div>
-
 					{/* Listado de PQRSDF */}
 					<Card className="bg-white shadow-sm">
 						<CardContent className="p-2">
-							<h2 className="text-lg mb-2">Listado de PQRSDF</h2>
+							<h2 className="text-lg mb-2 font-semibold">Listado de PQRSDF</h2>
 
-							<div className="space-y-2">
-								{isLoading ? (
-									<div className="flex justify-center py-10">
-										<LoadingSpinner />
-									</div>
-								) : solicitudes.map((solicitud: any) => (
-									<Card key={solicitud.id} className="border border-gray-200 shadow-sm hover:shadow-md transition duration-200">
-										<CardContent className="p-2 space-y-1">
-											<div className="flex justify-between items-center">
-												<h3 className="text-md font-bold text-blue-800">
-													#{solicitud.numeroRadicado ?? solicitud.id} - {solicitud.tipoPQ?.nombre}
-												</h3>
-												<Badge className="bg-gray-200 text-gray-800">{solicitud.nombreUltimoEstado}</Badge>
+							{isLoading ? (
+								<div className="flex justify-center py-10">
+									<LoadingSpinner />
+								</div>
+							) : (
+								<div className="divide-y divide-gray-200">
+									{solicitudes.map((solicitud: any) => (
+										<div
+											key={solicitud.id}
+											className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 transition"
+										>
+											{/* Columna 1 - ID y Tipo */}
+											<div className="flex flex-col w-1/4">
+												<span className="font-semibold text-blue-800 text-sm">
+													#{solicitud.numeroRadicado ?? solicitud.id}
+												</span>
+												<span className="text-xs text-gray-500">{solicitud.tipoPQ?.nombre}</span>
 											</div>
 
-											<div className="text-sm text-gray-700 grid grid-cols-3 gap-x-10">
-												<span><strong>Asunto:</strong> {solicitud.detalleAsunto}</span>
-												<span><strong>Fecha:</strong> {new Date(solicitud.fechaRadicacion).toLocaleDateString()}</span>
-												<span><strong>Hora:</strong> {new Date(`1970-01-01T${solicitud.horaRadicacion}`).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
+											{/* Columna 2 - Asunto */}
+											<div className="w-1/3 text-sm truncate"><strong>Asunto:</strong> {solicitud.detalleAsunto}</div>
 
-												<span><strong>Responsable:</strong> {solicitud.detalleAsunto}</span>
-												<span><strong>Resolución Estimada:</strong> {solicitud.fechaResolucionEstimada ? new Date(solicitud.fechaResolucionEstimada).toLocaleDateString() : "Sin fecha estimada"}</span>
-												<span><strong>Resolución:</strong> {solicitud.fechaResolucion ? new Date(solicitud.fechaResolucion).toLocaleDateString() : "Sin resolución"}</span>
+											{/* Columna 3 - Fecha */}
+											<div className="w-1/6 text-xs text-gray-600">
+												{new Date(solicitud.fechaRadicacion).toLocaleDateString()}
 											</div>
 
+											{/* Columna 4 - Estado */}
+											<div className="w-1/6">
+												<Badge variant="secondary">{solicitud.nombreUltimoEstado}</Badge>
+											</div>
 
-											<div className="flex justify-end">
+											{/* Columna 5 - Botón */}
+											<div className="w-auto">
 												<Button
 													variant="outline"
-													className="text-blue-600 hover:text-blue-800 py-0.1 px-2 text-xs"
+													size="sm"
+													className="text-xs"
 													onClick={() => handleVerClick(solicitud)}
 												>
 													<UndoIcon className="w-3 h-3 mr-1" />
-													Ver Detalles
+													Ver
 												</Button>
 											</div>
-										</CardContent>
-									</Card>
-								))}
-							</div>
+										</div>
+									))}
+								</div>
+							)}
 
 							{/* Paginación */}
 							<div className="flex justify-center mt-4 gap-4 items-center">
 								<Button
 									variant="outline"
-									disabled={currentPage === 0}
+									disabled={currentPage === 1}
 									onClick={() => setCurrentPage(prev => prev - 1)}
 								>
 									Anterior
@@ -229,9 +435,9 @@ const Dashboard: React.FC = () => {
 									Siguiente
 								</Button>
 							</div>
-
 						</CardContent>
 					</Card>
+
 				</div>
 			</div>
 			{modalOpen && selectedSolicitud && (
@@ -484,6 +690,199 @@ const Dashboard: React.FC = () => {
 							</div>
 						</div>
 
+					</div>
+				</div>
+			)}
+
+			{modalRadicarSolicitud && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+					<div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+						{/* Header del Modal */}
+						<div className="bg-blue-900 text-white p-6">
+							<div className="flex justify-between items-center">
+								<h2 className="text-xl font-bold">Radicar Peticion</h2>
+							</div>
+						</div>
+
+						{/* Contenido del Modal */}
+						<div className="p-6 space-y-4">
+
+							<form onSubmit={handleSubmit} className="space-y-6">
+								{/* Tipo de PQRSDF */}
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+									<div className="space-y-2">
+										<Label htmlFor="tipo" className="text-sm font-medium">
+											Tipo de PQRSDF <span className="text-red-500">*</span>
+										</Label>
+										<Select
+											value={formPeticion.tipo_pq_id}
+											onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
+										>
+											<SelectTrigger className={errors.tipo_pq_id ? "border-red-500" : ""}>
+												<SelectValue placeholder="Seleccione el tipo" />
+											</SelectTrigger>
+											<SelectContent>
+												{tipoPQ.map((tipo) => (
+													<SelectItem key={tipo.id} value={String(tipo.id)}>
+														<div className="flex items-center gap-2">
+															<span>{tipo.nombre}</span>
+														</div>
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+										{errors.tipo_pq_id && (
+											<p className="text-sm text-red-500">{errors.tipo_pq_id}</p>
+										)}
+									</div>
+
+								</div>
+
+								{/* Asunto */}
+								<div className="space-y-2">
+									<Label htmlFor="asunto" className="text-sm font-medium">
+										Asunto <span className="text-red-500">*</span>
+									</Label>
+									<Input
+										id="asunto"
+										type="text"
+										placeholder="Ingrese el asunto de su PQRSDF"
+										value={formPeticion.detalleAsunto}
+										onChange={(e) => handleInputChange("detalleAsunto", e.target.value)}
+										className={errors.detalleAsunto ? "border-red-500" : ""}
+									/>
+									{errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
+								</div>
+
+								{/* Descripción */}
+								<div className="space-y-2">
+									<Label htmlFor="descripcion" className="text-sm font-medium">
+										Descripción detallada <span className="text-red-500">*</span>
+									</Label>
+									<Textarea
+										id="descripcion"
+										placeholder="Describa detalladamente su solicitud ..."
+										value={formPeticion.detalleDescripcion}
+										onChange={(e) => handleInputChange("detalleDescripcion", e.target.value)}
+										className={`min-h-32 ${errors.detalleDescripcion ? "border-red-500" : ""}`}
+									/>
+									{errors.detalleDescripcion && <p className="text-sm text-red-500">{errors.detalleDescripcion}</p>}
+								</div>
+
+								{/* Zona de archivos */}
+								<div className="border-t pt-6">
+									<h3 className="text-lg font-semibold text-blue-900 mb-4">Archivos adjuntos (opcional)</h3>
+
+									<div className="space-y-4">
+										{/* Dropzone */}
+										<div
+											className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
+											onDrop={handleDrop}
+											onDragOver={handleDragOver}
+											onDragLeave={handleDragLeave}
+											onClick={() => document.getElementById("file-input")?.click()}
+										>
+											<div className="flex flex-col items-center gap-4">
+												<div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+													<svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path
+															strokeLinecap="round"
+															strokeLinejoin="round"
+															strokeWidth={2}
+															d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+														/>
+													</svg>
+												</div>
+												<div>
+													<p className="text-lg font-medium text-gray-700">Arrastra y suelta tus archivos aquí</p>
+													<p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar archivos</p>
+												</div>
+												<p className="text-xs text-gray-400">
+													Formatos permitidos: PDF, DOC, DOCX, JPG, PNG (máximo 10MB por archivo)
+												</p>
+											</div>
+
+											<input
+												id="file-input"
+												type="file"
+												multiple
+												accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+												onChange={handleFileSelect}
+												className="hidden"
+											/>
+										</div>
+
+										{formPeticion.lista_documentos.length > 0 && (
+											<div className="space-y-2">
+												<h4 className="font-medium text-gray-700">Archivos seleccionados:</h4>
+												<div className="space-y-2">
+													{formPeticion.lista_documentos.map((file, index) => (
+														<div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+															<div className="flex items-center gap-3">
+																<div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
+																	<svg
+																		className="w-4 h-4 text-blue-500"
+																		fill="none"
+																		stroke="currentColor"
+																		viewBox="0 0 24 24"
+																	>
+																		<path
+																			strokeLinecap="round"
+																			strokeLinejoin="round"
+																			strokeWidth={2}
+																			d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+																		/>
+																	</svg>
+																</div>
+																<div>
+																	<p className="text-sm font-medium text-gray-700">{file.name}</p>
+																	<p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+																</div>
+															</div>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => removeFile(index)}
+																className="text-red-500 hover:text-red-700 hover:bg-red-50"
+															>
+																<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																		strokeWidth={2}
+																		d="M6 18L18 6M6 6l12 12"
+																	/>
+																</svg>
+															</Button>
+														</div>
+													))}
+												</div>
+											</div>
+										)}
+									</div>
+								</div>
+
+								{/* Botones */}
+								<div className="flex justify-end gap-4 pt-6 border-t">
+									<Button type="button" variant="outline" onClick={() => navigate("/dashboard")} disabled={isSubmitting}>
+										Cancelar
+									</Button>
+									<Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
+										{isSubmitting ? "Enviando..." : "Radicar PQRSDF"}
+									</Button>
+								</div>
+							</form>
+
+							<div className="flex justify-end pt-4">
+								<button
+									onClick={() => setModalRadicarSolicitud(false)}
+									className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800"
+								>
+									Cerrar
+								</button>
+							</div>
+						</div>
 					</div>
 				</div>
 			)}
