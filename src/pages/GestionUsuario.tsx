@@ -330,6 +330,7 @@ export default function UsuariosPage() {
                     onSave={async (payload: any) => {
                         try {
                             if (editing) {
+                                console.error("Actualizando usuario:", payload) 
                                 await api.put(`/usuarios/${editing.id}`, payload)
                             } else {
                                 await api.post(`/usuarios`, payload)

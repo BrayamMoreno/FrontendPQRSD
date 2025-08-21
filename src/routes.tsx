@@ -4,7 +4,7 @@ import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PrivateRoute from "./context/PrivateRoute";
-import CrearPQ from "./pages/CrearPQ";
+
 import MostrarPerfil from "./pages/MostrarPerfil";
 import { AuthProvider } from "./context/AuthProvider";
 import AdminDashboard from "./pages/DashboardAdmin";
@@ -12,6 +12,10 @@ import DashboardLayoutUsuarios from "./layouts/DashboardLayoutUsuarios";
 import DashboardLayoutAdmin from "./layouts/DashboardLayoutAdmin";
 import GestionUsuarios from "./pages/GestionUsuario";
 import GestionRoles from "./pages/GestionRoles";
+import DashboardLayoutRadicador from "./layouts/DashboardLayoutRadicador";
+import DashboradRadicador from "./pages/DashboardRadicador";
+import DashboardLayoutContratistas from "./layouts/DashboardLayoutContratistas";
+import DashboardContratista from "./pages/DashboardContratistas";
 
 export default function App() {
   return (
@@ -27,7 +31,6 @@ export default function App() {
         {/* Rutas Públicas Para Usuarios*/}
         <Route  path="/usuario/dashboard" element={<DashboardLayoutUsuarios />}>
           <Route index element={<Dashboard />} />
-          <Route path="crear_pq" element={<CrearPQ />} />
           <Route path="mostrar_perfil" element={<MostrarPerfil />} />
         </Route>
 
@@ -37,7 +40,21 @@ export default function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="gestion_usuarios" element={<GestionUsuarios />} />
           <Route path="roles" element={<GestionRoles   />} />
-          <Route path="crear_pq" element={<CrearPQ />} />
+          <Route path="mostrar_perfil" element={<MostrarPerfil />} />
+        </Route>
+
+
+        <Route  path="/radicador/dashboard" element={<DashboardLayoutRadicador />}>
+          <Route index element={<DashboradRadicador />} />
+          <Route path="gestion_usuarios" element={<GestionUsuarios />} />
+          <Route path="roles" element={<GestionRoles   />} />
+          <Route path="mostrar_perfil" element={<MostrarPerfil />} />
+        </Route>
+
+        <Route  path="/contratista/dashboard" element={<DashboardLayoutContratistas />}>
+          <Route index element={<DashboardContratista />} />
+          <Route path="gestion_usuarios" element={<GestionUsuarios />} />
+          <Route path="roles" element={<GestionRoles   />} />
           <Route path="mostrar_perfil" element={<MostrarPerfil />} />
         </Route>
 

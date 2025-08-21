@@ -13,7 +13,7 @@ import type { LoginForm } from "../models/LoginForm";
 const Login: React.FC = () => {
 
 	const { login } = useAuth();
-	const  navigate  = useNavigate();
+	const navigate = useNavigate();
 
 	const [loginForm, setLoginForm] = useState<LoginForm>({
 		correo: "",
@@ -78,7 +78,6 @@ const Login: React.FC = () => {
 									value={loginForm.correo}
 									onChange={handleChange}
 									placeholder="usuario@ejemplo.com"
-									className="border-[#085CCC] border-opacity-75 focus:ring-[#085CCC] focus:ring-opacity-75"
 								/>
 							</div>
 							<div className="flex flex-col gap-2">
@@ -89,10 +88,10 @@ const Login: React.FC = () => {
 									value={loginForm.contrasena}
 									onChange={handleChange}
 									placeholder="********"
-									className="border-[#085CCC] border-opacity-75 focus:ring-[#085CCC] focus:ring-opacity-75"
 								/>
 							</div>
-							<Button type="submit" className="bg-blue-700 text-white hover:bg-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+							{/* BOTÓN CON LA NUEVA PALETA DE COLORES */}
+							<Button type="submit" className="bg-[#6a040f] text-white hover:bg-[#9d0208] focus:ring-2 focus:ring-[#9d0208] focus:ring-opacity-50">
 								Iniciar sesión
 							</Button>
 						</div>
@@ -100,7 +99,7 @@ const Login: React.FC = () => {
 				</CardContent>
 				<CardFooter>
 					<p className="text-sm text-gray-600">
-						¿No tienes una cuenta? <a href="#" className="text-blue-500 hover:text-blue-800">Regístrate</a>
+						¿No tienes una cuenta? <a href="#" className="text-[#9d0208] hover:text-[#9d0208]">Regístrate</a>
 					</p>
 				</CardFooter>
 			</Card>

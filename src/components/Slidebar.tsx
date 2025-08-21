@@ -1,11 +1,14 @@
 // Slidebar.tsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   FaBars,
-  FaUser,
-  FaSignOutAlt,
   FaFileAlt,
-  FaQuestion
+  FaIdCard,
+  FaQuestion,
+  FaSignOutAlt,
+  FaUser,
+  FaUsers,
+  FaUserShield
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider"; // 👈 Importa el hook
@@ -31,19 +34,95 @@ const Slidebar: React.FC = () => {
     };
   }, [menuOpen]);
 
-  // En vez de usar path con {auth}, aquí definimos qué hacer
   const menuItems = [
-    { label: "Dashboard", icon: <FaFileAlt />, action: () => navigate("/dashboard") },
-    { label: "Faqs", icon: <FaQuestion />, action: () => navigate("/faqs") },
-    { label: "Perfil", icon: <FaUser />, action: () => navigate("/dashboard/mostrar_perfil") },
-    { label: "Salir", icon: <FaSignOutAlt />, action: logout }, // 👈 Llamar directamente a logout
+    {
+      label: "Dashboard Admin",
+      icon: <FaFileAlt />,
+      action: () => navigate("/admin/dashboard"),
+      roles: ["Admin"]
+    },
+    {
+      label: "Peticiones Radicadas",
+      icon: <FaFileAlt />,
+      action: () => navigate("/usuario/dashboard"),
+      roles: ["Usuario"]
+    },
+    {
+      label: "Peticiones Pendientes",
+      icon: <FaFileAlt />,
+      action: () => navigate("/radicador/dashboard"),
+      roles: ["Radicador"]
+    },
+    {
+      label: "Usuarios",
+      icon: <FaUser />,
+      action: () => navigate("/admin/dashboard/gestion_usuarios"),
+      roles: ["Admin"]
+    },
+    {
+      label: "Roles",
+      icon: <FaUserShield />,
+      action: () => navigate("/admin/dashboard/roles"),
+      roles: ["Admin"]
+    },
+    {
+      label: "Tipos de Documentos",
+      icon: <FaIdCard />,
+      action: () => navigate("/admin/dashboard/tipos_documentos"),
+      roles: ["Admin"]
+    },
+    {
+      label: "Tipos de Personas",
+      icon: <FaUsers />,
+      action: () => navigate("/admin/dashboard/tipos_personas"),
+      roles: ["Admin"]
+    },
+
+    {
+      label: "Peticiones Asignadas",
+      icon: <FaFileAlt />,
+      action: () => navigate("/contratista/dashboard"),
+      roles: ["Contratista"]
+    },
+
+    {
+      label: "Todas las Peticiones",
+      icon: <FaFileAlt />,
+      action: () => navigate("/contratista/dashboard"),
+      roles: ["Contratista"]
+    },
+
+
+
+    {
+      label: "Faqs",
+      icon: <FaQuestion />,
+      action: () => navigate("/faqs"),
+      roles: ["Admin", "Usuario", "Radicador", "Contratista"]
+    },
+    {
+      label: "Perfil",
+      icon: <FaUser />,
+      action: () => navigate("/dashboard/mostrar_perfil"),
+      roles: ["Admin", "Usuario", "Radicador", "Contratista"]
+    },
+    {
+      label: "Salir",
+      icon: <FaSignOutAlt />,
+      action: logout,
+      roles: ["Admin", "Usuario", "Radicador", "Contratista"]
+    },
   ];
+
+  const rol = sessionStorage.getItem("usuario_rol_nombre") || ""; // ejemplo: "Admin"
+
+  const itemsFiltrados = menuItems.filter(item => item.roles.includes(rol));
 
   const userInfo = {
     nombre:
       sessionStorage.getItem("persona_nombre")?.split(" ")[0] +
-        " " +
-        sessionStorage.getItem("persona_apellido")?.split(" ")[0] || "Usuario",
+      " " +
+      sessionStorage.getItem("persona_apellido")?.split(" ")[0] || "Usuario",
     iniciales:
       sessionStorage.getItem("persona_nombre") && sessionStorage.getItem("persona_apellido")
         ? sessionStorage.getItem("persona_nombre")![0] +
@@ -54,27 +133,25 @@ const Slidebar: React.FC = () => {
   return (
     <aside
       ref={sidebarRef}
-      className={`${
-        menuOpen ? "w-64" : "w-20"
-      } bg-green-100 h-screen fixed top-0 left-0 p-4 transition-[width] duration-300 ease-in-out flex flex-col justify-between border-r border-gray-300 z-50`}
+      className={`${menuOpen ? "w-64" : "w-20"} bg-blue-100 h-screen fixed top-0 left-0 p-4 transition-[width] duration-300 ease-in-out flex flex-col justify-between border-r border-gray-300 z-50`}
     >
       <div>
         <div className="flex items-center justify-between mb-6">
           {menuOpen && (
-            <div className="text-lg font-bold text-green-900 transition-opacity duration-200 delay-150">
+            <div className="text-lg font-bold text-blue-900 transition-opacity duration-200 delay-150">
               Menu
             </div>
           )}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 rounded-md bg-white border border-gray-300 hover:bg-green-50"
+            className="p-2 rounded-md bg-white border border-gray-300 hover:bg-blue-50"
           >
-            <FaBars size={18} className="text-green-700" />
+            <FaBars size={18} className="text-blue-700" />
           </button>
         </div>
 
         <nav className="flex flex-col gap-1">
-          {menuItems.map(({ label, icon, action }, index) => (
+          {itemsFiltrados.map(({ label, icon, action }, index) => ( // 👈 ahora usamos itemsFiltrados
             <div
               key={label}
               onClick={() => {
@@ -84,8 +161,8 @@ const Slidebar: React.FC = () => {
               }}
               className={`flex items-center gap-3 cursor-pointer px-3 py-2 rounded-md transition-colors duration-200 ${
                 activeItem === label
-                  ? "bg-green-600 text-white"
-                  : "text-green-900 hover:bg-green-200"
+                  ? "bg-blue-600 text-white"
+                  : "text-blue-900 hover:bg-blue-200"
               }`}
             >
               <span className="flex-shrink-0">{icon}</span>
@@ -110,7 +187,7 @@ const Slidebar: React.FC = () => {
         </div>
         {menuOpen && (
           <div className="flex flex-col transition-opacity duration-200 delay-150">
-            <span className="text-sm font-medium text-green-900">
+            <span className="text-sm font-medium text-blue-900">
               {userInfo.nombre}
             </span>
           </div>

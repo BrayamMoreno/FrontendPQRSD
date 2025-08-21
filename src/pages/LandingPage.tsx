@@ -1,20 +1,21 @@
-
 import type React from "react"
 
 import { Link } from "react-router-dom"
 import {
-  FaFileAlt,
-  FaExclamationTriangle,
   FaCheckCircle,
   FaCar,
-  FaRoad,
-  FaIdCard,
-  FaClipboardList,
 } from "react-icons/fa"
 import landingImage from "../assets/landing.webp"
+import AnonimaForm from "../components/AnonimaForm"
 
 
 const LandingPage: React.FC = () => {
+
+  const handleAnonimaSubmit = async (data: { tipo: string; asunto: string; descripcion: string }) => {
+    console.log("Petición anónima enviada:", data)
+    // Aquí podrías hacer un fetch/axios POST al backend
+    // await fetch(`${API_URL}/pq/anonima`, { method: "POST", body: JSON.stringify(data), headers: {"Content-Type":"application/json"} })
+  }
 
   return (
     <div className="min-h-screen w-screen bg-white">
@@ -123,7 +124,12 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-  
+      <section id="anonima" className="py-20 bg-gray-100">
+        <div className="max-w-4xl mx-auto px-4">
+          <AnonimaForm  />
+        </div>
+      </section>
+
       {/* FAQ */}
       <section id="faq" className="py-20 bg-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -232,17 +238,6 @@ const LandingPage: React.FC = () => {
   )
 }
 
-// Componentes auxiliares
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <div className="text-3xl mb-4">{icon}</div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
-    </div>
-  )
-}
-
 function StepCard({ number, title, description }: { number: string; title: string; description: string }) {
   return (
     <div className="flex flex-col items-center text-center">
@@ -255,29 +250,6 @@ function StepCard({ number, title, description }: { number: string; title: strin
   )
 }
 
-function TramiteCard({
-  title,
-  description,
-  tiempoEstimado,
-  costo,
-}: { title: string; description: string; tiempoEstimado: string; costo: string }) {
-  return (
-    <div className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-gray-600 mb-4">{description}</p>
-      <div className="border-t pt-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-gray-500">Tiempo estimado:</span>
-          <span className="text-sm font-semibold">{tiempoEstimado}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-gray-500">Costo aproximado:</span>
-          <span className="text-sm font-semibold">{costo}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   return (

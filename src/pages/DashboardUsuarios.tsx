@@ -1,11 +1,10 @@
-import { UndoIcon } from "lucide-react"
+import { FileText, UndoIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
 
-import { FaArrowLeft, FaFileAlt, FaExclamationTriangle, FaComments, FaThumbsUp } from "react-icons/fa"
 import { Button } from "../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Card, CardContent } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
@@ -15,36 +14,38 @@ import { useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
 import type { TipoPQ } from "../models/TipoPQ"
 import type { PQ } from "../models/PQ"
-import { FormProvider } from "react-hook-form"
-import axios from "axios"
-
-
+import config from "../config";
 
 const Dashboard: React.FC = () => {
 
-	const navigate = useNavigate()
+	const API_URL = config.apiBaseUrl;
 
+	const navigate = useNavigate()
 	const api = apiServiceWrapper
 
 	const [solicitudes, setSolicitudes] = useState<any[]>([])
-
 	const [modalOpen, setModalOpen] = useState(false)
-
 	const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
-	const [historialEstados, setHistorialEstados] = useState<any[]>([])
-	const [documentos, setDocumentos] = useState<any[]>([])
-
 	const itemsPerPage = 10
 	const [currentPage, setCurrentPage] = useState(1)
 	const [hasMore, setHasMore] = useState(true)
 	const [totalCount, setTotalCount] = useState(0)
 	const [totalPages, setTotalPages] = useState(0)
-
 	const [isLoading, setIsLoading] = useState<boolean>(false)
-	const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(true)
-	const [isLoadingDocuments, setIsLoadingDocuments] = useState<boolean>(true)
-
 	const [modalRadicarSolicitud, setModalRadicarSolicitud] = useState(false)
+
+	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
+
+	const [formPeticion, setFormPeticion] = useState<PQ>({
+		tipo_pq_id: "",
+		solicitante_id: "",
+		detalleAsunto: "",
+		detalleDescripcion: "",
+		lista_documentos: []
+	})
+
+	const [errors, setErrors] = useState<Partial<PQ>>({})
+	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const fecthSolicitudes = async () => {
 		setIsLoading(true)
@@ -71,90 +72,20 @@ const Dashboard: React.FC = () => {
 		}
 	}
 
-
 	useEffect(() => {
 		fecthSolicitudes()
+		fetchAllData()
 	}, [currentPage])
-
-	const handleSetHistorialEstados = async (id: number | string) => {
-		setIsLoadingDetails(true); // Empieza a cargar
-		try {
-			const response = await api.get(`/historial_estados/GetByPqId?pqId=${id}`);
-			const historial = response.data;
-			const mappedData = historial.map((item: any) => ({
-				id: item.id,
-				nombre: item.estado?.nombre || "Sin nombre",
-				fecha: item.fechaCambio,
-				observacion: item.observacion || "Sin observación"
-			}));
-			setHistorialEstados(mappedData);
-			console.log("Historial de estados (mapeado):", mappedData);
-		} catch (error) {
-			console.error("Error al obtener el historial de estados:", error);
-		} finally {
-			setIsLoadingDetails(false); // Finaliza la carga siempre
-		}
-	};
-
-
-	const handleSetDocumentos = async (id: number | string) => {
-		setIsLoadingDocuments(true); // Empieza a cargar
-
-		try {
-			const response = await api.get(`/adjuntosPq/GetByPqId?pqId=${id}`);
-
-			console.log("Documentos obtenidos:", response);
-			setDocumentos(response.data);
-		} catch (error) {
-			console.error("Error al obtener los documentos:", error);
-		} finally {
-			setIsLoadingDocuments(false); // Finaliza la carga siempre
-		}
-
-
-
-		api.get(`/adjuntosPq/GetByPqId?pqId=${id}`)
-			.then(response => {
-				console.log("Documentos obtenidos:", response);
-
-				console.log("Documentos:", response.data);
-			})
-			.catch(error => {
-				console.error("Error al obtener el historial de estados:", error);
-			});
-	};
 
 	const handleVerClick = async (solicitud: any) => {
 		setModalOpen(true)
 		setSelectedSolicitud(solicitud)
-
-		await Promise.all([
-			handleSetHistorialEstados(solicitud.id),
-			handleSetDocumentos(solicitud.id)
-		])
-		console.log("Historial de estados:", historialEstados)
 	}
-
 
 	const handleCloseModal = () => {
 		setSelectedSolicitud(null)
-		setHistorialEstados([])
-		setDocumentos([])
 		setModalOpen(false)
 	}
-
-	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
-
-	const [formPeticion, setFormPeticion] = useState<PQ>({
-		tipo_pq_id: "",
-		solicitante_id: "",
-		detalleAsunto: "",
-		detalleDescripcion: "",
-		lista_documentos: []
-	})
-
-	const [errors, setErrors] = useState<Partial<PQ>>({})
-	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	const fetchAllData = async () => {
 		try {
@@ -176,18 +107,14 @@ const Dashboard: React.FC = () => {
 		}
 	}
 
-
 	const validateForm = (): boolean => {
 		const newErrors: Partial<PQ> = {}
-
 		if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
 		if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
 		if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
-
 		setErrors(newErrors)
 		return Object.keys(newErrors).length === 0
 	}
-
 
 	const handleInputChange = (field: keyof PQ, value: string) => {
 		setFormPeticion((prev) => ({
@@ -202,7 +129,6 @@ const Dashboard: React.FC = () => {
 		}
 	}
 
-	// Enviar formulario
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -234,10 +160,16 @@ const Dashboard: React.FC = () => {
 			};
 			const response = await api.post("/pqs/radicar_pq", payload);
 
-			console.log(response.status)
-
 			if (response.status === 201) {
-				navigate("/dashboard");
+				fecthSolicitudes();
+				setModalRadicarSolicitud(false);
+				setFormPeticion({
+					tipo_pq_id: "",
+					solicitante_id: "",
+					detalleAsunto: "",
+					detalleDescripcion: "",
+					lista_documentos: []
+				});
 			}
 
 		} catch (error) {
@@ -260,8 +192,6 @@ const Dashboard: React.FC = () => {
 			reader.onerror = reject;
 		});
 	};
-
-
 
 	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(e.target.files || [])
@@ -293,13 +223,8 @@ const Dashboard: React.FC = () => {
 		const validFiles = files.filter((file) => {
 			const validTypes = [
 				"application/pdf",
-				"application/msword",
-				"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-				"image/jpeg",
-				"image/jpg",
-				"image/png",
 			]
-			const maxSize = 10 * 1024 * 1024 // 10MB
+			const maxSize = 5 * 1024 * 1024 // 5MB
 
 			if (!validTypes.includes(file.type)) {
 				alert(`El archivo ${file.name} no tiene un formato válido`)
@@ -329,6 +254,9 @@ const Dashboard: React.FC = () => {
 		return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 	}
 
+	const handleCloseModalRadicar = () => {
+		setModalRadicarSolicitud(false)
+	}
 
 	return (
 		<div className="flex min-h-screen w-screen bg-gray-100 z-15">
@@ -352,11 +280,12 @@ const Dashboard: React.FC = () => {
 
 					{/* Tarjetas de estadísticas */}
 					<div className="grid grid-cols-4 gap-4 mb-6">
-						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Total PQRSDF</div><div className="text-2xl font-bold">{isLoading ? (
-							<div className="flex justify-center py-10">
-								<LoadingSpinner />
-							</div>
-						) : totalCount}</div></CardContent></Card>
+						<Card className="bg-white shadow-sm">
+							<CardContent className="p-4">
+								<div className="text-sm text-gray-600">Total PQRSDF</div><div className="text-2xl font-bold">
+									{totalCount}
+								</div>
+							</CardContent></Card>
 						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Pendientes</div><div className="text-2xl font-bold text-yellow-500"></div></CardContent></Card>
 						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">En Proceso</div><div className="text-2xl font-bold text-blue-500"></div></CardContent></Card>
 						<Card className="bg-white shadow-sm"><CardContent className="p-4"><div className="text-sm text-gray-600">Resueltos</div><div className="text-2xl font-bold text-green-500"></div></CardContent></Card>
@@ -370,7 +299,7 @@ const Dashboard: React.FC = () => {
 								<div className="flex justify-center py-10">
 									<LoadingSpinner />
 								</div>
-							) : (
+							) : solicitudes && solicitudes.length > 0 ? (
 								<div className="divide-y divide-gray-200">
 									{solicitudes.map((solicitud: any) => (
 										<div
@@ -380,13 +309,15 @@ const Dashboard: React.FC = () => {
 											{/* Columna 1 - ID y Tipo */}
 											<div className="flex flex-col w-1/4">
 												<span className="font-semibold text-blue-800 text-sm">
-													#{solicitud.numeroRadicado ?? solicitud.id}
+													#Radicado: {solicitud.numeroRadicado ?? solicitud.id}
 												</span>
 												<span className="text-xs text-gray-500">{solicitud.tipoPQ?.nombre}</span>
 											</div>
 
 											{/* Columna 2 - Asunto */}
-											<div className="w-1/3 text-sm truncate"><strong>Asunto:</strong> {solicitud.detalleAsunto}</div>
+											<div className="w-1/3 text-sm truncate">
+												<strong>Asunto:</strong> {solicitud.detalleAsunto}
+											</div>
 
 											{/* Columna 3 - Fecha */}
 											<div className="w-1/6 text-xs text-gray-600">
@@ -394,8 +325,17 @@ const Dashboard: React.FC = () => {
 											</div>
 
 											{/* Columna 4 - Estado */}
-											<div className="w-1/6">
-												<Badge variant="secondary">{solicitud.nombreUltimoEstado}</Badge>
+											<div className="w-1/6 badge">
+												<Badge
+													variant="secondary"
+													style={{
+														backgroundColor:
+															solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
+													}}
+												>
+													{solicitud.nombreUltimoEstado}
+												</Badge>
+
 											</div>
 
 											{/* Columna 5 - Botón */}
@@ -407,39 +347,66 @@ const Dashboard: React.FC = () => {
 													onClick={() => handleVerClick(solicitud)}
 												>
 													<UndoIcon className="w-3 h-3 mr-1" />
-													Ver
+													Ver Detalles
 												</Button>
 											</div>
 										</div>
 									))}
 								</div>
+							) : (
+								<div className="text-center py-10 text-gray-500">
+									No hay solicitudes registradas
+								</div>
 							)}
 
 							{/* Paginación */}
-							<div className="flex justify-center mt-4 gap-4 items-center">
+							<div className="flex justify-center mt-4 gap-2 items-center">
+								{/* Ir al inicio */}
+								<Button
+									variant="outline"
+									disabled={currentPage === 1}
+									onClick={() => setCurrentPage(1)}
+								>
+									⏮ Primero
+								</Button>
+
+								{/* Página anterior */}
 								<Button
 									variant="outline"
 									disabled={currentPage === 1}
 									onClick={() => setCurrentPage(prev => prev - 1)}
 								>
-									Anterior
+									◀ Anterior
 								</Button>
-								<span className="text-sm">
+
+								<span className="text-sm px-3">
 									Página {currentPage} de {totalPages}
 								</span>
+
+								{/* Página siguiente */}
 								<Button
 									variant="outline"
 									disabled={currentPage === totalPages}
 									onClick={() => setCurrentPage(prev => prev + 1)}
 								>
-									Siguiente
+									Siguiente ▶
+								</Button>
+
+								{/* Ir al final */}
+								<Button
+									variant="outline"
+									disabled={currentPage === totalPages}
+									onClick={() => setCurrentPage(totalPages)}
+								>
+									Último ⏭
 								</Button>
 							</div>
 						</CardContent>
 					</Card>
-
 				</div>
 			</div>
+
+
 			{modalOpen && selectedSolicitud && (
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
 					<div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
@@ -481,8 +448,12 @@ const Dashboard: React.FC = () => {
 												</p>
 											</div>
 											<div>
+												<label className="text-sm font-medium text-gray-600">Respuesta:</label>
+												<p className="text-gray-900 mt-1">{selectedSolicitud.respuesta || "Sin Respuesta"}</p>
+											</div>
+											<div>
 												<label className="text-sm font-medium text-gray-600">Responsable:</label>
-												<p className="text-gray-900 mt-1">{selectedSolicitud.responsable?.nombre || "No asignado"}</p>
+												<p className="text-gray-900 mt-1">{selectedSolicitud.responsable?.personaResponsable.nombre || "No asignado"} {selectedSolicitud.responsable?.personaResponsable.apellido}</p>
 											</div>
 										</div>
 									</div>
@@ -574,82 +545,59 @@ const Dashboard: React.FC = () => {
 								</div>
 							)}
 
-							<div className="mt-8 px-1">
-								<h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-									Historial de Estados
-								</h3>
-
-								{isLoadingDetails ? (
-									// Mientras carga
-									<div className="flex justify-center py-10">
-										<LoadingSpinner />
+							<div className="bg-white rounded-lg p-6 border border-gray-200 mt-6">
+								<h3 className="text-xl font-semibold text-gray-800 mb-4">Historial de Estados</h3>
+								<p className="text-sm text-gray-500 mb-6">
+									Pasa el cursor sobre cada nodo para ver las observaciones de cada estado.
+								</p>
+								{selectedSolicitud.historialEstados && selectedSolicitud.historialEstados.length > 0 ? (
+									<div className="relative flex items-start justify-between w-full">
+										{/* Línea atravesando las bolitas */}
+										<div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 z-0"></div>
+										{selectedSolicitud.historialEstados.map((estado: any, index: number) => (
+											<div
+												key={index}
+												className="flex flex-col items-center relative w-1/4 min-w-0"
+											>
+												{/* Nodo y Tooltip */}
+												<div className="group relative">
+													<div className="w-5 h-5 rounded-full ring-2 transition-all duration-300 bg-blue-600 ring-blue-600"></div>
+													<div className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal w-40 text-center pointer-events-none">
+														{estado.observacion ? estado.observacion : "Sin observación"}
+													</div>
+												</div>
+												{/* Texto del estado */}
+												<div className="mt-4 text-center">
+													<p className="text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+														{estado.estado.nombre}
+													</p>
+													<p className="text-xs text-gray-500 mt-1">
+														{new Date(estado.fechaCambio).toLocaleDateString()}
+													</p>
+												</div>
+											</div>
+										))}
 									</div>
 								) : (
-									// Cuando termina de cargar
-									<div className="bg-blue-50 rounded-lg p-4 overflow-x-auto">
-										<p className="text-sm text-gray-700 mb-2">
-											Para consultar las observaciones de cada estado, pasa el cursor sobre el nodo correspondiente.
-										</p>
-										{historialEstados && historialEstados.length > 0 ? (
-											<div className="relative flex items-center w-full h-24">
-												{/* Línea atravesando las bolitas */}
-												<div className="absolute top-[28px] left-0 right-0 h-0.5 bg-blue-300 z-0"></div>
-
-												{historialEstados.map((estado: any, index: number) => (
-													<div
-														key={index}
-														className="relative flex flex-col items-center flex-1 text-center z-10"
-													>
-														{/* Contenedor de bolita y tooltip */}
-														<div className="relative group z-10 mb-2">
-															{/* Bolita */}
-															<div className="w-4 h-4 bg-blue-600 rounded-full"></div>
-
-															{/* Tooltip */}
-															{estado.observacion && (
-																<div className="absolute -top-10 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none max-w-[160px] text-wrap text-center">
-																	{estado.observacion}
-																</div>
-															)}
-														</div>
-
-														{/* Nombre y fecha */}
-														<p className="text-xs text-gray-700 font-medium">{estado.nombre}</p>
-														<p className="text-[10px] text-gray-500">
-															{new Date(estado.fecha).toLocaleDateString()}
-														</p>
-													</div>
-												))}
-											</div>
-										) : (
-											<p className="text-sm text-gray-500">Sin historial disponible.</p>
-										)}
-									</div>
+									<p className="text-sm text-gray-500">Sin historial disponible.</p>
 								)}
 							</div>
 
-
-							<div className="mt-8 px-1 pb-4">
+							<div className="mt-2 px-1 pb-4">
 								<h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-									Documentos Enviados
+									Documentos Radicados
 								</h3>
-
-								{isLoadingDocuments ? (
-									// Mientras carga
-									<div className="flex justify-center py-10">
-										<LoadingSpinner />
-									</div>
-								) : (
-									<div className="bg-gray-50 p-4 rounded-lg space-y-4">
-										{documentos && documentos.length > 0 ? (
-											<ul className="text-sm text-blue-600 space-y-2">
-												{documentos.map((archivo: any, i: number) => (
+								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
+									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
+										<ul className="text-sm text-blue-600 space-y-2">
+											{selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
+												(!archivo.respuesta && (
 													<li key={i} className="flex items-center gap-2">
 														{/* Ícono del archivo */}
-														<span className="text-lg">📄</span>
+														<FileText className="w-5 h-5 text-blue-600" />
 														{/* Enlace para ver/descargar el archivo */}
 														<a
-															href={`https://TU_DOMINIO_O_STORAGE/${archivo.rutaArchivo}`}
+															href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
 															download
 															className="hover:underline break-all"
 														>
@@ -660,13 +608,47 @@ const Dashboard: React.FC = () => {
 															{new Date(archivo.createdAt).toLocaleDateString()}
 														</span>
 													</li>
-												))}
-											</ul>
-										) : (
-											<p className="text-sm text-gray-500">No hay documentos cargados.</p>
-										)}
-									</div>
-								)}
+												))
+											))}
+										</ul>
+									) : (
+										<p className="text-sm text-gray-500">No hay documentos cargados.</p>
+									)}
+								</div>
+							</div>
+
+							<div className="mt-2 px-1 pb-4">
+								<h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
+									Documentos de Respuesta
+								</h3>
+								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
+									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
+										<ul className="text-sm text-blue-600 space-y-2">
+											{selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
+												(archivo.respuesta && (
+													<li key={i} className="flex items-center gap-2">
+														{/* Ícono del archivo */}
+														<FileText className="w-5 h-5 text-blue-600" />
+														{/* Enlace para ver/descargar el archivo */}
+														<a
+															href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
+															download
+															className="hover:underline break-all"
+														>
+															{archivo.nombreArchivo}
+														</a>
+														{/* Fecha opcional */}
+														<span className="text-[10px] text-gray-500 ml-auto">
+															{new Date(archivo.createdAt).toLocaleDateString()}
+														</span>
+													</li>
+												))
+											))}
+										</ul>
+									) : (
+										<p className="text-sm text-gray-500">No hay documentos cargados.</p>
+									)}
+								</div>
 							</div>
 
 						</div>
@@ -706,7 +688,6 @@ const Dashboard: React.FC = () => {
 
 						{/* Contenido del Modal */}
 						<div className="p-6 space-y-4">
-
 							<form onSubmit={handleSubmit} className="space-y-6">
 								{/* Tipo de PQRSDF */}
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -771,7 +752,7 @@ const Dashboard: React.FC = () => {
 
 								{/* Zona de archivos */}
 								<div className="border-t pt-6">
-									<h3 className="text-lg font-semibold text-blue-900 mb-4">Archivos adjuntos (opcional)</h3>
+									<h3 className="text-lg font-semibold text-blue-900 mb-4">Archivo adjunto (Solo se puede adjuntar un archivo)</h3>
 
 									<div className="space-y-4">
 										{/* Dropzone */}
@@ -794,11 +775,11 @@ const Dashboard: React.FC = () => {
 													</svg>
 												</div>
 												<div>
-													<p className="text-lg font-medium text-gray-700">Arrastra y suelta tus archivos aquí</p>
-													<p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar archivos</p>
+													<p className="text-lg font-medium text-gray-700">Arrastra y suelta tu archivo aquí</p>
+													<p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar el archivo</p>
 												</div>
 												<p className="text-xs text-gray-400">
-													Formatos permitidos: PDF, DOC, DOCX, JPG, PNG (máximo 10MB por archivo)
+													Formatos permitidos: PDF (máximo 5MB)
 												</p>
 											</div>
 
@@ -806,7 +787,7 @@ const Dashboard: React.FC = () => {
 												id="file-input"
 												type="file"
 												multiple
-												accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+												accept=".pdf"
 												onChange={handleFileSelect}
 												className="hidden"
 											/>
@@ -865,7 +846,7 @@ const Dashboard: React.FC = () => {
 
 								{/* Botones */}
 								<div className="flex justify-end gap-4 pt-6 border-t">
-									<Button type="button" variant="outline" onClick={() => navigate("/dashboard")} disabled={isSubmitting}>
+									<Button type="button" variant="outline" onClick={handleCloseModalRadicar} disabled={isSubmitting}>
 										Cancelar
 									</Button>
 									<Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
@@ -873,21 +854,10 @@ const Dashboard: React.FC = () => {
 									</Button>
 								</div>
 							</form>
-
-							<div className="flex justify-end pt-4">
-								<button
-									onClick={() => setModalRadicarSolicitud(false)}
-									className="bg-blue-900 text-white px-4 py-2 rounded hover:bg-blue-800"
-								>
-									Cerrar
-								</button>
-							</div>
 						</div>
 					</div>
 				</div>
 			)}
-
-
 		</div>
 	)
 }

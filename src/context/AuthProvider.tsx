@@ -14,6 +14,15 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
+  type Rol = "Admin" | "Usuario" | "Radicador" | "Contratista";
+
+  const rutas: Record<Rol, string> = {
+    Admin: "/admin/dashboard",
+    Usuario: "/usuario/dashboard",
+    Radicador: "/radicador/dashboard",
+    Contratista: "/contratista/dashboard"
+  };
+
   const apiBaseUrl: string = config.apiBaseUrl;
   const navigate = useNavigate();
 
@@ -36,8 +45,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Error en el login");
       }
 
-
-
       const data = await response.json();
 
       sessionStorage.setItem("isAuthenticated", data.logged.toString());
@@ -48,11 +55,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthenticated(true);
       setUser(data.usuario);
 
-      if(data.usuario.rol.nombre === "Admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/usuario/dashboard");
-      }
+      const rol = data.usuario.rol.nombre as Rol;
+      navigate(rutas[rol] || "/");
+
     } catch (error) {
       console.error("Error en el login:", error);
       throw error;
@@ -94,7 +99,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Error al cerrar sesión");
       }
 
-      if(response.status === 200){
+      if (response.status === 200) {
         sessionStorage.clear();
         navigate("/login");
       }
@@ -102,12 +107,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
-    
 
-    sessionStorage.removeItem("isAuthenticated");
-    sessionStorage.removeItem("usuario");
-    sessionStorage.removeItem("persona");
-    sessionStorage.removeItem("jwt");
+    sessionStorage.clear();
 
     setIsAuthenticated(false);
     setUser(null);
