@@ -1,16 +1,18 @@
 // layouts/DashboardLayout.tsx
 import React from "react";
 import { Outlet } from "react-router-dom";
-import Slidebar from "../components/Slidebar"; // ajusta la ruta
+import Navbar from "../components/Navbar";
+
 
 const DashboardLayoutUsuarios: React.FC = () => {
   return (
     <div className="flex">
-      <Slidebar />
-      <main>
+      <Navbar />
+      <main className="pt-24">
         <Outlet />
       </main>
     </div>
+
   );
 };
 

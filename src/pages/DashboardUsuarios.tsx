@@ -259,12 +259,12 @@ const Dashboard: React.FC = () => {
 	}
 
 	return (
-		<div className="flex min-h-screen w-screen bg-gray-100 z-15">
+		<div className="flex min-h-screen w-screen bg-gray-100">
 			<div className="ml-14 w-full">
-				<div className="max-w-7xl mx-auto p-6">
+				<div className="max-w-7xl mx-auto">
 
 					{/* Header */}
-					<div className="flex justify-between items-center mb-6">
+					<div className="flex justify-between items-center mb-6 mt-8">
 						<h1 className="text-2xl font-bold text-blue-900">Panel de PQRSDF</h1>
 					</div>
 

@@ -16,7 +16,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "../components/ui/alert-dialog"
-import { Edit3, Plus, RefreshCw, Trash2 } from "lucide-react"
+import { Edit3, Plus, PlusCircleIcon, RefreshCw, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../api/ApiService"
 import UsuarioForm from "../components/UsuarioForm"
@@ -140,8 +140,9 @@ export default function UsuariosPage() {
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-2xl font-bold text-blue-900">Gestión de Usuarios</h1>
                         <div className="flex gap-2">
-                            <Button onClick={() => setFormOpen(true)}>
-                                <Plus className="mr-2 h-4 w-4" />
+                            <Button onClick={() => setFormOpen(true)}
+                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition">
+                                <PlusCircleIcon size={18} />
                                 Nuevo usuario
                             </Button>
                         </div>
@@ -319,32 +320,34 @@ export default function UsuariosPage() {
             </div>
 
 
-            {formOpen && (
-                <UsuarioForm
-                    user={editing}
-                    roles={roles}
-                    onClose={() => {
-                        setFormOpen(false)
-                        setEditing(null)
-                    }}
-                    onSave={async (payload: any) => {
-                        try {
-                            if (editing) {
-                                console.error("Actualizando usuario:", payload) 
-                                await api.put(`/usuarios/${editing.id}`, payload)
-                            } else {
-                                await api.post(`/usuarios`, payload)
-                            }
-                            await fetchAllUsers()
+            {
+                formOpen && (
+                    <UsuarioForm
+                        user={editing}
+                        roles={roles}
+                        onClose={() => {
                             setFormOpen(false)
                             setEditing(null)
-                        } catch (e) {
-                            console.error("Error guardando usuario:", e)
-                        }
-                    }}
-                />
-            )}
-        </div>
+                        }}
+                        onSave={async (payload: any) => {
+                            try {
+                                if (editing) {
+                                    console.error("Actualizando usuario:", payload)
+                                    await api.put(`/usuarios/${editing.id}`, payload)
+                                } else {
+                                    await api.post(`/usuarios`, payload)
+                                }
+                                await fetchAllUsers()
+                                setFormOpen(false)
+                                setEditing(null)
+                            } catch (e) {
+                                console.error("Error guardando usuario:", e)
+                            }
+                        }}
+                    />
+                )
+            }
+        </div >
     )
 }
 

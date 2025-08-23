@@ -16,6 +16,7 @@ import DashboardLayoutRadicador from "./layouts/DashboardLayoutRadicador";
 import DashboradRadicador from "./pages/DashboardRadicador";
 import DashboardLayoutContratistas from "./layouts/DashboardLayoutContratistas";
 import DashboardContratista from "./pages/DashboardContratistas";
+import GenericCrud from "./components/GenericCrud";
 
 export default function App() {
   return (
@@ -41,6 +42,47 @@ export default function App() {
           <Route path="gestion_usuarios" element={<GestionUsuarios />} />
           <Route path="roles" element={<GestionRoles   />} />
           <Route path="mostrar_perfil" element={<MostrarPerfil />} />
+          <Route
+              path="/admin/dashboard/roles"
+              element={
+                <GenericCrud
+                  titulo="CRUD Roles"
+                  endpoint="/roles"
+                  columns={[
+                    { key: "id", label: "ID" },
+                    { key: "nombre", label: "Rol" },
+                  ]}
+                />
+              }
+            />
+
+            <Route
+              path="/admin/dashboard/tipos_documentos"
+              element={
+                <GenericCrud
+                  titulo="CRUD Tipos de Documentos"
+                  endpoint="/tipos_documentos"
+                  columns={[
+                    { key: "id", label: "ID" },
+                    { key: "nombre", label: "Nombre" },
+                  ]}
+                />
+              }
+            />
+
+            <Route
+              path="/admin/dashboard/tipos_personas"
+              element={
+                <GenericCrud
+                  titulo="CRUD Tipos de Personas"
+                  endpoint="/tipos_personas"
+                  columns={[
+                    { key: "id", label: "ID" },
+                    { key: "nombre", label: "Tipo de Persona" },
+                  ]}
+                />
+              }
+            />
         </Route>
 
 
