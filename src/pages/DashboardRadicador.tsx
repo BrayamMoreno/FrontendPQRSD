@@ -2,7 +2,6 @@ import { Calendar, CheckCircle, FileText, UndoIcon, UserPlus, XCircle } from "lu
 import { useEffect, useRef, useState } from "react"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
-
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
@@ -10,47 +9,59 @@ import { useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
 
 import config from "../config";
+import type { PaginatedResponse } from "../models/PaginatedResponse"
+import type { PqItem } from "../models/PqItem"
+import type { Persona } from "../models/Persona"
+import type { Usuario } from "../models/Usuario"
 
-const DashboradRadicador: React.FC = () => {
+interface Radicacion {
+    id: number;
+    responsableId: string;
+    comentario: string;
+    fechaAprobacion: string;
+    isAprobada: boolean;
+    radicadorId: string;
+}
+
+const DashboardRadicador: React.FC = () => {
 
     const API_URL = config.apiBaseUrl;
-
     const navigate = useNavigate()
-
     const api = apiServiceWrapper
 
     const [solicitudes, setSolicitudes] = useState<any[]>([])
     const [modalOpen, setModalOpen] = useState(false)
     const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
-    const [historialEstados, setHistorialEstados] = useState<any[]>([])
-    const [documentos, setDocumentos] = useState<any[]>([])
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
     const [hasMore, setHasMore] = useState(true)
     const [totalCount, setTotalCount] = useState(0)
     const [totalPages, setTotalPages] = useState(0)
     const [isLoading, setIsLoading] = useState<boolean>(false)
-    const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(true)
-    const [isLoadingDocuments, setIsLoadingDocuments] = useState<boolean>(true)
 
-
-    const [responsableSeleccionado, setResponsableSeleccionado] = useState("");
-    const [responsables, setResponsables] = useState<any[]>([]);
-    const [comentario, setComentario] = useState("");
+    const [responsables, setResponsables] = useState<Usuario[]>([]);
     const [tab, setTab] = useState("aceptar");
-    const [fechaAprobacion, setFechaAprobacion] = useState("");
+
+    const [formdata, setFormdata] = useState<Radicacion>({
+        id: 0,
+        responsableId: "",
+        comentario: "",
+        fechaAprobacion: "",
+        isAprobada: false,
+        radicadorId: sessionStorage.getItem("usuario_id") || ""
+    });
 
     const fecthSolicitudes = async () => {
         setIsLoading(true)
         try {
-            const response = await api.get("/pqs/sin_responsable", {
+            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/sin_responsable", {
                 page: currentPage - 1,
                 size: itemsPerPage
             })
-            setSolicitudes(response.data.data)
-            setTotalCount(response.data.total_count ?? 0)
-            setHasMore(response.data.has_more ?? false)
-            const totalPages = Math.ceil((response.data.total_count ?? 0) / itemsPerPage)
+            setSolicitudes(response.data)
+            setTotalCount(response.total_count ?? 0)
+            setHasMore(response.has_more ?? false)
+            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
             setTotalPages(totalPages)
         } catch (error) {
             console.error("Error al obtener las solicitudes:", error)
@@ -63,101 +74,89 @@ const DashboradRadicador: React.FC = () => {
         fecthSolicitudes()
     }, [currentPage])
 
-    const handleSetHistorialEstados = async (id: number | string) => {
-        setIsLoadingDetails(true);
+
+    const fetchData = async <T,>(
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>,
+    ) => {
         try {
-            const response = await api.get(`/historial_estados/GetByPqId?pqId=${id}`);
-            const historial = response.data;
-            const mappedData = historial.map((item: any) => ({
-                id: item.id,
-                nombre: item.estado?.nombre || "Sin nombre",
-                fecha: item.fechaCambio,
-                observacion: item.observacion || "Sin observación"
-            }));
-            setHistorialEstados(mappedData);
+            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            setter(response.data || []);
         } catch (error) {
-            console.error("Error al obtener el historial de estados:", error);
-        } finally {
-            setIsLoadingDetails(false);
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
     };
 
-    const handleSetDocumentos = async (id: number | string) => {
-        setIsLoadingDocuments(true);
-        try {
-            const response = await api.get(`/adjuntosPq/GetByPqId?pqId=${id}`);
-            setDocumentos(response.data);
-        } catch (error) {
-            console.error("Error al obtener los documentos:", error);
-        } finally {
-            setIsLoadingDocuments(false);
-        }
-    };
-
-    const handleVerClick = async (solicitud: any) => {
+    const handleVerClick = async (solicitud: PqItem) => {
         setModalOpen(true)
         setSelectedSolicitud(solicitud)
+        setFormdata((prev) => ({
+            ...prev,
+            id: solicitud.id,
+            comentario: "",
+            responsableId: "",
+            fechaAprobacion: "",
+            isAprobada: false
+        }))
         await Promise.all([
-            handleSetHistorialEstados(solicitud.id),
-            handleSetDocumentos(solicitud.id),
-            fetchData('usuarios/contratistas', setResponsables)
+            fetchData<Usuario>('usuarios/contratistas', setResponsables)
         ])
     }
 
+    const clearFormData = () => {
+        setFormdata({
+            id: 0,
+            responsableId: "",
+            comentario: "",
+            fechaAprobacion: "",
+            isAprobada: false,
+            radicadorId: sessionStorage.getItem("persona_id") || ""
+        });
+    }
+
     const handleCloseModal = () => {
-
         fecthSolicitudes();
-
         setSelectedSolicitud(null)
-        setResponsableSeleccionado("");
-        setComentario("");
-        setFechaAprobacion("");
+        clearFormData();
         setTab("aceptar");
-
-        setResponsableSeleccionado("")
-        setHistorialEstados([])
-        setDocumentos([])
         setModalOpen(false)
     }
 
-    const inputRef = useRef<HTMLInputElement>(null); // 1. Creamos la referencia
+    const inputRef = useRef<HTMLInputElement>(null);
 
     const handleIconClick = () => {
         if (inputRef.current) {
-            (inputRef.current as HTMLInputElement).showPicker(); // 3. Usamos showPicker() para abrir el calendario
+            (inputRef.current as HTMLInputElement).showPicker();
         }
     }
 
-    const handleRadicarPeticion = async (id: number, responsableId: string, Comentario: String, Fecha: String, isAprobada: boolean, radicadorId: string) => {
+    const handleChange = (field: keyof Radicacion, value: string | boolean) => {
+        setFormdata(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const handleRadicarPeticion = async (data: Radicacion) => {
         try {
-            const data = {
-                radicadorId: Number(radicadorId),
-                solicitudId: Number(id),
-                fechaResolucionEstimada: Fecha,   // asumiendo que es string tipo "2025-08-30"
-                responsableId: Number(responsableId),
-                comentario: Comentario,
-                isAprobada: Boolean(isAprobada),  // asegura true/false
+            const payload = {
+                radicadorId: Number(data.radicadorId),
+                solicitudId: Number(data.id),
+                fechaResolucionEstimada: data.fechaAprobacion,
+                responsableId: data.responsableId ? Number(data.responsableId) : null,
+                comentario: data.comentario,
+                isAprobada: Boolean(data.isAprobada),
             };
 
-            await api.post(`pqs/aprobacion_pq`, JSON.stringify(data));
+
+            await api.post(`pqs/aprobacion_pq`, JSON.stringify(payload));
 
             handleCloseModal();
-
+            clearFormData();
         } catch (error) {
             console.error(error);
         }
     };
-
-    const fetchData = async (endpoint: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
-        try {
-            const response = await api.get(`/${endpoint}`)
-
-            const data = await response.data
-            setter(data.data || [])
-        } catch (error) {
-            console.error(`Error al obtener los datos de ${endpoint}:`, error)
-        }
-    }
 
     return (
         <div className="flex min-h-screen w-screen bg-gray-100 z-15">
@@ -225,7 +224,6 @@ const DashboradRadicador: React.FC = () => {
 
                             {/* Paginación */}
                             <div className="flex justify-center mt-4 gap-2 items-center">
-                                {/* Ir al inicio */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === 1}
@@ -233,8 +231,6 @@ const DashboradRadicador: React.FC = () => {
                                 >
                                     ⏮ Primero
                                 </Button>
-
-                                {/* Página anterior */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === 1}
@@ -242,12 +238,9 @@ const DashboradRadicador: React.FC = () => {
                                 >
                                     ◀ Anterior
                                 </Button>
-
                                 <span className="text-sm px-3">
                                     Página {currentPage} de {totalPages}
                                 </span>
-
-                                {/* Página siguiente */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === totalPages}
@@ -255,8 +248,6 @@ const DashboradRadicador: React.FC = () => {
                                 >
                                     Siguiente ▶
                                 </Button>
-
-                                {/* Ir al final */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === totalPages}
@@ -268,10 +259,8 @@ const DashboradRadicador: React.FC = () => {
 
                         </CardContent>
                     </Card>
-
                 </div>
             </div>
-
 
             {modalOpen && selectedSolicitud && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -527,12 +516,13 @@ const DashboradRadicador: React.FC = () => {
                                     <UserPlus className="w-5 h-5 text-indigo-600" />
                                     Opciones de Radicación
                                 </h3>
+
                                 {/* Tabs */}
                                 <div className="flex border-b mb-5">
                                     <button
                                         className={`px-4 py-2 text-sm font-medium rounded-t-lg ${tab === "aceptar"
-                                            ? "bg-indigo-600 text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                ? "bg-indigo-600 text-white"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                             }`}
                                         onClick={() => setTab("aceptar")}
                                     >
@@ -540,8 +530,8 @@ const DashboradRadicador: React.FC = () => {
                                     </button>
                                     <button
                                         className={`px-4 py-2 text-sm font-medium rounded-t-lg ${tab === "rechazar"
-                                            ? "bg-red-600 text-white"
-                                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                ? "bg-red-600 text-white"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                             }`}
                                         onClick={() => setTab("rechazar")}
                                     >
@@ -555,16 +545,13 @@ const DashboradRadicador: React.FC = () => {
                                         <>
                                             {/* Selector */}
                                             <div>
-                                                <label
-                                                    htmlFor="responsable"
-                                                    className="block text-sm font-medium bg-white mb-2"
-                                                >
+                                                <label htmlFor="responsable" className="block text-sm font-medium mb-2">
                                                     Asignar Responsable
                                                 </label>
                                                 <select
                                                     id="responsable"
-                                                    value={responsableSeleccionado}
-                                                    onChange={(e) => setResponsableSeleccionado(e.target.value)}
+                                                    value={formdata.responsableId}
+                                                    onChange={(e) => handleChange("responsableId", e.target.value)}
                                                     className="w-full border border-gray-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                                 >
                                                     <option value="">Seleccione un responsable</option>
@@ -578,16 +565,13 @@ const DashboradRadicador: React.FC = () => {
 
                                             {/* Comentario */}
                                             <div>
-                                                <label
-                                                    htmlFor="comentarioAceptar"
-                                                    className="block text-sm font-medium text-black mb-2"
-                                                >
+                                                <label htmlFor="comentarioAceptar" className="block text-sm font-medium text-black mb-2">
                                                     Comentario
                                                 </label>
                                                 <textarea
                                                     id="comentarioAceptar"
-                                                    value={comentario}
-                                                    onChange={(e) => setComentario(e.target.value)}
+                                                    value={formdata.comentario}
+                                                    onChange={(e) => handleChange("comentario", e.target.value)}
                                                     placeholder="Escriba un comentario (opcional)..."
                                                     rows={3}
                                                     className="w-full border bg-white border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -599,24 +583,27 @@ const DashboradRadicador: React.FC = () => {
                                                 <input
                                                     type="date"
                                                     id="fechaAprobacion"
-                                                    value={fechaAprobacion}
-                                                    onChange={(e) => setFechaAprobacion(e.target.value)}
-                                                    ref={inputRef} // 2. Asignamos la referencia al input
+                                                    value={formdata.fechaAprobacion}
+                                                    onChange={(e) => handleChange("fechaAprobacion", e.target.value)}
+                                                    ref={inputRef}
                                                     className="w-full border bg-white border-gray-300 rounded-xl px-3 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 appearance-none"
                                                 />
-                                                {/* Ícono con evento onClick */}
                                                 <Calendar
-                                                    className="w-5 h-5 text-indigo-600 absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer" // Añadimos cursor-pointer para mejor UX
-                                                    onClick={handleIconClick} // 4. Agregamos el evento de clic
+                                                    className="w-5 h-5 text-indigo-600 absolute left-3 top-1/2 -translate-y-1/2 cursor-pointer"
+                                                    onClick={handleIconClick}
                                                 />
                                             </div>
 
                                             {/* Botón */}
                                             <button
                                                 onClick={() =>
-                                                    handleRadicarPeticion(selectedSolicitud.id, responsableSeleccionado, comentario, fechaAprobacion, true, sessionStorage.getItem("persona_id") || "")
+                                                    handleRadicarPeticion({
+                                                        ...formdata,
+                                                        id: selectedSolicitud.id,
+                                                        isAprobada: true
+                                                    })
                                                 }
-                                                disabled={!responsableSeleccionado || !fechaAprobacion}
+                                                disabled={!formdata.responsableId || !formdata.fechaAprobacion}
                                                 className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <CheckCircle className="w-5 h-5" />
@@ -629,16 +616,13 @@ const DashboradRadicador: React.FC = () => {
                                         <>
                                             {/* Comentario */}
                                             <div>
-                                                <label
-                                                    htmlFor="comentarioRechazar"
-                                                    className="block text-sm font-medium text-gray-700 mb-2"
-                                                >
+                                                <label htmlFor="comentarioRechazar" className="block text-sm font-medium text-gray-700 mb-2">
                                                     Comentario (obligatorio)
                                                 </label>
                                                 <textarea
                                                     id="comentarioRechazar"
-                                                    value={comentario}
-                                                    onChange={(e) => setComentario(e.target.value)}
+                                                    value={formdata.comentario}
+                                                    onChange={(e) => handleChange("comentario", e.target.value)}
                                                     placeholder="Indique la razón del rechazo..."
                                                     rows={3}
                                                     className="w-full border bg-white border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
@@ -647,8 +631,16 @@ const DashboradRadicador: React.FC = () => {
 
                                             {/* Botón */}
                                             <button
-                                                onClick={() => handleRadicarPeticion(selectedSolicitud.id, "", comentario, "", false, sessionStorage.getItem("usuario_id") || "")}
-                                                disabled={!comentario.trim()}
+                                                onClick={() =>
+                                                    handleRadicarPeticion({
+                                                        ...formdata,
+                                                        id: selectedSolicitud.id,
+                                                        responsableId: "",
+                                                        fechaAprobacion: "",
+                                                        isAprobada: false
+                                                    })
+                                                }
+                                                disabled={!formdata.comentario.trim()}
                                                 className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2.5 px-4 rounded-xl hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
                                                 <XCircle className="w-5 h-5" />
@@ -658,6 +650,7 @@ const DashboradRadicador: React.FC = () => {
                                     )}
                                 </div>
                             </div>
+
 
                         </div>
 
@@ -681,8 +674,9 @@ const DashboradRadicador: React.FC = () => {
                     </div>
                 </div>
             )}
+
         </div>
     )
 }
 
-export default DashboradRadicador
+export default DashboardRadicador

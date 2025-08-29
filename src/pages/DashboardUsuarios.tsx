@@ -12,9 +12,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "../components/ui/badge"
 import { useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
-import type { TipoPQ } from "../models/TipoPQ"
-import type { PQ } from "../models/PQ"
+import type { RequestPq } from "../models/RequestPq"
 import config from "../config";
+import type { PqItem } from "../models/PqItem"
+import type { TipoPQ } from "../models/TipoPQ"
+import type { PaginatedResponse } from "../models/PaginatedResponse"
+import type { Adjunto } from "../models/Adjunto"
+import type { HistorialEstado } from "../models/HistorialEstado"
+
+interface FormPeticion {
+	tipo_pq_id: string;
+	solicitante_id: string;
+	detalleAsunto: string;
+	detalleDescripcion: string;
+	lista_documentos: File[];
+	// agrega aquí los otros campos de tu formulario
+}
 
 const Dashboard: React.FC = () => {
 
@@ -23,9 +36,9 @@ const Dashboard: React.FC = () => {
 	const navigate = useNavigate()
 	const api = apiServiceWrapper
 
-	const [solicitudes, setSolicitudes] = useState<any[]>([])
+	const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
 	const [modalOpen, setModalOpen] = useState(false)
-	const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
+	const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
 	const itemsPerPage = 10
 	const [currentPage, setCurrentPage] = useState(1)
 	const [hasMore, setHasMore] = useState(true)
@@ -36,7 +49,7 @@ const Dashboard: React.FC = () => {
 
 	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
 
-	const [formPeticion, setFormPeticion] = useState<PQ>({
+	const [formPeticion, setFormPeticion] = useState<FormPeticion>({
 		tipo_pq_id: "",
 		solicitante_id: "",
 		detalleAsunto: "",
@@ -44,26 +57,26 @@ const Dashboard: React.FC = () => {
 		lista_documentos: []
 	})
 
-	const [errors, setErrors] = useState<Partial<PQ>>({})
+	const [errors, setErrors] = useState<Partial<RequestPq>>({})
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
-	const fecthSolicitudes = async () => {
+	const fetchSolicitudes = async () => {
 		setIsLoading(true)
 		try {
 			const rawId = sessionStorage.getItem("persona_id")
 			const solicitanteId = rawId ? Number(rawId) : null
 
-			const response = await api.get("/pqs/mis_pqs", {
+			const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs", {
 				solicitanteId,
 				page: currentPage - 1,
 				size: itemsPerPage
 			})
 
-			setSolicitudes(response.data.data)
-			setTotalCount(response.data.total_count ?? 0)
-			setHasMore(response.data.has_more ?? false)
+			setSolicitudes(response.data)
+			setTotalCount(response.total_count ?? 0)
+			setHasMore(response.has_more ?? false)
 
-			const totalPages = Math.ceil((response.data.total_count ?? 0) / itemsPerPage)
+			const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
 			setTotalPages(totalPages)
 		} catch (error) {
 			console.error("Error al obtener las solicitudes:", error)
@@ -73,11 +86,24 @@ const Dashboard: React.FC = () => {
 	}
 
 	useEffect(() => {
-		fecthSolicitudes()
+		fetchSolicitudes()
 		fetchAllData()
 	}, [currentPage])
 
-	const handleVerClick = async (solicitud: any) => {
+	const fetchData = async <T,>(
+		endpoint: string,
+		setter: React.Dispatch<React.SetStateAction<T[]>>
+	): Promise<void> => {
+		try {
+			const response = await api.get<PaginatedResponse<T>>(endpoint);
+			const result = response.data ?? [];
+			setter(result);
+		} catch (error) {
+			console.error(`Error al obtener los datos de ${endpoint}:`, error);
+		}
+	};
+
+	const handleVerClick = async (solicitud: PqItem) => {
 		setModalOpen(true)
 		setSelectedSolicitud(solicitud)
 	}
@@ -90,25 +116,16 @@ const Dashboard: React.FC = () => {
 	const fetchAllData = async () => {
 		try {
 			await Promise.all([
-				fetchData("tipos_pqs", setTipoPQ),
+				fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
 			])
 		} catch (error) {
 			console.error("Error al cargar datos iniciales:", error)
 		}
 	}
 
-	const fetchData = async (endpoint: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
-		try {
-			const response = await api.get(`/${endpoint}`)
-			const data = await response.data
-			setter(data.data || [])
-		} catch (error) {
-			console.error(`Error al obtener los datos de ${endpoint}:`, error)
-		}
-	}
 
 	const validateForm = (): boolean => {
-		const newErrors: Partial<PQ> = {}
+		const newErrors: Partial<FormPeticion> = {}
 		if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
 		if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
 		if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
@@ -116,7 +133,7 @@ const Dashboard: React.FC = () => {
 		return Object.keys(newErrors).length === 0
 	}
 
-	const handleInputChange = (field: keyof PQ, value: string) => {
+	const handleInputChange = (field: keyof RequestPq, value: string) => {
 		setFormPeticion((prev) => ({
 			...prev!,
 			[field]: value
@@ -160,8 +177,8 @@ const Dashboard: React.FC = () => {
 			};
 			const response = await api.post("/pqs/radicar_pq", payload);
 
-			if (response.status === 201) {
-				fecthSolicitudes();
+			if (response.status === "201") {
+				fetchSolicitudes();
 				setModalRadicarSolicitud(false);
 				setFormPeticion({
 					tipo_pq_id: "",
@@ -171,6 +188,8 @@ const Dashboard: React.FC = () => {
 					lista_documentos: []
 				});
 			}
+			setModalRadicarSolicitud(false);
+			fetchSolicitudes;
 
 		} catch (error) {
 			console.error("Error al enviar:", error);
@@ -301,7 +320,7 @@ const Dashboard: React.FC = () => {
 								</div>
 							) : solicitudes && solicitudes.length > 0 ? (
 								<div className="divide-y divide-gray-200">
-									{solicitudes.map((solicitud: any) => (
+									{solicitudes.map((solicitud: PqItem) => (
 										<div
 											key={solicitud.id}
 											className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 transition"
@@ -518,32 +537,6 @@ const Dashboard: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Información Adicional */}
-							{(selectedSolicitud.observaciones || selectedSolicitud.documentos) && (
-								<div className="mt-6 pt-6 border-t">
-									<h3 className="text-lg font-semibold text-gray-900 mb-3">Información Adicional</h3>
-									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-										{selectedSolicitud.observaciones && (
-											<div className="bg-gray-50 p-4 rounded-lg">
-												<label className="text-sm font-medium text-gray-600">Observaciones:</label>
-												<p className="text-gray-900 mt-2 text-sm leading-relaxed">{selectedSolicitud.observaciones}</p>
-											</div>
-										)}
-										{selectedSolicitud.documentos && selectedSolicitud.documentos.length > 0 && (
-											<div className="bg-gray-50 p-4 rounded-lg">
-												<label className="text-sm font-medium text-gray-600">Documentos Adjuntos:</label>
-												<div className="mt-2 space-y-1">
-													{selectedSolicitud.documentos.map((doc: any, index: number) => (
-														<div key={index} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-															📄 <span>{doc.nombre || `Documento ${index + 1}`}</span>
-														</div>
-													))}
-												</div>
-											</div>
-										)}
-									</div>
-								</div>
-							)}
 
 							<div className="bg-white rounded-lg p-6 border border-gray-200 mt-6">
 								<h3 className="text-xl font-semibold text-gray-800 mb-4">Historial de Estados</h3>
@@ -554,16 +547,16 @@ const Dashboard: React.FC = () => {
 									<div className="relative flex items-start justify-between w-full">
 										{/* Línea atravesando las bolitas */}
 										<div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 z-0"></div>
-										{selectedSolicitud.historialEstados.map((estado: any, index: number) => (
+										{selectedSolicitud.historialEstados.map((estado: HistorialEstado, index: number) => (
 											<div
-												key={index}
+												key={estado.id ?? index}
 												className="flex flex-col items-center relative w-1/4 min-w-0"
 											>
 												{/* Nodo y Tooltip */}
 												<div className="group relative">
 													<div className="w-5 h-5 rounded-full ring-2 transition-all duration-300 bg-blue-600 ring-blue-600"></div>
 													<div className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal w-40 text-center pointer-events-none">
-														{estado.observacion ? estado.observacion : "Sin observación"}
+														{estado.observacion ?? "Sin observación"}
 													</div>
 												</div>
 												{/* Texto del estado */}
@@ -577,6 +570,7 @@ const Dashboard: React.FC = () => {
 												</div>
 											</div>
 										))}
+
 									</div>
 								) : (
 									<p className="text-sm text-gray-500">Sin historial disponible.</p>
@@ -590,7 +584,7 @@ const Dashboard: React.FC = () => {
 								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
 									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
 										<ul className="text-sm text-blue-600 space-y-2">
-											{selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
+											{selectedSolicitud.adjuntos.map((archivo: Adjunto, i: number) => (
 												(!archivo.respuesta && (
 													<li key={i} className="flex items-center gap-2">
 														{/* Ícono del archivo */}
@@ -624,7 +618,7 @@ const Dashboard: React.FC = () => {
 								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
 									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
 										<ul className="text-sm text-blue-600 space-y-2">
-											{selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
+											{selectedSolicitud.adjuntos.map((archivo: Adjunto, i: number) => (
 												(archivo.respuesta && (
 													<li key={i} className="flex items-center gap-2">
 														{/* Ícono del archivo */}
@@ -798,7 +792,10 @@ const Dashboard: React.FC = () => {
 												<h4 className="font-medium text-gray-700">Archivos seleccionados:</h4>
 												<div className="space-y-2">
 													{formPeticion.lista_documentos.map((file, index) => (
-														<div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+														<div
+															key={index}
+															className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+														>
 															<div className="flex items-center gap-3">
 																<div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
 																	<svg
@@ -827,7 +824,12 @@ const Dashboard: React.FC = () => {
 																onClick={() => removeFile(index)}
 																className="text-red-500 hover:text-red-700 hover:bg-red-50"
 															>
-																<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<svg
+																	className="w-4 h-4"
+																	fill="none"
+																	stroke="currentColor"
+																	viewBox="0 0 24 24"
+																>
 																	<path
 																		strokeLinecap="round"
 																		strokeLinejoin="round"

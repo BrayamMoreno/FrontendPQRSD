@@ -1,5 +1,4 @@
-
-export type PQ = {
+export type RequestPq = {
   tipo_pq_id: string;
   solicitante_id: string;
   detalleAsunto: string;

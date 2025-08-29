@@ -2,35 +2,31 @@ import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
 import config from "../config";
 import { useNavigate } from "react-router-dom";
+import type { Usuario } from "../models/Usuario";
+import type { Permiso } from "../models/Permiso";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  user: Usuario | null; // 🔹 aquí puede ir un tipo "Usuario"
+  permisos: Permiso[];
+  login: (correo: string, contrasena: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-
-  type Rol = "Admin" | "Usuario" | "Radicador" | "Contratista";
-
-  const rutas: Record<Rol, string> = {
-    Admin: "/admin/dashboard",
-    Usuario: "/usuario/dashboard",
-    Radicador: "/radicador/dashboard",
-    Contratista: "/contratista/dashboard"
-  };
-
   const apiBaseUrl: string = config.apiBaseUrl;
   const navigate = useNavigate();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => sessionStorage.getItem("isAuthenticated") === "true"
   );
-  const [user, setUser] = useState<"" | null>(
+  const [user, setUser] = useState<any | null>(
     () => JSON.parse(sessionStorage.getItem("user") || "null")
+  );
+  const [permisos, setPermisos] = useState<any[]>(
+    () => JSON.parse(sessionStorage.getItem("permisos") || "[]")
   );
 
   const login = async (correo: string, contrasena: string) => {
@@ -41,23 +37,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ correo, contrasena }),
       });
 
-      if (!response.ok) {
-        throw new Error("Error en el login");
-      }
+      if (!response.ok) throw new Error("Error en el login");
 
       const data = await response.json();
+      console.log("Datos del usuario:", data);
 
-      sessionStorage.setItem("isAuthenticated", data.logged.toString());
-      sessionStorage.setItem("jwt", data.jwt);
-      sessionStorage.setItem("username", data.username);
-      saveToSessionStorage("usuario", data.usuario);
+      // Guardar datos básicos en sessionStorage
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("jwt", data.jwt || "");
+      saveToSessionStorage("usuario", data);
       saveToSessionStorage("persona", data.persona);
+
       setIsAuthenticated(true);
-      setUser(data.usuario);
+      setUser(data);
 
-      const rol = data.usuario.rol.nombre as Rol;
-      navigate(rutas[rol] || "/");
+      // 🚀 permisos vienen dentro del rol
+      const permisosUsuario = data.usuario.rol?.permisos || [];
+      sessionStorage.setItem("permisos", JSON.stringify(permisosUsuario));
+      setPermisos(permisosUsuario);
 
+      console.log("Permisos del usuario:", permisosUsuario);
+
+      // Filtrar solo dashboards
+      const dashboards = permisosUsuario.filter(
+        (p: any) => p.tabla.startsWith("dashboard_") && p.accion === "acceder"
+      );
+
+      if (dashboards.length === 1) {
+        navigate(getDashboardRoute(dashboards[0].tabla));
+      } else if (dashboards.length > 1) {
+        navigate("/selector_dashboard");
+      } else {
+        navigate("/"); // sin dashboards
+      }
     } catch (error) {
       console.error("Error en el login:", error);
       throw error;
@@ -66,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const saveToSessionStorage = (prefix: string, obj: any) => {
     for (const key in obj) {
-      if (!obj.hasOwnProperty(key)) continue;
+      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
 
       const value = obj[key];
       const storageKey = `${prefix}_${key}`;
@@ -85,6 +97,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getDashboardRoute = (tabla: string) => {
+    switch (tabla) {
+      case "dashboard_pqs":
+        return "/dashboard/pqs";
+      case "dashboard_estadisticas":
+        return "/dashboard/estadisticas";
+      case "dashboard_admin":
+        return "/dashboard/admin";
+      default:
+        return "/";
+    }
+  };
 
   const logout = async () => {
     try {
@@ -103,19 +127,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         sessionStorage.clear();
         navigate("/login");
       }
-
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
     }
 
     sessionStorage.clear();
-
     setIsAuthenticated(false);
     setUser(null);
+    setPermisos([]);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, user, permisos, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

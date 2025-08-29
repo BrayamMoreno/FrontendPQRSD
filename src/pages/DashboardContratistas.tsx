@@ -1,28 +1,27 @@
 import { CheckCircle, FileText, UndoIcon } from "lucide-react"
 import { useEffect, useState } from "react"
-import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import apiServiceWrapper from "../api/ApiService"
+import type { PaginatedResponse } from "../models/PaginatedResponse"
 import config from "../config"
-import type { PQ } from "../models/PQ"
+import type { PqItem } from "../models/PqItem"
 
 type FormPeticion = {
     respuesta: string;
     lista_documentos: File[];
 };
 
-
 const DashboardContratista: React.FC = () => {
     const api = apiServiceWrapper
 
     const API_URL = config.apiBaseUrl
 
-    const [solicitudes, setSolicitudes] = useState<any[]>([])
+    const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
 
     const [modalOpen, setModalOpen] = useState(false)
-    const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
+    const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
@@ -38,14 +37,14 @@ const DashboardContratista: React.FC = () => {
             const rawId = sessionStorage.getItem("persona_id")
             const responsableId = rawId ? Number(rawId) : null
 
-            const response = await api.get("pqs/pqs_asignadas", {
+            const response = await api.get<PaginatedResponse<PqItem>>("pqs/pqs_asignadas", {
                 responsableId,
                 page: currentPage - 1,
                 size: itemsPerPage,
             })
 
-            setSolicitudes(response.data.data)
-            const totalPages = Math.ceil((response.data.total_count ?? 0) / itemsPerPage)
+            setSolicitudes(response.data)
+            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
             setTotalPages(totalPages)
         } catch (error) {
             console.error("Error al obtener las solicitudes asignadas:", error)
@@ -78,7 +77,7 @@ const DashboardContratista: React.FC = () => {
 
             const payload = {
                 responsableId: Number(sessionStorage.getItem("usuario_id")),
-                pqId: selectedSolicitud.id,
+                pqId: selectedSolicitud?.id,
                 respuesta: formPeticion.respuesta,
                 lista_documentos: documentosBase64
             };
@@ -93,8 +92,6 @@ const DashboardContratista: React.FC = () => {
                     lista_documentos: []
                 });
             }
-
-
         } catch (error) {
             console.error("Error al enviar:", error);
             alert("Error al enviar la PQRSDF");
@@ -103,7 +100,7 @@ const DashboardContratista: React.FC = () => {
         }
     }
 
-    const handleVerClick = async (solicitud: any) => {
+    const handleVerClick = async (solicitud: PqItem) => {
         setModalOpen(true)
         setSelectedSolicitud(solicitud)
     }
@@ -172,7 +169,7 @@ const DashboardContratista: React.FC = () => {
             return true
         })
 
-        setFormPeticion((prev: any) => ({
+        setFormPeticion((prev: FormPeticion) => ({
             ...prev,
             lista_documentos: [...prev.lista_documentos, ...validFiles],
         }))
@@ -236,7 +233,7 @@ const DashboardContratista: React.FC = () => {
 
                             {solicitudes && solicitudes.length > 0 ? (
                                 <div className="divide-y divide-gray-200">
-                                    {solicitudes.map((solicitud: any) => (
+                                    {solicitudes.map((solicitud: PqItem) => (
                                         <div
                                             key={solicitud.id}
                                             className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 transition"
@@ -378,7 +375,7 @@ const DashboardContratista: React.FC = () => {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-600">Correo:</label>
-                                        <p className="text-gray-900 break-all">{selectedSolicitud.solicitante?.correoUsuario || "No registrado"}</p>
+                                        <p className="text-gray-900 break-all">{selectedSolicitud.solicitante.correoUsuario || "No registrado"}</p>
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium text-gray-600">Teléfono:</label>
@@ -484,29 +481,9 @@ const DashboardContratista: React.FC = () => {
                             </div>
 
                             {/* Información Adicional */}
-                            {(selectedSolicitud.observaciones || selectedSolicitud.documentos) && (
+                            {(selectedSolicitud) && (
                                 <div className="mt-6 pt-6 border-t">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-3">Información Adicional</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {selectedSolicitud.observaciones && (
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <label className="text-sm font-medium text-gray-600">Observaciones:</label>
-                                                <p className="text-gray-900 mt-2 text-sm leading-relaxed">{selectedSolicitud.observaciones}</p>
-                                            </div>
-                                        )}
-                                        {selectedSolicitud.documentos && selectedSolicitud.documentos.length > 0 && (
-                                            <div className="bg-gray-50 p-4 rounded-lg">
-                                                <label className="text-sm font-medium text-gray-600">Documentos Adjuntos:</label>
-                                                <div className="mt-2 space-y-1">
-                                                    {selectedSolicitud.documentos.map((doc: any, index: number) => (
-                                                        <div key={index} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                                                            📄 <span>{doc.nombre || `Documento ${index + 1}`}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             )}
                             <div className="bg-white rounded-lg p-6 border border-gray-200 mt-6">

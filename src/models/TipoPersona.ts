@@ -1,4 +1,4 @@
-export type TiposPersonas = {
+export type TipoPersona = {
     id: "" | string;
     nombre: ""| string;
 }

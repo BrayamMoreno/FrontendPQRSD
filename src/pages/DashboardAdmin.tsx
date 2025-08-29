@@ -3,76 +3,64 @@ import {
     BarChart, Bar, LineChart, Line, PieChart, Pie,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
+import type { PaginatedResponse } from "../models/PaginatedResponse";
+import type { RequestPq } from "../models/RequestPq";
+import type { PqItem } from "../models/PqItem";
 
-const tendenciasDiarias = [
-    { fecha: "Lun", cantidad: 12 },
-    { fecha: "Mar", cantidad: 19 },
-    { fecha: "Mié", cantidad: 8 },
-    { fecha: "Jue", cantidad: 15 },
-    { fecha: "Vie", cantidad: 22 },
-    { fecha: "Sáb", cantidad: 10 },
-    { fecha: "Dom", cantidad: 5 },
+
+const COLORS = [
+    "#0088FE", // azul fuerte
+    "#FFBB28", // amarillo
+    "#FF8042", // naranja
+    "#A569BD", // morado
+    "#52BE80", // verde
+    "#F1948A", // rosado
+    "#E59866", // terracota
+    "#BB8FCE"  // lila
 ];
 
-const peticionesPorTipo = [
-    { tipo: "Quejas", valor: 30 },
-    { tipo: "Peticiones", valor: 20 },
-    { tipo: "Reclamos", valor: 15 },
-    { tipo: "Felicitaciones", valor: 5 },
-];
-
-const peticionesPorDepartamento = [
-    { departamento: "Antioquia", cantidad: 25 },
-    { departamento: "Cundinamarca", cantidad: 18 },
-    { departamento: "Valle", cantidad: 12 },
-    { departamento: "Santander", cantidad: 8 },
-    { departamento: "Bolívar", cantidad: 5 },
-];
-
-
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 import apiServiceWrapper from "../api/ApiService";
 
 const DashboardAdmin: React.FC = () => {
 
     const api = apiServiceWrapper
-    const [ultimasSolicitudes, setUltimasSolicitudes] = useState<any | []>([]);
-    const [proximasAVencer, setProximasAVencer] = useState<any | []>([]);
-    const [tendenciasDiarias, setTendenciasDiarias] = useState<any[]>([]);
-    const [peticionesPorTipo, setPeticionesPorTipo] = useState<any[]>([]);
-    const [peticionesPorDepartamento, setPeticionesPorDepartamento] = useState<any[]>([]);
 
-    const [totalSolicitudes, setTotalSolicitudes] = useState(0);
-    const [totalProximasAVencer, setTotalProximasAVencer] = useState(0);
+    const [ultimasSolicitudes, setUltimasSolicitudes] = useState<PqItem[]>([]);
+    const [proximasAVencer, setProximasAVencer] = useState<PqItem[]>([]);
+    const [tendenciasDiarias, setTendenciasDiarias] = useState<{ fecha: string; cantidad: number }[]>([]);
+    const [peticionesPorTipo, setPeticionesPorTipo] = useState<{ tipo: string; cantidad: number }[]>([]);
+    const [peticionesPorDepartamento, setPeticionesPorDepartamento] = useState<{ departamento: string; cantidad: number }[]>([]);
 
-    const fetchData = async (
+    const [totalSolicitudes, setTotalSolicitudes] = useState<number>(0);
+    const [totalProximasAVencer, setTotalProximasAVencer] = useState<number>(0);
+
+
+    const fetchData = async <T,>(
         endpoint: string,
-        setter: React.Dispatch<React.SetStateAction<any[]>>,
-        setterNumberData: React.Dispatch<React.SetStateAction<number>>) => {
+        setter: React.Dispatch<React.SetStateAction<T[]>>,
+        setterNumberData: React.Dispatch<React.SetStateAction<number>>
+    ) => {
         try {
-            const response = await api.get(endpoint)
-            const data = await response.data.data
-            setter(data || [])
-            setterNumberData(response.data.total_count || 0)
+            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            setter(response.data || []);
+            setterNumberData(response.total_count || 0);
         } catch (error) {
-            console.error(`Error al obtener los datos de ${endpoint}:`, error)
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
-    }
+    };
 
-    const fetchEstadisticas = async (
+    const fetchEstadisticas = async <T,>(
         endpoint: string,
-        setter: React.Dispatch<React.SetStateAction<any[]>>,) => {
+        setter: React.Dispatch<React.SetStateAction<T[]>>
+    ) => {
         try {
-            const response = await api.get(endpoint)
-            const data = await response.data
-            setter(data || [])
-            console.log(data)
+            const response = await api.get<T[]>(endpoint);
+            setter(response || []);
         } catch (error) {
-            console.error("Error al obtener las tendencias diarias:", error)
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
-    }
-
+    };
 
     const fetchAllData = async () => {
         await Promise.all([
@@ -205,7 +193,7 @@ const DashboardAdmin: React.FC = () => {
                                                     const fechaEstimada = new Date(solicitud.fechaResolucionEstimada);
                                                     const diffMs = fechaEstimada.getTime() - hoy.getTime(); // ahora sí es number
                                                     const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                                                    return diffDias < 0 ? "Vencida" : `${diffDias} días`;
+                                                    return diffDias < 0 ? "Vencida" : diffDias === 0 ? "Hoy" : `${diffDias} días`;
                                                 })()}
                                             </td>
 

@@ -8,10 +8,14 @@ import {
     FaUserShield,
     FaIdCard,
     FaUsers,
-    FaChevronDown
+    FaChevronDown,
+    FaArchive,
+    FaUsersCog,
+    FaAddressCard
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
+import { Building, VenusAndMarsIcon } from "lucide-react";
 
 const SlidebarAdmin: React.FC = () => {
     const navigate = useNavigate();
@@ -33,21 +37,32 @@ const SlidebarAdmin: React.FC = () => {
     }, [menuOpen]);
 
     const menuItems = [
-        { label: "Dashboard", icon: <FaFileAlt />, action: () => navigate("/admin/dashboard") },
-        {
-            label: "CRUDs ",
-            icon: <FaUsers />,
-            children: [
-                { label: "Usuarios", icon: <FaUser />, action: () => navigate("/admin/dashboard/gestion_usuarios") },
-                { label: "Roles", icon: <FaUserShield />, action: () => navigate("/admin/dashboard/roles") },
-                { label: "Tipos de Documentos", icon: <FaIdCard />, action: () => navigate("/admin/dashboard/tipos_documentos") },
-                { label: "Tipos de Personas", icon: <FaUsers />, action: () => navigate("/admin/dashboard/tipos_personas") },
-            ],
-        },
-        { label: "Faqs", icon: <FaQuestion />, action: () => navigate("/faqs") },
-        { label: "Perfil", icon: <FaUser />, action: () => navigate("/dashboard/mostrar_perfil") },
-        { label: "Salir", icon: <FaSignOutAlt />, action: logout },
-    ];
+    { label: "Dashboard", icon: <FaFileAlt />, action: () => navigate("/admin/dashboard") },
+    {
+        label: "Gestión de Usuarios",
+        icon: <FaUsers />,
+        children: [
+            { label: "Personas", icon: <FaUser />, action: () => navigate("/admin/dashboard/gestion_personas") },
+            { label: "Usuarios", icon: <FaAddressCard />, action: () => navigate("/admin/dashboard/gestion_usuarios") }
+        ],
+    },
+    {
+        label: "Administración",
+        icon: <FaUsersCog />,
+        children: [
+            { label: "Roles", icon: <FaUserShield />, action: () => navigate("/admin/dashboard/roles") },
+            { label: "Tipos de Documentos", icon: <FaIdCard />, action: () => navigate("/admin/dashboard/tipos_documentos") },
+            { label: "Tipos de Personas", icon: <FaUsers />, action: () => navigate("/admin/dashboard/tipos_personas") },
+            { label: "Generos", icon: <VenusAndMarsIcon />, action: () => navigate("/admin/dashboard/generos") },
+            { label: "Tipos de Solicitudes", icon: <FaArchive />, action: () => navigate("/admin/dashboard/tipos_solicitudes") },
+            { label: "Áreas Responsables", icon: <Building />, action: () => navigate("/admin/dashboard/areas_responsables") },
+        ],
+    },
+    { label: "FAQs", icon: <FaQuestion />, action: () => navigate("/faqs") },
+    { label: "Perfil", icon: <FaUser />, action: () => navigate("/dashboard/mostrar_perfil") },
+    { label: "Salir", icon: <FaSignOutAlt />, action: logout },
+];
+
 
     const userInfo = {
         nombre:
@@ -57,7 +72,7 @@ const SlidebarAdmin: React.FC = () => {
         iniciales:
             sessionStorage.getItem("persona_nombre") && sessionStorage.getItem("persona_apellido")
                 ? sessionStorage.getItem("persona_nombre")![0] +
-                  sessionStorage.getItem("persona_apellido")![0]
+                sessionStorage.getItem("persona_apellido")![0]
                 : "U",
     };
 
@@ -96,39 +111,35 @@ const SlidebarAdmin: React.FC = () => {
                                         setMenuOpen(false);
                                     }
                                 }}
-                                className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-md transition-colors duration-200 ${
-                                    activeItem === label ? "bg-blue-600 text-white" : "text-blue-900 hover:bg-blue-200"
-                                }`}
+                                className={`flex items-center justify-between cursor-pointer px-3 py-2 rounded-md transition-colors duration-200 ${activeItem === label ? "bg-blue-600 text-white" : "text-blue-900 hover:bg-blue-200"
+                                    }`}
                             >
                                 <div className="flex items-center">
                                     <span className="flex items-center justify-center w-6 h-6">
                                         {React.cloneElement(icon, { size: 18, className: "block" })}
                                     </span>
                                     <span
-                                        className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
-                                            menuOpen ? "w-full opacity-100" : "w-0 opacity-0"
-                                        }`}
+                                        className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? "w-full opacity-100" : "w-0 opacity-0"
+                                            }`}
                                     >
                                         {label}
                                     </span>
                                 </div>
                                 {children && menuOpen && (
                                     <FaChevronDown
-                                        className={`transition-transform duration-300 ${
-                                            openSubmenu === label ? "rotate-180" : ""
-                                        }`}
+                                        className={`transition-transform duration-300 ${openSubmenu === label ? "rotate-180" : ""
+                                            }`}
                                     />
                                 )}
                             </div>
 
-                            {/* Submenú con animación */}
+                            {/* Submenú con animación y scroll si hay muchos items */}
                             <div
-                                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                                    openSubmenu === label ? "max-h-60 opacity-100 mt-1" : "max-h-0 opacity-0"
-                                }`}
+                                className={`transition-all duration-300 ease-in-out overflow-hidden ${openSubmenu === label ? "max-h-[300px] opacity-100 mt-1" : "max-h-0 opacity-0"
+                                    }`}
                             >
                                 {children && (
-                                    <div className="flex flex-col gap-1">
+                                    <div className="flex flex-col gap-1 overflow-y-auto max-h-[280px] pr-1">
                                         {children.map((child) => (
                                             <div
                                                 key={child.label}
@@ -137,19 +148,17 @@ const SlidebarAdmin: React.FC = () => {
                                                     child.action();
                                                     setMenuOpen(false);
                                                 }}
-                                                className={`flex items-center cursor-pointer px-3 py-2 rounded-md transition-colors duration-200 ${
-                                                    activeItem === child.label
-                                                        ? "bg-blue-500 text-white"
-                                                        : "text-blue-900 hover:bg-blue-200"
-                                                }`}
+                                                className={`flex items-center cursor-pointer px-3 py-2 rounded-md transition-colors duration-200 ${activeItem === child.label
+                                                    ? "bg-blue-500 text-white"
+                                                    : "text-blue-900 hover:bg-blue-200"
+                                                    }`}
                                             >
                                                 <span className="flex items-center justify-center w-6 h-6">
                                                     {React.cloneElement(child.icon, { size: 18, className: "block" })}
                                                 </span>
                                                 <span
-                                                    className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
-                                                        menuOpen ? "w-full opacity-100" : "w-0 opacity-0"
-                                                    }`}
+                                                    className={`ml-3 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${menuOpen ? "w-full opacity-100" : "w-0 opacity-0"
+                                                        }`}
                                                 >
                                                     {child.label}
                                                 </span>
@@ -158,6 +167,8 @@ const SlidebarAdmin: React.FC = () => {
                                     </div>
                                 )}
                             </div>
+
+
                         </div>
                     ))}
                 </nav>
@@ -170,9 +181,8 @@ const SlidebarAdmin: React.FC = () => {
                 {menuOpen && (
                     <div className={`flex items-center ${menuOpen ? "w-40" : "w-0"} overflow-hidden`}>
                         <span
-                            className={`whitespace-nowrap transition-opacity duration-300 ${
-                                menuOpen ? "opacity-100" : "opacity-0"
-                            }`}
+                            className={`whitespace-nowrap transition-opacity duration-300 ${menuOpen ? "opacity-100" : "opacity-0"
+                                }`}
                         >
                             {userInfo.nombre}
                         </span>

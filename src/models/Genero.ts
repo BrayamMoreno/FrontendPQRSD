@@ -1,4 +1,4 @@
-export type Generos = {
+export type Genero = {
 	id: "" | string;
 	nombre: "" | string;
 }

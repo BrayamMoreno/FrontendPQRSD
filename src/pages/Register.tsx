@@ -31,9 +31,9 @@ import {
 } from "../components/ui/select"
 import { Separator } from "../components/ui/separator"
 import type { RegisterForm } from "../models/RegisterForm"
-import type { TiposPersonas } from "../models/TiposPersonas"
-import type { Generos } from "../models/Generos"
-import type { TipoDocumentos } from "../models/TiposDocumentos"
+import type { TipoPersona } from "../models/TipoPersona"
+import type { Genero } from "../models/Genero"
+import type { TipoDoc } from "../models/TipoDoc"
 import type { Municipios } from "../models/Municipios"
 import type { Departamentos } from "../models/Departamentos"
 import config from "../config"
@@ -43,11 +43,11 @@ const Register: React.FC = () => {
   const apiBaseUrl = config.apiBaseUrl
 
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [tipoDoc, setTiposDoc] = useState<TipoDocumentos[]>([])
+  const [tipoDoc, setTiposDoc] = useState<TipoDoc[]>([])
   const [municipios, setMunicipios] = useState<Municipios[]>([])
   const [departamentos, setDepartamentos] = useState<Departamentos[]>([])
-  const [generos, setGeneros] = useState<Generos[]>([])
-  const [tiposPersonas, setTiposPersonas] = useState<TiposPersonas[]>([])
+  const [generos, setGeneros] = useState<Genero[]>([])
+  const [tiposPersonas, setTiposPersonas] = useState<TipoPersona[]>([])
   const [alert, setAlert] = useState<string | null>(null)
   const [showAlert, setShowAlert] = useState(false)
 
