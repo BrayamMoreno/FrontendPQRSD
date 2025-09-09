@@ -1,14 +1,14 @@
 // layouts/DashboardLayout.tsx
 import React from "react";
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navegacion/Navbar";
 
 
 const DashboardLayoutUsuarios: React.FC = () => {
   return (
-    <div className="flex">
+    <div >
       <Navbar />
-      <main className="pt-24">
+      <main >
         <Outlet />
       </main>
     </div>

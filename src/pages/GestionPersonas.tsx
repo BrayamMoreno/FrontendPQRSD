@@ -16,7 +16,7 @@ import {
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../api/ApiService"
-import PersonaForm from "../components/PersonaForm"
+import PersonaForm from "../components/Formularios/PersonaForm"
 import type { Persona } from "../models/Persona"
 import type { PaginatedResponse } from "../models/PaginatedResponse"
 

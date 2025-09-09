@@ -54,7 +54,7 @@ function GestionRoles() {
         setter: React.Dispatch<React.SetStateAction<T[]>>
     ): Promise<void> => {
         try {
-            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            const response = await api.get<PaginatedResponse<T>>(endpoint, { page: 0, size: 100 });
             // 👇 ojo: si tu backend devuelve {data, meta}, asegúrate de extraer bien
             const result = response.data ?? [];
             setter(result);
@@ -233,7 +233,7 @@ function GestionRoles() {
                                                             key={permiso.id}
                                                             className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
                                                         >
-                                                            {permiso.nombre}
+                                                            {permiso.tabla}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -368,7 +368,7 @@ function GestionRoles() {
                                                                     htmlFor={`permiso-${permiso.id}`}
                                                                     className="text-sm font-medium text-gray-900 cursor-pointer"
                                                                 >
-                                                                    {permiso.nombre}
+                                                                    {permiso.tabla}
                                                                 </label>
                                                                 <p className="text-xs text-gray-500 mt-1">
                                                                     {permiso.descripcion}

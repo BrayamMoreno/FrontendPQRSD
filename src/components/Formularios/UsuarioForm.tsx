@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import apiServiceWrapper from "../api/ApiService"
-import type { TipoDoc } from "../models/TipoDoc"
-import type { Genero } from "../models/Genero"
-import type { TipoPersona } from "../models/TipoPersona"
-import type { Usuario } from "../models/Usuario"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import apiServiceWrapper from "../../api/ApiService"
+import type { TipoDoc } from "../../models/TipoDoc"
+import type { Genero } from "../../models/Genero"
+import type { TipoPersona } from "../../models/TipoPersona"
+import type { Usuario } from "../../models/Usuario"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import { set } from "react-hook-form"
-import type { Rol } from "../models/Rol"
+import type { Rol } from "../../models/Rol"
 
 interface UsuarioFormProps {
-  usuario?: Usuario;
-  onClose: () => void;
-  onSave: (usuario: Usuario) => void;
-  readOnly?: boolean;
+    usuario?: Usuario;
+    onClose: () => void;
+    onSave: (usuario: Usuario) => void;
+    readOnly?: boolean;
 }
 
 export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false }: UsuarioFormProps) {
@@ -173,17 +173,17 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
     }
 
     const fetchData = async <T,>(
-		endpoint: string,
-		setter: React.Dispatch<React.SetStateAction<T[]>>
-	): Promise<void> => {
-		try {
-			const response = await api.get<PaginatedResponse<T>>(endpoint);
-			const result = response.data ?? [];
-			setter(result);
-		} catch (error) {
-			console.error(`Error al obtener los datos de ${endpoint}:`, error);
-		}
-	};
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>
+    ): Promise<void> => {
+        try {
+            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            const result = response.data ?? [];
+            setter(result);
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
+        }
+    };
 
     const fetchAllData = async () => {
         await Promise.all([
@@ -346,13 +346,12 @@ function SwitchField({ label, checked, onChange, readOnly = false }: any) {
                 </span>
                 <span
                     className={`inline-block w-5 h-5 transform bg-white rounded-full shadow-md transition-transform duration-300
-                        ${checked ? 'translate-x-5' : '-translate-x-4'}`}
+                        ${checked ? 'translate-x-5 ' : '-translate-x-4'}`}
                 />
             </button>
         </div>
     );
 }
-
 
 interface SelectFieldProps<T> {
     label: string;

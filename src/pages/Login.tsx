@@ -1,6 +1,5 @@
 import { AlertCircle } from "lucide-react";
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
@@ -8,12 +7,11 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { useAuth } from "../context/AuthProvider";
 import type { LoginForm } from "../models/LoginForm";
-
+import logo from "../assets/Logo.webp"
+import fondo1 from "../assets/fondo1.svg"
 
 const Login: React.FC = () => {
-
 	const { login } = useAuth();
-	const navigate = useNavigate();
 
 	const [loginForm, setLoginForm] = useState<LoginForm>({
 		correo: "",
@@ -52,15 +50,31 @@ const Login: React.FC = () => {
 			setError("Error al iniciar sesión. Verifica tus credenciales.");
 			console.error("Error al iniciar sesión:", error);
 		}
-	}
+	};
 
 	return (
-		<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-			<Card className="w-96 shadow-lg">
-				<CardHeader>
-					<CardTitle>Iniciar sesión</CardTitle>
-					<CardDescription>Accede con tu cuenta</CardDescription>
+		<div className="relative min-h-screen w-screen flex items-center justify-center bg-gray-100">
+			{/* Fondo estilo SAC adaptado */}<div
+				className="absolute inset-0 bg-cover bg-center opacity-20"
+				style={{ backgroundImage: `url(${fondo1})` }}
+			/>
+
+			<Card className="w-96 shadow-2xl relative z-10">
+				<CardHeader className="text-center">
+					{/* Encabezado institucional */}
+					<img
+						src={logo}
+						alt="Secretaría de Tránsito y Transporte"
+						className="mx-auto w-20 mb-2"
+					/>
+					<CardTitle className="text-xl font-bold text-blue-900">
+						Secretaría de Tránsito y Transporte de Girardot
+					</CardTitle>
+					<CardDescription>
+						Sistema de Atención al Ciudadano – SAC
+					</CardDescription>
 				</CardHeader>
+
 				<CardContent>
 					{error && (
 						<Alert variant="destructive" className="mb-4">
@@ -71,7 +85,7 @@ const Login: React.FC = () => {
 					<form onSubmit={handleSubmit}>
 						<div className="space-y-4">
 							<div className="flex flex-col gap-2">
-								<Label htmlFor="email">Correo electrónico</Label>
+								<Label htmlFor="correo">Correo electrónico</Label>
 								<Input
 									id="correo"
 									type="email"
@@ -81,7 +95,7 @@ const Login: React.FC = () => {
 								/>
 							</div>
 							<div className="flex flex-col gap-2">
-								<Label htmlFor="password">Contraseña</Label>
+								<Label htmlFor="contrasena">Contraseña</Label>
 								<Input
 									id="contrasena"
 									type="password"
@@ -90,16 +104,25 @@ const Login: React.FC = () => {
 									placeholder="********"
 								/>
 							</div>
-							{/* BOTÓN CON LA NUEVA PALETA DE COLORES */}
-							<Button type="submit" className="bg-[#6a040f] text-white hover:bg-[#9d0208] focus:ring-2 focus:ring-[#9d0208] focus:ring-opacity-50">
+							<Button
+								type="submit"
+								className="bg-blue-700 text-white hover:bg-blue-800 focus:ring-2 focus:ring-blue-800 focus:ring-opacity-50 w-full"
+							>
 								Iniciar sesión
 							</Button>
 						</div>
 					</form>
 				</CardContent>
-				<CardFooter>
-					<p className="text-sm text-gray-600">
-						¿No tienes una cuenta? <a href="#" className="text-[#9d0208] hover:text-[#9d0208]">Regístrate</a>
+
+				<CardFooter className="flex flex-col items-center gap-2">
+					<p className="text-sm text-gray-600 text-center">
+						¿No tienes una cuenta?{" "}
+						<a href="#" className="text-blue-700 hover:underline hover:text-blue-800">
+							Regístrate
+						</a>
+					</p>
+					<p className="text-xs text-gray-500 text-center">
+						Accede las 24 horas del día para consultas tus PQRS
 					</p>
 				</CardFooter>
 			</Card>

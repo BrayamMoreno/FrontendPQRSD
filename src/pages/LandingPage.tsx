@@ -6,16 +6,9 @@ import {
   FaCar,
 } from "react-icons/fa"
 import landingImage from "../assets/landing.webp"
-import AnonimaForm from "../components/AnonimaForm"
 
 
 const LandingPage: React.FC = () => {
-
-  const handleAnonimaSubmit = async (data: { tipo: string; asunto: string; descripcion: string }) => {
-    console.log("Petición anónima enviada:", data)
-    // Aquí podrías hacer un fetch/axios POST al backend
-    // await fetch(`${API_URL}/pq/anonima`, { method: "POST", body: JSON.stringify(data), headers: {"Content-Type":"application/json"} })
-  }
 
   return (
     <div className="min-h-screen w-screen bg-white">
@@ -121,12 +114,6 @@ const LandingPage: React.FC = () => {
               description="Reciba actualizaciones sobre el estado de su solicitud y la respuesta oficial dentro de los plazos establecidos."
             />
           </div>
-        </div>
-      </section>
-
-      <section id="anonima" className="py-20 bg-gray-100">
-        <div className="max-w-4xl mx-auto px-4">
-          <AnonimaForm  />
         </div>
       </section>
 

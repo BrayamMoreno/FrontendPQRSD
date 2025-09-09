@@ -7,7 +7,7 @@ import type { Permiso } from "../models/Permiso";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: Usuario | null; // 🔹 aquí puede ir un tipo "Usuario"
+  user: Usuario | null;
   permisos: Permiso[];
   login: (correo: string, contrasena: string) => Promise<void>;
   logout: () => void;
@@ -22,10 +22,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => sessionStorage.getItem("isAuthenticated") === "true"
   );
-  const [user, setUser] = useState<any | null>(
+
+  const [user, setUser] = useState<Usuario | null>(
     () => JSON.parse(sessionStorage.getItem("user") || "null")
   );
-  const [permisos, setPermisos] = useState<any[]>(
+
+  const [permisos, setPermisos] = useState<Permiso[]>(
     () => JSON.parse(sessionStorage.getItem("permisos") || "[]")
   );
 
@@ -36,79 +38,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ correo, contrasena }),
       });
-
       if (!response.ok) throw new Error("Error en el login");
 
       const data = await response.json();
-      console.log("Datos del usuario:", data);
 
-      // Guardar datos básicos en sessionStorage
       sessionStorage.setItem("isAuthenticated", "true");
       sessionStorage.setItem("jwt", data.jwt || "");
-      saveToSessionStorage("usuario", data);
-      saveToSessionStorage("persona", data.persona);
+      sessionStorage.setItem("user", JSON.stringify(data.usuario));
 
-      setIsAuthenticated(true);
-      setUser(data);
-
-      // 🚀 permisos vienen dentro del rol
-      const permisosUsuario = data.usuario.rol?.permisos || [];
+      const permisosUsuario: Permiso[] = data.usuario.rol?.permisos || [];
       sessionStorage.setItem("permisos", JSON.stringify(permisosUsuario));
+
+      setUser(data.usuario);
       setPermisos(permisosUsuario);
+      setIsAuthenticated(true);
 
-      console.log("Permisos del usuario:", permisosUsuario);
-
-      // Filtrar solo dashboards
       const dashboards = permisosUsuario.filter(
-        (p: any) => p.tabla.startsWith("dashboard_") && p.accion === "acceder"
+        (p) => p.accion === "dashboard"
       );
 
-      if (dashboards.length === 1) {
-        navigate(getDashboardRoute(dashboards[0].tabla));
-      } else if (dashboards.length > 1) {
-        navigate("/selector_dashboard");
+      if (dashboards.length > 0) {
+        navigate(`/${dashboards[0].tabla}/inicio`, { replace: true });
       } else {
-        navigate("/"); // sin dashboards
+        navigate("/", { replace: true });
       }
+
     } catch (error) {
-      console.error("Error en el login:", error);
+      console.error(error);
       throw error;
     }
   };
 
-  const saveToSessionStorage = (prefix: string, obj: any) => {
-    for (const key in obj) {
-      if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
-
-      const value = obj[key];
-      const storageKey = `${prefix}_${key}`;
-
-      if (value === null) {
-        sessionStorage.setItem(storageKey, "null");
-      } else if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean"
-      ) {
-        sessionStorage.setItem(storageKey, value.toString());
-      } else if (typeof value === "object" && !Array.isArray(value)) {
-        saveToSessionStorage(storageKey, value);
-      }
-    }
-  };
-
-  const getDashboardRoute = (tabla: string) => {
-    switch (tabla) {
-      case "dashboard_pqs":
-        return "/dashboard/pqs";
-      case "dashboard_estadisticas":
-        return "/dashboard/estadisticas";
-      case "dashboard_admin":
-        return "/dashboard/admin";
-      default:
-        return "/";
-    }
-  };
 
   const logout = async () => {
     try {
@@ -119,9 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ tokenjwt }),
       });
 
-      if (!response.ok) {
-        throw new Error("Error al cerrar sesión");
-      }
+      if (!response.ok) throw new Error("Error al cerrar sesión");
 
       if (response.status === 200) {
         sessionStorage.clear();

@@ -7,8 +7,12 @@ import apiServiceWrapper from "../api/ApiService"
 import type { PaginatedResponse } from "../models/PaginatedResponse"
 import config from "../config"
 import type { PqItem } from "../models/PqItem"
+import "react-quill/dist/quill.snow.css";
+import ReactQuill from "react-quill";
 
 type FormPeticion = {
+    para: string;
+    asunto: string;
     respuesta: string;
     lista_documentos: File[];
 };
@@ -28,6 +32,8 @@ const DashboardContratista: React.FC = () => {
     const [totalPages, setTotalPages] = useState(0)
 
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
+        para: "",
+        asunto: "",
         respuesta: "",
         lista_documentos: []
     });
@@ -88,6 +94,8 @@ const DashboardContratista: React.FC = () => {
 
             if (response.status === 201) {
                 setFormPeticion({
+                    para: "",
+                    asunto: "",
                     respuesta: "",
                     lista_documentos: []
                 });
@@ -103,6 +111,8 @@ const DashboardContratista: React.FC = () => {
     const handleVerClick = async (solicitud: PqItem) => {
         setModalOpen(true)
         setSelectedSolicitud(solicitud)
+
+        formPeticion.para = solicitud.solicitante?.correoUsuario || ""
     }
 
     const fileToBase64 = (file: File): Promise<string> => {
@@ -563,29 +573,65 @@ const DashboardContratista: React.FC = () => {
                             <div className="pt-6">
 
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-                                    Repuesta de la Solicitud
+                                    Respuesta de la Solicitud
                                 </h3>
-                                <textarea
-                                    value={formPeticion.respuesta}
-                                    onChange={(e) =>
-                                        setFormPeticion((prev) => ({
-                                            ...prev,
-                                            respuesta: e.target.value
-                                        }))
-                                    }
-                                    placeholder="Escribe tu respuesta aquí..."
-                                    className="w-full p-2 border rounded-lg bg-white text-sm focus:ring focus:ring-blue-300 resize-none"
-                                    rows={2}
-                                />
-                            </div>
 
-                            {/* Zona de archivos */}
-                            <div className="pt-6">
-                                <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-                                    Repuesta de la Solicitud
-                                </h3>
-                                <div className="space-y-4">
+                                {/* Campo PARA */}
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Para:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formPeticion.para}
+                                        onChange={(e) =>
+                                            setFormPeticion((prev) => ({ ...prev, para: e.target.value }))
+                                        }
+                                        placeholder="correo1@ejemplo.com, correo2@ejemplo.com"
+                                        className="w-full border rounded-lg px-3 py-2 mt-1"
+                                    />
+
+                                </div>
+
+                                {/* Campo ASUNTO */}
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Asunto:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formPeticion.asunto}
+                                        onChange={(e) =>
+                                            setFormPeticion((prev) => ({ ...prev, asunto: e.target.value }))
+                                        }
+                                        placeholder="Escribe el asunto..."
+                                        className="w-full border rounded-lg px-3 py-2 mt-1"
+                                    />
+                                </div>
+
+                                {/* Editor de texto */}
+                                <ReactQuill
+                                    theme="snow"
+                                    value={formPeticion.respuesta}
+                                    onChange={(value) =>
+                                        setFormPeticion((prev) => ({ ...prev, respuesta: value }))
+                                    }
+                                    className="bg-white rounded-lg mb-3 h-36"
+                                    placeholder="Escribe tu respuesta aquí..."
+                                    modules={{
+                                        toolbar: [
+                                            [{ header: [1, 2, false] }],
+                                            ["bold", "italic", "underline", "strike"],
+                                            [{ list: "ordered" }, { list: "bullet" }],
+                                            ["link"],
+                                            ["clean"],
+                                        ],
+                                    }}
+                                />
+
+                                <div className="space-y-4 mt-12">
                                     {/* Dropzone */}
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Adjuntar archivos</h3>
                                     <div
                                         className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
                                         onDrop={handleDrop}
@@ -609,7 +655,7 @@ const DashboardContratista: React.FC = () => {
                                                 <p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar el archivo</p>
                                             </div>
                                             <p className="text-xs text-gray-400">
-                                                Formatos permitidos: PDF (máximo 2MB)
+                                                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (máximo MB)
                                             </p>
                                         </div>
 
@@ -617,10 +663,11 @@ const DashboardContratista: React.FC = () => {
                                             id="file-input"
                                             type="file"
                                             multiple
-                                            accept=".pdf"
+                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                                             onChange={handleFileSelect}
                                             className="hidden"
                                         />
+
                                     </div>
 
                                     {formPeticion.lista_documentos.length > 0 && (

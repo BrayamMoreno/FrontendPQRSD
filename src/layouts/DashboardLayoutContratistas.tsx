@@ -1,7 +1,7 @@
 // layouts/DashboardLayout.tsx
 import React from "react";
 import { Outlet } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navegacion/Navbar";
 
 const DashboardLayoutContratistas: React.FC = () => {
   return (

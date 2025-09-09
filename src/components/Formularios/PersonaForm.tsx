@@ -1,21 +1,21 @@
 import type React from "react";
 import { useState, useEffect } from "react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Checkbox } from "../components/ui/checkbox";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Checkbox } from "../ui/checkbox";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../components/ui/select";
-import apiServiceWrapper from "../api/ApiService";
-import type { TipoDoc } from "../models/TipoDoc";
-import type { Genero } from "../models/Genero";
-import type { TipoPersona } from "../models/TipoPersona";
-import type { PaginatedResponse } from "../models/PaginatedResponse";
-import type { Persona } from "../models/Persona";
+} from "../ui/select";
+import apiServiceWrapper from "../../api/ApiService";
+import type { TipoDoc } from "../../models/TipoDoc";
+import type { Genero } from "../../models/Genero";
+import type { TipoPersona } from "../../models/TipoPersona";
+import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import type { Persona } from "../../models/Persona";
 
 interface PersonaFormProps {
     persona?: Persona;

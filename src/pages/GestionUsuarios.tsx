@@ -18,7 +18,7 @@ import {
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../api/ApiService"
-import UsuarioForm from "../components/UsuarioForm"
+import UsuarioForm from "../components/Formularios/UsuarioForm"
 import type { PaginatedResponse } from "../models/PaginatedResponse"
 import type { Usuario } from "../models/Usuario"
 import type { Rol } from "../models/Rol"
