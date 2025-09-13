@@ -2,8 +2,8 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "../../context/AuthProvider"
-import { BarChart3, ChevronDown, FileText, Home, LayoutDashboard, Settings2, Users, User, LogOut } from "lucide-react"
-import logo from "../../assets/logo.webp"
+import { ChevronDown, FileText, Home, LayoutDashboard, Settings2, User, LogOut } from "lucide-react"
+import logo from "../../assets/Logo.webp"
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate()
