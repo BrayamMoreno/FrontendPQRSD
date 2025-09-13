@@ -1,6 +1,6 @@
 import type React from "react"
 import { useNavigate } from "react-router-dom"
-import landingImage from "../assets/Landing.webp"
+import landing from "../assets/Landing.webp"
 import Logo from "../assets/Logo.webp"
 import { useAuth } from "../context/AuthProvider"
 
@@ -77,7 +77,7 @@ const LandingPage: React.FC = () => {
         {/* Imagen */}
         <div className="md:w-1/2 mt-10 md:mt-0 flex justify-center">
           <img
-            src={landingImage}
+            src={landing}
             alt="landing"
             className="rounded-xl shadow-2xl w-4/5 md:w-full"
           />
