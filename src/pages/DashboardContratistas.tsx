@@ -388,7 +388,7 @@ const DashboardContratista: React.FC = () => {
                                                     onClick={() => handleVerClick(solicitud)}
                                                 >
                                                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                                                    Dar Resolución
+                                                    Dar Respuesta
                                                 </Button>
                                             </div>
                                         </div>

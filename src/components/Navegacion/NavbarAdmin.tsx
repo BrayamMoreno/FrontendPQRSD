@@ -10,7 +10,7 @@ import {
     Menu,
     X,
 } from "lucide-react"
-import logo from "../../assets/logo.webp"
+import logo from "../../assets/Logo.webp"
 import {
     FaAddressCard,
     FaArchive,
