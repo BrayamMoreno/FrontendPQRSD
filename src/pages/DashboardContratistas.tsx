@@ -1,4 +1,4 @@
-import { CheckCircle, FileText, UndoIcon } from "lucide-react"
+import { CheckCircle, CheckCircle2, FileText, PlusCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
@@ -7,8 +7,18 @@ import apiServiceWrapper from "../api/ApiService"
 import type { PaginatedResponse } from "../models/PaginatedResponse"
 import config from "../config"
 import type { PqItem } from "../models/PqItem"
-import "react-quill/dist/quill.snow.css";
-import ReactQuill from "react-quill";
+
+
+import ReactQuill from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css"
+
+import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
+
+import { useAuth } from "../context/AuthProvider"
+import { Input } from "../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import type { TipoPQ } from "../models/TipoPQ"
+import { LoadingSpinner } from "../components/LoadingSpinner"
 
 type FormPeticion = {
     para: string;
@@ -18,9 +28,11 @@ type FormPeticion = {
 };
 
 const DashboardContratista: React.FC = () => {
-    const api = apiServiceWrapper
 
+    const api = apiServiceWrapper
     const API_URL = config.apiBaseUrl
+
+    const { user } = useAuth()
 
     const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
 
@@ -31,6 +43,14 @@ const DashboardContratista: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
+    const [fechaSeleccionada, setFechaSeleccionada] = useState<string>("")
+    const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
+    const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
+    const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
+
+    const [isLoading, setIsLoading] = useState(false)
+    const [adjuntarDocumentos, setAdjuntarDocumentos] = useState(false)
+
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
         para: "",
         asunto: "",
@@ -39,33 +59,77 @@ const DashboardContratista: React.FC = () => {
     });
 
     const fetchSolicitudes = async () => {
+        setIsLoading(true);
         try {
-            const rawId = sessionStorage.getItem("persona_id")
-            const responsableId = rawId ? Number(rawId) : null
+            const rawId = user?.persona.id
+            const responsableId = rawId ? Number(rawId) : null;
 
-            const response = await api.get<PaginatedResponse<PqItem>>("pqs/pqs_asignadas", {
+            // construir parámetros dinámicos
+            const params: Record<string, any> = {
                 responsableId,
                 page: currentPage - 1,
                 size: itemsPerPage,
-            })
+            };
 
-            setSolicitudes(response.data)
-            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
-            setTotalPages(totalPages)
+            if (tipoPqSeleccionado !== null) {
+                params.tipoId = tipoPqSeleccionado;
+            }
+
+            if (numeroRadicado && numeroRadicado.trim() !== "") {
+                params.numeroRadicado = numeroRadicado;
+            }
+
+            if (fechaSeleccionada !== null) {
+                params.fechaRadicacion = fechaSeleccionada;
+            }
+            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_contratistas", params);
+            setSolicitudes(response.data || []);
+            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
+            setTotalPages(totalPages);
         } catch (error) {
-            console.error("Error al obtener las solicitudes asignadas:", error)
+            console.error("Error al obtener las solicitudes:", error);
+        } finally {
+            setIsLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
-        fetchSolicitudes()
-    }, [currentPage])
+        const delayDebounce = setTimeout(() => {
+            fetchSolicitudes()
+            fetchAllData()
+        }, 500)
+
+        return () => clearTimeout(delayDebounce)
+    }, [currentPage, fechaSeleccionada, tipoPqSeleccionado, numeroRadicado])
+
 
     const handleCloseModal = () => {
         setSelectedSolicitud(null)
         setModalOpen(false)
     }
 
+    const fetchData = async <T,>(
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>
+    ): Promise<void> => {
+        try {
+            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            const result = response.data ?? [];
+            setter(result);
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
+        }
+    };
+
+    const fetchAllData = async () => {
+        try {
+            await Promise.all([
+                fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
+            ])
+        } catch (error) {
+            console.error("Error al cargar datos iniciales:", error)
+        }
+    }
 
     const handleDarResolucion = async () => {
         try {
@@ -82,10 +146,12 @@ const DashboardContratista: React.FC = () => {
             );
 
             const payload = {
-                responsableId: Number(sessionStorage.getItem("usuario_id")),
+                responsableId: Number(user?.persona.id),
                 pqId: selectedSolicitud?.id,
+                lista_documentos: documentosBase64,
+                asunto: formPeticion.asunto,
                 respuesta: formPeticion.respuesta,
-                lista_documentos: documentosBase64
+                listaCorreos: formPeticion.para ? [formPeticion.para] : []
             };
 
             console.log("Payload a enviar:", payload);
@@ -196,42 +262,70 @@ const DashboardContratista: React.FC = () => {
 
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100 z-15">
-            <div className="ml-14 w-full">
-                <div className="max-w-7xl mx-auto p-6">
-                    {/* Header */}
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold text-blue-900">Panel de Contratistas</h1>
+        <div className="flex min-h-screen w-screen bg-gray-50">
+            <div className="w-full p-32">
+                <div className="max-w-7xl mx-auto ">
+                    <div className="mb-6">
+                        {/* Breadcrumbs arriba */}
+                        <Breadcrumbs />
+
+                        {/* Contenedor de título y botón */}
+                        <div className="flex items-center justify-between mt-2">
+                            <h1 className="text-2xl font-bold text-blue-900">Peticiones Pendientes</h1>
+                        </div>
                     </div>
 
-                    {/* Tarjetas de estadísticas */}
-                    <div className="grid grid-cols-4 gap-4 mb-6">
-                        <Card className="bg-white shadow-sm">
-                            <CardContent className="p-4">
-                                <div className="text-sm text-gray-600">Total Asignadas</div>
-                                <div className="text-2xl font-bold">
+                    <div className="max-w-7xl mx-auto">
+                        <Card className="mb-4">
+                            <CardContent className="p-2">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 ">
+                                    <Input
+                                        className="w-full"
+                                        placeholder="Buscar por Numero de Radicado"
+                                        value={numeroRadicado ? String(numeroRadicado) : ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value.trim();
+                                            setNumeroRadicado(value === "" ? null : value);
+                                        }}
 
+                                    />
+                                    <Select
+                                        value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+                                        onValueChange={(value) => {
+                                            setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Tipo Solicitud" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                                            {tipoPQ.map((tipo) => (
+                                                <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                    {tipo.nombre}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <input
+                                        type="date"
+                                        value={fechaSeleccionada}
+                                        onChange={(e) => setFechaSeleccionada(e.target.value)}
+                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+
+                                    <Button
+                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+                                        onClick={() => {
+                                            setTipoPqSeleccdionado(null)
+                                            setNumeroRadicado(null)
+                                            setFechaSeleccionada("")
+                                        }}
+                                    >
+                                        Limpiar filtros
+                                    </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-white shadow-sm">
-                            <CardContent className="p-4">
-                                <div className="text-sm text-gray-600">Pendientes por Respuesta </div>
-                                <div className="text-2xl font-bold text-yellow-500">
-                                    {/* Aquí puedes agregar el número de pendientes */}
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-white shadow-sm">
-                            <CardContent className="p-4">
-                                <div className="text-sm text-gray-600">En Proceso</div>
-                                <div className="text-2xl font-bold text-blue-500"></div>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-white shadow-sm">
-                            <CardContent className="p-4">
-                                <div className="text-sm text-gray-600">Resueltas</div>
-                                <div className="text-2xl font-bold text-green-500"></div>
                             </CardContent>
                         </Card>
                     </div>
@@ -241,7 +335,11 @@ const DashboardContratista: React.FC = () => {
                         <CardContent className="p-2">
                             <h2 className="text-lg mb-2 font-semibold">Solicitudes Asignadas</h2>
 
-                            {solicitudes && solicitudes.length > 0 ? (
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-4">
+                                    <LoadingSpinner />
+                                </div>
+                            ) : solicitudes && solicitudes.length > 0 ? (
                                 <div className="divide-y divide-gray-200">
                                     {solicitudes.map((solicitud: PqItem) => (
                                         <div
@@ -269,20 +367,28 @@ const DashboardContratista: React.FC = () => {
                                             </div>
 
                                             {/* Columna 4 - Estado */}
-                                            <div className="w-1/6">
-                                                <Badge variant="secondary">{solicitud.nombreUltimoEstado}</Badge>
+                                            <div className="w-1/6 badge">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="text-white"
+                                                    style={{
+                                                        backgroundColor:
+                                                            solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
+                                                    }}
+                                                >
+                                                    {solicitud.nombreUltimoEstado}
+                                                </Badge>
+
                                             </div>
 
                                             {/* Columna 5 - Botón */}
                                             <div className="w-auto">
                                                 <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="text-xs"
+                                                    className="text-xs flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                                                     onClick={() => handleVerClick(solicitud)}
                                                 >
-                                                    <UndoIcon className="w-3 h-3 mr-1" />
-                                                    Ver Detalles
+                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    Dar Resolución
                                                 </Button>
                                             </div>
                                         </div>
@@ -562,8 +668,22 @@ const DashboardContratista: React.FC = () => {
                                                 ))
                                             ))}
                                         </ul>
-                                    ) : (
-                                        <p className="text-sm text-gray-500">No hay documentos cargados.</p>
+                                    ) : (<div className="flex items-center justify-between">
+                                        <p className="text-sm text-gray-500">
+                                            No hay documentos cargados.
+                                        </p>
+                                        <Button
+                                            onClick={() => {
+                                                // aquí abres modal o rediriges al formulario
+                                            }}
+                                            className="flex items-center  bg-green-600 px-4 py-2 text-white
+                                            hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                        >
+                                            <PlusCircle size={18} />
+                                            Adjuntar Documento
+                                        </Button>
+                                    </div>
+
                                     )}
                                 </div>
                             </div>
@@ -609,25 +729,31 @@ const DashboardContratista: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Editor de texto */}
-                                <ReactQuill
-                                    theme="snow"
-                                    value={formPeticion.respuesta}
-                                    onChange={(value) =>
-                                        setFormPeticion((prev) => ({ ...prev, respuesta: value }))
-                                    }
-                                    className="bg-white rounded-lg mb-3 h-36"
-                                    placeholder="Escribe tu respuesta aquí..."
-                                    modules={{
-                                        toolbar: [
-                                            [{ header: [1, 2, false] }],
-                                            ["bold", "italic", "underline", "strike"],
-                                            [{ list: "ordered" }, { list: "bullet" }],
-                                            ["link"],
-                                            ["clean"],
-                                        ],
-                                    }}
-                                />
+                                {/* Campo ASUNTO */}
+                                <div className="mb-3">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Mensaje:
+                                    </label>
+                                    {/* Editor de texto */}
+                                    <ReactQuill
+                                        theme="snow"
+                                        value={formPeticion.respuesta}
+                                        onChange={(value) =>
+                                            setFormPeticion((prev) => ({ ...prev, respuesta: value }))
+                                        }
+                                        className="bg-white rounded-lg mb-3 h-36 mt-1"
+                                        placeholder="Escribe tu respuesta aquí..."
+                                        modules={{
+                                            toolbar: [
+                                                [{ header: [1, 2, false] }],
+                                                ["bold", "italic", "underline", "strike"],
+                                                [{ list: "ordered" }, { list: "bullet" }],
+                                                ["link"],
+                                                ["clean"],
+                                            ],
+                                        }}
+                                    />
+                                </div>
 
                                 <div className="space-y-4 mt-12">
                                     {/* Dropzone */}

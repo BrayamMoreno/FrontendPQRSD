@@ -8,7 +8,7 @@ import {
 	KeyIcon,
 	XIcon
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import {
@@ -34,6 +34,9 @@ const MostrarPerfil: React.FC = () => {
 	const [perfilBackup, setPerfilBackup] = useState<any>({});
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+
+	const location = useLocation();
+	const from = location.state?.from || "/dashboard";
 
 	useEffect(() => {
 		const nombre = user?.persona.nombre;
@@ -114,7 +117,7 @@ const MostrarPerfil: React.FC = () => {
 										</h2>
 										<p className="text-sm text-gray-600">Perfil del usuario</p>
 									</div>
-									<Button variant="outline" onClick={() => navigate("/dashboard")}>
+									<Button variant="outline" onClick={() => navigate(from)}>
 										<UndoIcon className="w-4 h-4 mr-1" /> Volver
 									</Button>
 								</CardContent>
@@ -205,10 +208,10 @@ const MostrarPerfil: React.FC = () => {
 														}
 														onChange={(e) => handleChange(item.field, e.target.value)}
 														className={`border rounded-md px-3 py-2 text-sm transition ${isEditing &&
-																item.field !== "fechaCreacion" &&
-																item.field !== "cedula"
-																? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
-																: "border-gray-300 bg-gray-50"
+															item.field !== "fechaCreacion" &&
+															item.field !== "cedula"
+															? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
+															: "border-gray-300 bg-gray-50"
 															}`}
 													/>
 												)}

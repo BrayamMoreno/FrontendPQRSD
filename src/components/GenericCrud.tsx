@@ -117,9 +117,9 @@ function GenericCrud<T extends { id: number | string }>({
     };
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100 z-15">
-            <div className="ml-14 w-full">
-                <div className="max-w-7xl mx-auto p-10">
+        <div className="flex min-h-screen w-screen bg-gray-100">
+            <div className="w-full">
+                <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-2xl font-bold text-blue-900">{titulo}</h1>
@@ -278,75 +278,96 @@ function GenericCrud<T extends { id: number | string }>({
 
             {/* Formulario modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-black/50 flex justify-center items-center p-4">
-                    <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-lg">
-                        <h3 className="text-xl font-semibold mb-6 text-gray-800">
-                            {editingItem ? "Editar" : "Nuevo"} Registro
-                        </h3>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                handleSave();
-                            }}
-                        >
-                            <div className="space-y-4">
-                                {Columns.map((col) => (
-                                    <div key={String(col.key)}>
-                                        {col.key !== "id" && (
-                                            <>
-                                                <label className="block text-sm font-medium mb-1 text-gray-700">
-                                                    {col.label}
-                                                </label>
-                                                <input
-                                                    type={col.type ?? "text"}
-                                                    name={String(col.key)}
-                                                    value={String(formData[col.key] ?? "")}
-                                                    onChange={handleChange}
-                                                    disabled={col.key === "id"}
-                                                    readOnly={readOnly}
-                                                    className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${errors[col.key as string]
-                                                        ? "border-red-500 focus:ring-red-500"
-                                                        : "border-blue-300 focus:ring-blue-500"
-                                                        } ${col.key === "id"
-                                                            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                                                            : "bg-white"
-                                                        }`}
-                                                />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
 
-                                                {errors[col.key as string] && (
-                                                    <p className="text-red-500 text-sm mt-1">
-                                                        {errors[col.key as string]}
-                                                    </p>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                        {/* Header */}
+                        <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
+                            <h2 className="text-xl font-bold">
+                                {readOnly
+                                    ? `Ver Registro #${editingItem?.id}`
+                                    : editingItem?.id
+                                        ? `Editar Registro #${editingItem.id}`
+                                        : "Nuevo Registro"}
+                            </h2>
+                            <span className="bg-white text-blue-900 font-semibold px-3 py-1 rounded-full shadow">
+                                {readOnly
+                                    ? "Ver"
+                                    : editingItem
+                                        ? "Edición"
+                                        : "Creación"}{" "}
+                                Registro
+                            </span>
+                        </div>
 
-                            <div className="flex justify-end gap-3 mt-8">
-                                <Button
-                                    type="button"
-                                    onClick={() => setShowForm(false)}
-                                    className="px-6 py-2 border bg bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-                                >
-                                    {readOnly ? "Cerrar" : "Cancelar"}
-                                </Button>
+                        {/* Contenido */}
+                        <div className="p-8">
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleSave();
+                                }}
+                            >
+                                <div className="space-y-4">
+                                    {Columns.map((col) => (
+                                        <div key={String(col.key)}>
+                                            {col.key !== "id" && (
+                                                <>
+                                                    <label className="block text-sm font-medium mb-1 text-gray-700">
+                                                        {col.label}
+                                                    </label>
+                                                    <input
+                                                        type={col.type ?? "text"}
+                                                        name={String(col.key)}
+                                                        value={String(formData[col.key] ?? "")}
+                                                        onChange={handleChange}
+                                                        disabled={col.key === "id"}
+                                                        readOnly={readOnly}
+                                                        className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${errors[col.key as string]
+                                                                ? "border-red-500 focus:ring-red-500"
+                                                                : "border-blue-300 focus:ring-blue-500"
+                                                            } ${col.key === "id"
+                                                                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+                                                                : "bg-white"
+                                                            }`}
+                                                    />
 
-                                {!readOnly && (
+                                                    {errors[col.key as string] && (
+                                                        <p className="text-red-500 text-sm mt-1">
+                                                            {errors[col.key as string]}
+                                                        </p>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Footer */}
+                                <div className="flex justify-end gap-3 mt-8">
                                     <Button
-                                        type="submit"
-                                        className="bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 font-semibold px-6 py-2 rounded-lg shadow-md"
+                                        type="button"
+                                        onClick={() => setShowForm(false)}
+                                        className="px-6 py-2 border bg bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
                                     >
-                                        Guardar
+                                        {readOnly ? "Cerrar" : "Cancelar"}
                                     </Button>
-                                )}
-                            </div>
 
-                        </form>
+                                    {!readOnly && (
+                                        <Button
+                                            type="submit"
+                                            className="bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 font-semibold px-6 py-2 rounded-lg shadow-md"
+                                        >
+                                            Guardar
+                                        </Button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
+
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import { FileText, HelpCircle, UndoIcon, User } from "lucide-react"
+import { FileText, UndoIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
@@ -18,10 +18,11 @@ import type { PaginatedResponse } from "../models/PaginatedResponse"
 import type { Adjunto } from "../models/Adjunto"
 import type { HistorialEstado } from "../models/HistorialEstado"
 import type { Estado } from "../models/Estado"
-import ReactQuill from "react-quill-new"
+
 import { useAuth } from "../context/AuthProvider"
 import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
-
+import ReactQuill from "react-quill-new"
+import "react-quill-new/dist/quill.snow.css"
 
 interface FormPeticion {
 	tipo_pq_id: string;
@@ -35,21 +36,23 @@ const Dashboard: React.FC = () => {
 
 	const API_URL = config.apiBaseUrl;
 	const api = apiServiceWrapper
-	const { user } = useAuth()
+	const { user } = useAuth();
 
-	const [solicitudes, setSolicitudes] = useState<PqItem[]>([]);
-	const [modalOpen, setModalOpen] = useState(false)
-	const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
+	const [modalOpen, setModalOpen] = useState(false);
+	const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null);
 	const itemsPerPage = 10
 	const [currentPage, setCurrentPage] = useState(1)
 	const [totalPages, setTotalPages] = useState(0)
-	const [isLoading, setIsLoading] = useState<boolean>(false)
-	const [modalRadicarSolicitud, setModalRadicarSolicitud] = useState(false)
 
-	const [estadosPq, SetEstadosPq] = useState<Estado[]>([])
-	const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null)
+	const [solicitudes, setSolicitudes] = useState<PqItem[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 
-	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
+	const [modalRadicarSolicitud, setModalRadicarSolicitud] = useState(false);
+
+	const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
+	const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
+
+	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
 	const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
 
 	const [numeroRadicado, SetNumeroRadicado] = useState<String | null>(null)
@@ -63,9 +66,9 @@ const Dashboard: React.FC = () => {
 
 	const [errors, setErrors] = useState<Partial<RequestPq>>({})
 	const [isSubmitting, setIsSubmitting] = useState(false)
+	const [alertFile, setAlertFile] = useState<string | null>(null)
 
-	const fetchSolicitudes = async () => {
-		setIsLoading(true);
+	const fetchSolicitudes = async () => {	
 		try {
 			const rawId = user?.persona.id
 			const solicitanteId = rawId ? Number(rawId) : null;
@@ -208,11 +211,11 @@ const Dashboard: React.FC = () => {
 				});
 			}
 			setModalRadicarSolicitud(false);
-			fetchSolicitudes;
+			fetchSolicitudes();
 
 		} catch (error) {
 			console.error("Error al enviar:", error);
-			alert("Error al enviar la PQRSDF");
+			alert("Error al enviar la PQRSD");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -262,15 +265,17 @@ const Dashboard: React.FC = () => {
 			const validTypes = [
 				"application/pdf",
 			]
-			const maxSize = 5 * 1024 * 1024 // 5MB
+			const maxSize = 2 * 1024 * 1024 // 2MB
 
 			if (!validTypes.includes(file.type)) {
-				alert(`El archivo ${file.name} no tiene un formato válido`)
+				setAlertFile(null)
+				setAlertFile(`El archivo ${file.name} no es un PDF válido`)
 				return false
 			}
 
 			if (file.size > maxSize) {
-				alert(`El archivo ${file.name} es demasiado grande (máximo 10MB)`)
+				setAlertFile(null)
+				setAlertFile(`El archivo ${file.name} excede el tamaño máximo de 2MB`)
 				return false
 			}
 
@@ -293,7 +298,16 @@ const Dashboard: React.FC = () => {
 	}
 
 	const handleCloseModalRadicar = () => {
+		setFormPeticion({
+			tipo_pq_id: "",
+			solicitante_id: "",
+			detalleAsunto: "",
+			detalleDescripcion: "",
+			lista_documentos: []
+		})
 		setModalRadicarSolicitud(false)
+		setErrors({})
+		setAlertFile(null)
 	}
 
 	return (
@@ -335,23 +349,15 @@ const Dashboard: React.FC = () => {
 						<Card className="bg-white shadow-md border">
 							<CardContent>
 								<div className="flex flex-col items-center text-center space-y-6 h-200">
-
-									{/* Ícono principal */}
 									<div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center shadow-md">
 										<FileText className="w-10 h-10 text-blue-700" />
 									</div>
-
-									{/* Título */}
 									<h1 className="text-3xl font-bold text-blue-900">
 										Aún no tienes solicitudes registradas
 									</h1>
-
-									{/* Subtítulo */}
 									<p className="text-gray-600 max-w-xl">
-										Empieza creando tu primera solicitud PQRSDF para hacer seguimiento y recibir respuestas de manera organizada.
+										Empieza creando tu primera solicitud PQRSD para hacer seguimiento y recibir respuestas de manera organizada.
 									</p>
-
-									{/* Acción */}
 									<Button
 										className="bg-blue-600 text-white hover:bg-blue-700"
 										onClick={() => setModalRadicarSolicitud(true)}
@@ -467,6 +473,7 @@ const Dashboard: React.FC = () => {
 													<div className="w-1/6 badge">
 														<Badge
 															variant="secondary"
+															className="text-white"
 															style={{
 																backgroundColor:
 																	solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
@@ -805,12 +812,15 @@ const Dashboard: React.FC = () => {
 						{/* Contenido del Modal */}
 						<div className="p-6 space-y-4">
 							<form onSubmit={handleSubmit} className="space-y-6">
-								{/* Tipo de PQRSDF */}
+								{/* Tipo de PQRSD */}
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 									<div className="space-y-2">
 										<Label htmlFor="tipo" className="text-sm font-medium">
-											Tipo de PQRSDF <span className="text-red-500">*</span>
+											Tipo de PQRSD <span className="text-red-500">*</span>
 										</Label>
+										{errors.tipo_pq_id && (
+											<p className="text-sm text-red-500">{errors.tipo_pq_id}</p>
+										)}
 										<Select
 											value={formPeticion.tipo_pq_id}
 											onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
@@ -828,9 +838,6 @@ const Dashboard: React.FC = () => {
 												))}
 											</SelectContent>
 										</Select>
-										{errors.tipo_pq_id && (
-											<p className="text-sm text-red-500">{errors.tipo_pq_id}</p>
-										)}
 									</div>
 
 								</div>
@@ -840,15 +847,15 @@ const Dashboard: React.FC = () => {
 									<Label htmlFor="asunto" className="text-sm font-medium">
 										Asunto <span className="text-red-500">*</span>
 									</Label>
+									{errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
 									<Input
 										id="asunto"
 										type="text"
-										placeholder="Ingrese el asunto de su PQRSDF"
+										placeholder="Ingrese el asunto de su PQRSD"
 										value={formPeticion.detalleAsunto}
 										onChange={(e) => handleInputChange("detalleAsunto", e.target.value)}
 										className={errors.detalleAsunto ? "border-red-500" : ""}
 									/>
-									{errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
 								</div>
 
 								{/* Descripción */}
@@ -856,6 +863,9 @@ const Dashboard: React.FC = () => {
 									<Label htmlFor="descripcion" className="text-sm font-medium">
 										Descripción detallada <span className="text-red-500">*</span>
 									</Label>
+									{errors.detalleDescripcion && (
+										<p className="text-sm text-red-500 mt-1">{errors.detalleDescripcion}</p>
+									)}
 									<ReactQuill
 										theme="snow"
 										value={formPeticion.detalleDescripcion}
@@ -874,19 +884,18 @@ const Dashboard: React.FC = () => {
 											],
 										}}
 									/>
-									{errors.detalleDescripcion && (
-										<p className="text-sm text-red-500">{errors.detalleDescripcion}</p>
-									)}
 								</div>
-
 
 								{/* Zona de archivos */}
 								<div className="pt-10">
 									<h3 className="text-lg font-semibold text-blue-900 mb-4">
 										Archivo adjunto (Solo se puede adjuntar un archivo)
 									</h3>
-
 									<div className="space-y-4">
+
+										{alertFile && (
+											<p className="text-sm text-red-500">{alertFile}</p>
+										)}
 										{/* Dropzone */}
 										<div
 											className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
@@ -930,7 +939,7 @@ const Dashboard: React.FC = () => {
 													</p>
 												</div>
 												<p className="text-xs text-gray-400">
-													Formatos permitidos: PDF (máximo 5MB)
+													Formatos permitidos: PDF (máximo 2 MB)
 												</p>
 											</div>
 
@@ -1009,7 +1018,7 @@ const Dashboard: React.FC = () => {
 										Cancelar
 									</Button>
 									<Button type="submit" className="bg-blue-600 text-white hover:bg-blue-700" disabled={isSubmitting}>
-										{isSubmitting ? "Enviando..." : "Radicar PQRSDF"}
+										{isSubmitting ? "Enviando..." : "Radicar PQRSD"}
 									</Button>
 								</div>
 							</form>

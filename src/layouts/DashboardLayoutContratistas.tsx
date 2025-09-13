@@ -5,9 +5,9 @@ import Navbar from "../components/Navegacion/Navbar";
 
 const DashboardLayoutContratistas: React.FC = () => {
   return (
-    <div className="flex">
+    <div>
       <Navbar />
-      <main className="pt-24">
+      <main>
         <Outlet />
       </main>
     </div>

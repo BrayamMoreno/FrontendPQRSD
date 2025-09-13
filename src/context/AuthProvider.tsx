@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import config from "../config";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import type { Usuario } from "../models/Usuario";
 import type { Permiso } from "../models/Permiso";
 
@@ -18,6 +18,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const apiBaseUrl: string = config.apiBaseUrl;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(
     () => sessionStorage.getItem("isAuthenticated") === "true"
@@ -30,6 +31,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [permisos, setPermisos] = useState<Permiso[]>(
     () => JSON.parse(sessionStorage.getItem("permisos") || "[]")
   );
+
+  // 👇 Verificar sesión al montar o cuando cambie el path
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === "/") {
+      // buscar dashboard disponible
+      const dashboards = permisos.filter((p) => p.accion === "dashboard");
+      if (dashboards.length > 0) {
+        navigate(`/${dashboards[0].tabla}/inicio`, { replace: true });
+      } else {
+        navigate("/home", { replace: true }); // o la ruta que quieras como fallback
+      }
+    }
+  }, [isAuthenticated, permisos, location.pathname, navigate]);
 
   const login = async (correo: string, contrasena: string) => {
     try {
@@ -60,15 +74,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (dashboards.length > 0) {
         navigate(`/${dashboards[0].tabla}/inicio`, { replace: true });
       } else {
-        navigate("/", { replace: true });
+        navigate("/home", { replace: true });
       }
-
     } catch (error) {
       console.error(error);
       throw error;
     }
   };
-
 
   const logout = async () => {
     try {

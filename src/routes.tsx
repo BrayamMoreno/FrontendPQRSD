@@ -1,6 +1,7 @@
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import PrivateRoute from "./context/PrivateRoute";
+import { Navigate } from "react-router-dom";
 
 // Layouts
 import DashboardLayoutUsuarios from "./layouts/DashboardLayoutUsuarios";
@@ -13,6 +14,7 @@ import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MostrarPerfil from "./pages/MostrarPerfil";
+import InicioContratista from "./components/Inicio/InicioContratista";
 
 // Dashboards
 import DashboardUsuarios from "./pages/DashboardUsuarios";
@@ -29,6 +31,7 @@ import GestionAdjuntos from "./pages/GesstionAdjuntos";
 // Generic CRUD
 import GenericCrud from "./components/GenericCrud";
 import InicioUsuario from "./components/Inicio/InicioUsuario";
+import DashboardAdmin from "./pages/DashboardAdmin";
 
 export default function App() {
   return (
@@ -44,7 +47,7 @@ export default function App() {
           <Route element={<PrivateRoute />}>
             {/* Usuario */}
             <Route path="/usuario" element={<DashboardLayoutUsuarios />}>
-              <Route index element={<DashboardUsuarios />} />
+              <Route index element={<Navigate to="inicio" />} />
               <Route path="inicio" element={<InicioUsuario />} />
               <Route path="peticiones" element={<DashboardUsuarios />} />
               <Route path="perfil" element={<MostrarPerfil />} />
@@ -58,13 +61,16 @@ export default function App() {
 
             {/* Contratistas */}
             <Route path="/contratista" element={<DashboardLayoutContratistas />}>
-              <Route index element={<DashboardContratista />} />
+              <Route index element={<Navigate to="inicio" />} />
+              <Route path="inicio" element={<InicioContratista />} />
+              <Route path="peticiones" element={<DashboardContratista />} />
               <Route path="perfil" element={<MostrarPerfil />} />
             </Route>
 
             {/* Administrador */}
             <Route path="/admin" element={<DashboardLayoutAdmin />}>
-              <Route index element={<AdminDashboard />} />
+              <Route index element={<Navigate to="inicio" />} />
+              <Route path="inicio" element={<DashboardAdmin />} />
               <Route path="personas" element={<GestionPersonas />} />
               <Route path="usuarios" element={<GestionUsuarios />} />
               <Route path="roles" element={<GestionRoles />} />
@@ -168,21 +174,7 @@ export default function App() {
                     />
                   }
                 />
-                <Route
-                  path="municipios"
-                  element={
-                    <GenericCrud
-                      titulo="Municipios"
-                      endpoint="/municipios"
-                      Columns={[
-                        { key: "id", label: "ID" },
-                        { key: "nombre", label: "Nombre" },
-                        { key: "departamento.nombre", label: "Departamento" },
-                        { key: "codigoDane", label: "Código DANE" },
-                      ]}
-                    />
-                  }
-                />
+
                 <Route
                   path="historial_estados"
                   element={

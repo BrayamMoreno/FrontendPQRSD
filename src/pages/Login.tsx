@@ -71,7 +71,7 @@ const Login: React.FC = () => {
 						Secretaría de Tránsito y Transporte de Girardot
 					</CardTitle>
 					<CardDescription>
-						Sistema de Atención al Ciudadano – SAC
+						Sistema de Gestión PQRSD
 					</CardDescription>
 				</CardHeader>
 

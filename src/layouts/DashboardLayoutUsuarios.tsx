@@ -6,7 +6,7 @@ import Navbar from "../components/Navegacion/Navbar";
 
 const DashboardLayoutUsuarios: React.FC = () => {
   return (
-    <div >
+    <div>
       <Navbar />
       <main >
         <Outlet />

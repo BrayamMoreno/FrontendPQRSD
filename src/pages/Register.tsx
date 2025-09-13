@@ -1,5 +1,4 @@
 import type React from "react"
-
 import { AlertCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm, type SubmitHandler } from "react-hook-form"
@@ -29,7 +28,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "../components/ui/select"
-import { Separator } from "../components/ui/separator"
 import type { RegisterForm } from "../models/RegisterForm"
 import type { TipoPersona } from "../models/TipoPersona"
 import type { Genero } from "../models/Genero"
@@ -51,9 +49,7 @@ const Register: React.FC = () => {
   const [alert, setAlert] = useState<string | null>(null)
   const [showAlert, setShowAlert] = useState(false)
 
-  const form = useForm<RegisterForm>({
-
-  })
+  const form = useForm<RegisterForm>({})
 
   useEffect(() => {
     fetchAllData()
@@ -77,21 +73,16 @@ const Register: React.FC = () => {
     try {
       const response = await fetch(`${apiBaseUrl}/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
       })
-      if (!response.ok) {
-        throw new Error("Error al registrar el usuario")
-      }
+      if (!response.ok) throw new Error("Error al registrar el usuario")
+
       const result = await response.json()
       console.log("Registro exitoso:", result)
       setAlert("Registro exitoso")
       setShowAlert(true)
-      setTimeout(() => {
-        navigate("/login")
-      }, 2000)
+      setTimeout(() => navigate("/login"), 2000)
     } catch (error) {
       console.error("Error en el registro:", error)
       setAlert("Ocurrió un error al registrarse")
@@ -135,9 +126,7 @@ const Register: React.FC = () => {
       const response = await fetch(
         `${apiBaseUrl}/municipios/mpd_data?departamentoId=${departamentoId}`
       )
-      if (!response.ok) {
-        throw new Error("Error al obtener los municipios")
-      }
+      if (!response.ok) throw new Error("Error al obtener los municipios")
       const data = await response.json()
       setMunicipios(data.data)
     } catch (error) {
@@ -150,311 +139,230 @@ const Register: React.FC = () => {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen flex justify-center items-center p-4">
-      <Card className="w-full max-w-4xl shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">Registro al Sistema de PQRSD</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen w-screen flex items-center justify-center bg-gradient-to-b from-[#0A192F] to-[#173A5E] px-4">
+      <Card className="w-full max-w-4xl rounded-2xl shadow-2xl bg-white">
+        <CardHeader className="text-center space-y-2">
+          <CardTitle className="text-3xl font-bold text-[#0A192F]">
+            Registro al Sistema de PQRSD
+          </CardTitle>
+          <CardDescription className="text-gray-600">
             Complete el formulario para crear su cuenta
           </CardDescription>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="p-6 md:p-10">
           {showAlert && (
             <Alert variant="destructive" className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{alert}</AlertDescription>
             </Alert>
           )}
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Información personal */}
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Información Personal
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nombres */}
-                  <FormField
-                    name="nombre"
-                    render={({ field }) => (
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-10">
+              {/* Grid principal: info personal a la izquierda, info usuario a la derecha */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+
+                {/* Información personal */}
+                <fieldset className="border-l-4 border-[#173A5E] pl-4 space-y-6">
+                  <legend className="text-xl font-semibold text-[#173A5E]">
+                    Información Personal
+                  </legend>
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Nombres */}
+                    <FormField name="nombre" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Nombres</FormLabel>
-                        <FormControl>
-                          <Input
-                            className="text-black"
-                            placeholder="Ingrese sus nombres"
-                            {...field}
-                          />
-                        </FormControl>
+                        <FormControl><Input placeholder="Ingrese sus nombres" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Apellidos */}
-                  <FormField
-                    name="apellido"
-                    render={({ field }) => (
+                    )} />
+                    {/* Apellidos */}
+                    <FormField name="apellido" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Apellidos</FormLabel>
-                        <FormControl>
-                          <Input
-                            className="text-black"
-                            placeholder="Ingrese sus apellidos"
-                            {...field}
-                          />
-                        </FormControl>
+                        <FormControl><Input placeholder="Ingrese sus apellidos" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Género */}
-                  <FormField
-                    name="genero"
-                    render={({ field }) => (
+                    )} />
+                    {/* Género */}
+                    <FormField name="genero" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Género</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un género" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Seleccione un género" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {generos.map((genero) => (
-                              <SelectItem key={genero.id} value={String(genero.id)}>
-                                {genero.nombre}
-                              </SelectItem>
+                            {generos.map((g) => (
+                              <SelectItem key={g.id} value={String(g.id)}>{g.nombre}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Tipo Documento */}
-                  <FormField
-                    name="tipoDocumento"
-                    render={({ field }) => (
+                    )} />
+                    {/* Tipo Documento */}
+                    <FormField name="tipoDocumento" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Documento</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un tipo de documento" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Seleccione un tipo de documento" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {tipoDoc.map((tipo) => (
-                              <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                {tipo.nombre}
-                              </SelectItem>
+                            {tipoDoc.map((t) => (
+                              <SelectItem key={t.id} value={String(t.id)}>{t.nombre}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Documento */}
-                  <FormField
-                    name="dni"
-                    render={({ field }) => (
+                    )} />
+                    {/* Documento */}
+                    <FormField name="dni" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Documento</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ingrese su documento" {...field} />
-                        </FormControl>
+                        <FormControl><Input placeholder="Ingrese su documento" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Tipo de Persona */}
-                  <FormField
-                    name="tipoPersona"
-                    render={({ field }) => (
+                    )} />
+                    {/* Tipo Persona */}
+                    <FormField name="tipoPersona" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tipo de Persona</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un tipo de persona" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Seleccione un tipo de persona" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {tiposPersonas.map((tipo) => (
-                              <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                {tipo.nombre}
-                              </SelectItem>
+                            {tiposPersonas.map((tp) => (
+                              <SelectItem key={tp.id} value={String(tp.id)}>{tp.nombre}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Teléfono */}
-                  <FormField
-                    name="telefono"
-                    render={({ field }) => (
+                    )} />
+                    {/* Teléfono */}
+                    <FormField name="telefono" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Teléfono</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ingrese su teléfono" {...field} />
-                        </FormControl>
+                        <FormControl><Input placeholder="Ingrese su teléfono" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Departamento */}
-                  <FormField
-                    name="departamentosId"
-                    render={({ field }) => (
+                    )} />
+                    {/* Departamento */}
+                    <FormField name="departamentosId" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Departamento</FormLabel>
                         <Select
-                          onValueChange={(value) => {
-                            field.onChange(value)
-                            handleDepartamentoChange(value)
-                          }}
+                          onValueChange={(value) => { field.onChange(value); handleDepartamentoChange(value) }}
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un departamento" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Seleccione un departamento" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {departamentos.map((dep) => (
-                              <SelectItem key={dep.id} value={String(dep.id)}>
-                                {dep.nombre}
-                              </SelectItem>
+                            {departamentos.map((d) => (
+                              <SelectItem key={d.id} value={String(d.id)}>{d.nombre}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Municipio */}
-                  <FormField
-                    name="municipioId"
-                    render={({ field }) => (
+                    )} />
+                    {/* Municipio */}
+                    <FormField name="municipioId" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Municipio</FormLabel>
-                        <Select
-                          disabled={municipios.length === 0}
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
+                        <Select disabled={municipios.length === 0} onValueChange={field.onChange} defaultValue={field.value}>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleccione un municipio" />
-                            </SelectTrigger>
+                            <SelectTrigger><SelectValue placeholder="Seleccione un municipio" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             {municipios.map((m) => (
-                              <SelectItem key={m.id} value={String(m.id)}>
-                                {m.nombre}
-                              </SelectItem>
+                              <SelectItem key={m.id} value={String(m.id)}>{m.nombre}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Dirección */}
-                  <FormField
-                    name="direccion"
-                    render={({ field }) => (
-                      <FormItem className="col-span-2">
+                    )} />
+                    {/* Dirección */}
+                    <FormField name="direccion" render={({ field }) => (
+                      <FormItem>
                         <FormLabel>Dirección</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ingrese su dirección" {...field} />
-                        </FormControl>
+                        <FormControl><Input placeholder="Ingrese su dirección" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
+                    )} />
+                  </div>
+                </fieldset>
 
-              <Separator />
-
-              {/* Información del usuario */}
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                  Información del Usuario
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Correo */}
-                  <FormField
-                    name="correo"
-                    render={({ field }) => (
+                {/* Información del usuario */}
+                <fieldset className="border-l-4 border-[#173A5E] pl-4 space-y-6">
+                  <legend className="text-xl font-semibold text-[#173A5E]">
+                    Información del Usuario
+                  </legend>
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Correo */}
+                    <FormField name="correo" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Correo Electrónico</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="ejemplo@correo.com" {...field} />
-                        </FormControl>
+                        <FormControl><Input type="email" placeholder="ejemplo@correo.com" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                  {/* Contraseña */}
-                  <FormField
-                    name="contraseña"
-                    render={({ field }) => (
+                    )} />
+                    {/* Contraseña */}
+                    <FormField name="contraseña" render={({ field }) => (
                       <FormItem>
                         <FormLabel>Contraseña</FormLabel>
-                        <FormControl>
-                          <Input type="password" placeholder="********" {...field} />
-                        </FormControl>
+                        <FormControl><Input type="password" placeholder="********" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
-                    )}
-                  />
-                </div>
+                    )} />
+
+                    {/* Tratamiento de datos */}
+                    <FormField
+                      name="aceptaTratamientoDatos"
+                      rules={{ required: "Debes aceptar el tratamiento de datos personales" }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <div className="flex items-start space-x-2 mt-4">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                className="mt-1"
+                                checked={field.value}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="text-sm leading-snug">
+                              <FormLabel className="font-medium">
+                                Acepto el{" "}
+                                <a
+                                  href="/politica"
+                                  target="_blank"
+                                  className="underline text-[#173A5E] hover:text-[#0A192F]"
+                                >
+                                  tratamiento de datos personales
+                                </a>.
+                              </FormLabel>
+                              <FormMessage />
+                            </div>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </fieldset>
               </div>
 
-              <Separator />
-
-              {/* Tratamiento de datos */}
-              <FormField
-                name="aceptaTratamientoDatos"
-                rules={{ required: "Debes aceptar el tratamiento de datos personales" }}
-                render={({ field }) => (
-                  <FormItem className="col-span-2">
-                    <div className="flex items-start space-x-2">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          className="mt-1"
-                          checked={field.value}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="text-sm leading-snug">
-                        <FormLabel className="font-medium">
-                          Acepto el{" "}
-                          <a
-                            href="/politica"
-                            target="_blank"
-                            className="underline text-blue-600 hover:text-blue-800"
-                          >
-                            tratamiento de datos personales
-                          </a>.
-                        </FormLabel>
-                        <FormMessage />
-                      </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              {/* Botón de registro */}
+              {/* Botón */}
               <Button
                 type="submit"
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-md mt-4"
+                className="w-full bg-[#1E4C7C] hover:bg-[#173A5E] text-white font-semibold py-3 rounded-lg transition"
                 disabled={isLoading}
               >
                 {isLoading ? "Cargando..." : "Registrarse"}

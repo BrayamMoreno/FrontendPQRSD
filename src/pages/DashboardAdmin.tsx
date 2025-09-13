@@ -77,9 +77,9 @@ const DashboardAdmin: React.FC = () => {
 
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100 z-15">
-            <div className="ml-10 w-full">
-                <div className="max-w-7xl mx-auto p-4">
+        <div className="flex min-h-screen w-screen bg-gray-100">
+            <div className="w-full p-32">
+                <div className="max-w-7xl mx-auto">
                     {/* Título */}
                     <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
 

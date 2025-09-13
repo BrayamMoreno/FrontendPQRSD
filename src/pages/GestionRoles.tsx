@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pencil, Trash2, PlusCircle, Users } from "lucide-react";
+import { Pencil, Trash2, PlusCircle, Users, Eye } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import apiServiceWrapper from "../api/ApiService";
@@ -23,6 +23,8 @@ function GestionRoles() {
     const [loading, setLoading] = useState(true);
     const [editingRol, setEditingRol] = useState<Rol | null>(null);
     const [showForm, setShowForm] = useState(false);
+
+    const [readOnly, setReadOnly] = useState(false);
 
     // FormData separado del modelo Rol
     const [formData, setFormData] = useState<RolFormData>({
@@ -69,6 +71,8 @@ function GestionRoles() {
         await fetchData<Permiso>("/permisos", setPermisos);
         setLoading(false);
     };
+
+
 
     useEffect(() => {
         loadData();
@@ -141,6 +145,13 @@ function GestionRoles() {
         setShowForm(true);
     };
 
+    const handleView = (rol: Rol) => {
+        setEditingRol(rol);
+        setFormData(mapRolToFormData(rol));
+        setReadOnly(true);    // 🔹 solo vista
+        setShowForm(true);
+    };
+
     const handleDelete = async (id: number) => {
         if (!window.confirm("¿Seguro que quieres eliminar este rol?")) return;
         try {
@@ -175,9 +186,9 @@ function GestionRoles() {
                                     });
                                     setErrors({});
                                 }}
-                                className="flex items-center gap-2 bg-blue-400 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition"
+                                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                             >
-                                <PlusCircle size={18} /> Nuevo Rol
+                                <PlusCircle size={18} /> Nuevo Registro
                             </Button>
                         </div>
                     </div>
@@ -233,7 +244,7 @@ function GestionRoles() {
                                                             key={permiso.id}
                                                             className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
                                                         >
-                                                            {permiso.tabla}
+                                                            {permiso.tabla}: {permiso.accion}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -242,13 +253,19 @@ function GestionRoles() {
                                                 <div className="flex justify-end gap-2">
                                                     <Button
                                                         onClick={() => handleEdit(rol)}
-                                                        className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm"
+                                                        className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
                                                     >
                                                         <Pencil size={16} />
                                                     </Button>
                                                     <Button
+                                                        onClick={() => handleView(rol)}
+                                                        className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </Button>
+                                                    <Button
                                                         onClick={() => handleDelete(rol.id)}
-                                                        className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
+                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
                                                     >
                                                         <Trash2 size={16} />
                                                     </Button>
@@ -282,10 +299,10 @@ function GestionRoles() {
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
                         <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
                             <h2 className="text-xl font-bold">
-                                {editingRol?.id ? `Editar Rol #${editingRol.id}` : "Nuevo Rol"}
+                                {readOnly ? `Ver Registro #${editingRol?.id}` : editingRol?.id ? `Editar Registro #${editingRol.id}` : "Nuevo Registro"}
                             </h2>
                             <span className="bg-white text-blue-900 font-semibold px-3 py-1 rounded-full shadow">
-                                {editingRol ? "Edición" : "Creación"}
+                                {readOnly ? "Ver" : editingRol ? "Edición" : "Creación"} Registro
                             </span>
                         </div>
 
@@ -303,6 +320,7 @@ function GestionRoles() {
                                             Nombre del Rol
                                         </label>
                                         <input
+                                            readOnly={readOnly}   // 🔹 modo solo lectura
                                             type="text"
                                             name="nombre"
                                             value={formData.nombre}
@@ -327,6 +345,7 @@ function GestionRoles() {
                                         </label>
                                         <textarea
                                             name="descripcion"
+                                            readOnly={readOnly}
                                             value={formData.descripcion}
                                             onChange={handleChange}
                                             rows={3}
@@ -354,6 +373,7 @@ function GestionRoles() {
                                                     {permisos.map((permiso) => (
                                                         <div key={permiso.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border hover:bg-blue-50 transition">
                                                             <Checkbox
+                                                                // 🔹 modo solo lectura
                                                                 id={`permiso-${permiso.id}`}
                                                                 checked={formData.permisos.includes(
                                                                     Number(permiso.id)
@@ -361,6 +381,7 @@ function GestionRoles() {
                                                                 onCheckedChange={() =>
                                                                     handlePermisoToggle(permiso.id)
                                                                 }
+                                                                disabled={readOnly}
                                                                 className="mt-1"
                                                             />
                                                             <div className="flex-1">
@@ -396,19 +417,44 @@ function GestionRoles() {
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-8">
-                                    <Button
-                                        type="button"
-                                        onClick={() => setShowForm(false)}
-                                        className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
-                                    >
-                                        Cancelar
-                                    </Button>
-                                    <Button
-                                        type="submit"
-                                        className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md"
-                                    >
-                                        {editingRol ? "Actualizar Rol" : "Crear Rol"}
-                                    </Button>
+                                    {readOnly ? (
+                                        <Button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowForm(false);
+                                                setReadOnly(false);
+                                                setEditingRol(null);
+                                                setFormData({
+                                                    id: 0,
+                                                    nombre: "",
+                                                    descripcion: "",
+                                                    permisos: [],
+                                                });
+                                                setErrors({});
+                                            }}
+                                            className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                                        >
+                                            Cerrar
+                                        </Button>
+                                    ) : (
+                                        <>
+                                            <Button
+                                                type="button"
+                                                onClick={() => setShowForm(false)}
+                                                className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition"
+                                            >
+                                                Cancelar
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md"
+                                            >
+                                                {editingRol ? "Actualizar Rol" : "Crear Rol"}
+                                            </Button>
+                                        </>
+                                    )}
+
+
                                 </div>
                             </form>
                         </div>

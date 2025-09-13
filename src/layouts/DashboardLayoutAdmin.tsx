@@ -1,12 +1,12 @@
 // layouts/DashboardLayout.tsx
 import React from "react";
 import { Outlet } from "react-router-dom";
-import SlidebarAdmin from "../components/Navegacion/SlidebarAdmin";
+import NavbarAdmin from "../components/Navegacion/NavbarAdmin";
 
 const DashboardLayoutAdmin: React.FC = () => {
     return (
-        <div className="flex">
-            <SlidebarAdmin />
+        <div >
+            <NavbarAdmin />
             <main>
                 <Outlet />
             </main>
