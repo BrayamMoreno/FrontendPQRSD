@@ -1,6 +1,6 @@
 import type React from "react"
 import { useNavigate } from "react-router-dom"
-import landing from "../assets/Landing.webp"
+import landing from "../assets/landing.webp"
 import Logo from "../assets/Logo.webp"
 import { useAuth } from "../context/AuthProvider"
 
