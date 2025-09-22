@@ -1,4 +1,4 @@
-import { FileText, UndoIcon } from "lucide-react"
+import { FileText, UndoIcon, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
@@ -16,13 +16,13 @@ import type { PqItem } from "../models/PqItem"
 import type { TipoPQ } from "../models/TipoPQ"
 import type { PaginatedResponse } from "../models/PaginatedResponse"
 import type { Adjunto } from "../models/Adjunto"
-import type { HistorialEstado } from "../models/HistorialEstado"
 import type { Estado } from "../models/Estado"
 
 import { useAuth } from "../context/AuthProvider"
 import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
 import ReactQuill from "react-quill-new"
 import "react-quill-new/dist/quill.snow.css"
+import { useLocation } from "react-router-dom"
 
 interface FormPeticion {
 	tipo_pq_id: string;
@@ -68,12 +68,19 @@ const Dashboard: React.FC = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [alertFile, setAlertFile] = useState<string | null>(null)
 
-	const fetchSolicitudes = async () => {	
+	const location = useLocation();
+
+	useEffect(() => {
+		if (location.state?.modal) {
+			setModalRadicarSolicitud(true);
+		}
+	}, [location.state]);
+
+	const fetchSolicitudes = async () => {
 		try {
 			const rawId = user?.persona.id
 			const solicitanteId = rawId ? Number(rawId) : null;
 
-			// construir parámetros dinámicos
 			const params: Record<string, any> = {
 				solicitanteId,
 				page: currentPage - 1,
@@ -92,7 +99,7 @@ const Dashboard: React.FC = () => {
 				params.numeroRadicado = numeroRadicado;
 			}
 
-			const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs", params);
+			const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_usuarios", params);
 			setSolicitudes(response.data || []);
 			const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
 			setTotalPages(totalPages);
@@ -104,13 +111,14 @@ const Dashboard: React.FC = () => {
 	};
 
 	useEffect(() => {
-		const delayDebounce = setTimeout(() => {
-			fetchSolicitudes()
-			fetchAllData()
-		}, 500)
+		fetchAllData(); // solo 1 vez
+	}, []);
 
-		return () => clearTimeout(delayDebounce)
-	}, [currentPage, estadoSeleccionado, tipoPqSeleccionado, numeroRadicado])
+	useEffect(() => {
+		const delayDebounce = setTimeout(fetchSolicitudes, 500);
+		return () => clearTimeout(delayDebounce);
+	}, [currentPage, estadoSeleccionado, tipoPqSeleccionado, numeroRadicado, modalRadicarSolicitud]);
+
 
 	const fetchData = async <T,>(
 		endpoint: string,
@@ -297,6 +305,7 @@ const Dashboard: React.FC = () => {
 		return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
 	}
 
+
 	const handleCloseModalRadicar = () => {
 		setFormPeticion({
 			tipo_pq_id: "",
@@ -311,18 +320,15 @@ const Dashboard: React.FC = () => {
 	}
 
 	return (
-		<div className="flex min-h-screen w-screen bg-gray-50">
-			<div className="w-full p-32">
+		<div className="min-h-screen w-full bg-gray-50">
+			<div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
 				<div className="max-w-7xl mx-auto">
-
 					<div className="mb-6">
 						{/* Breadcrumbs arriba */}
 						<Breadcrumbs />
-
 						{/* Contenedor de título y botón */}
 						<div className="flex items-center justify-between mt-2">
 							<h1 className="text-2xl font-bold text-blue-900">Mis Peticiones</h1>
-
 							{/* Botón alineado a la derecha */}
 							{solicitudes.length == 0 ? (
 								null
@@ -336,235 +342,233 @@ const Dashboard: React.FC = () => {
 							)}
 						</div>
 					</div>
-
-					{isLoading ? (
-						<Card className="bg-white shadow-md border">
-							<CardContent>
-								<div className="flex justify-center items-center py-20">
-									<LoadingSpinner />
-								</div>
-							</CardContent>
-						</Card>
-					) : solicitudes.length === 0 ? (
-						<Card className="bg-white shadow-md border">
-							<CardContent>
-								<div className="flex flex-col items-center text-center space-y-6 h-200">
-									<div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center shadow-md">
-										<FileText className="w-10 h-10 text-blue-700" />
-									</div>
-									<h1 className="text-3xl font-bold text-blue-900">
-										Aún no tienes solicitudes registradas
-									</h1>
-									<p className="text-gray-600 max-w-xl">
-										Empieza creando tu primera solicitud PQRSD para hacer seguimiento y recibir respuestas de manera organizada.
-									</p>
-									<Button
-										className="bg-blue-600 text-white hover:bg-blue-700"
-										onClick={() => setModalRadicarSolicitud(true)}
-									>
-										+ Radicar mi primera Solicitud
-									</Button>
-								</div>
-							</CardContent>
-						</Card>
-					) : (
-						<div>
-							<div className="max-w-7xl mx-auto">
-								<Card className="mb-4">
-									<CardContent className="p-2">
-										<div className="grid grid-cols-1 md:grid-cols-4 gap-4 ">
-											<Input
-												className="w-full"
-												placeholder="Buscar por Numero de Radicado"
-												value={numeroRadicado ? String(numeroRadicado) : ""}
-												onChange={(e) => {
-													const value = e.target.value.trim();
-													SetNumeroRadicado(value === "" ? null : value);
-												}}
-
-											/>
-											<Select
-												value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
-												onValueChange={(value) => {
-													setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
-												}}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Tipo Solicitud" />
-												</SelectTrigger>
-												<SelectContent>
-													<SelectItem value="TODOS">Todos los tipos</SelectItem>
-													{tipoPQ.map((tipo) => (
-														<SelectItem key={tipo.id} value={String(tipo.id)}>
-															{tipo.nombre}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-
-											<Select
-												value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
-												onValueChange={(value) => {
-													setEstadoSeleccionado(value === "TODOS" ? null : Number(value));
-												}}
-											>
-												<SelectTrigger className="w-full">
-													<SelectValue placeholder="Estado" />
-												</SelectTrigger>
-
-												<SelectContent>
-													<SelectItem value="TODOS">Todos los estados</SelectItem>
-													{estadosPq.map((estado) => (
-														<SelectItem key={estado.id} value={String(estado.id)}>
-															{estado.nombre}
-														</SelectItem>
-													))}
-												</SelectContent>
-											</Select>
-
-											<Button
-												className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-												onClick={() => {
-													setEstadoSeleccionado(null)
-													setTipoPqSeleccdionado(null)
-													SetNumeroRadicado(null)
-												}}
-											>
-												Limpiar filtros
-											</Button>
-										</div>
-									</CardContent>
-								</Card>
+				</div>
+				{isLoading ? (
+					<Card className="bg-white shadow-md border max-w-7xl mx-auto">
+						<CardContent>
+							<div className="flex justify-center items-center py-20">
+								<LoadingSpinner />
 							</div>
-							<Card className="bg-white shadow-sm">
-								<CardContent className="p-2">
-									<h2 className="text-lg mb-2 font-semibold">Mis Solicitudes</h2>
+						</CardContent>
+					</Card>
+				) : solicitudes &&solicitudes.length === 0 ? (
+					<Card className="bg-white shadow-md border max-w-7xl mx-auto">
+						<CardContent>
+							<div className="flex flex-col items-center text-center space-y-6 h-200">
+								<div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center shadow-md">
+									<FileText className="w-10 h-10 text-blue-700" />
+								</div>
+								<h1 className="text-3xl font-bold text-blue-900">
+									Aún no tienes solicitudes registradas
+								</h1>
+								<p className="text-gray-600 max-w-xl">
+									Empieza creando tu primera solicitud PQRSD para hacer seguimiento y recibir respuestas de manera organizada.
+								</p>
+								<Button
+									className="bg-blue-600 text-white hover:bg-blue-700"
+									onClick={() => setModalRadicarSolicitud(true)}
+								>
+									+ Radicar mi primera Solicitud
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+				) : (
+					<div>
+						<div className="max-w-7xl mx-auto">
+							<Card className="mb-4">
+								<CardContent>
+									<div className="grid grid-cols-1 md:grid-cols-4 gap-4 ">
+										<Input
+											className="w-full"
+											placeholder="Buscar por Numero de Radicado"
+											value={numeroRadicado ? String(numeroRadicado) : ""}
+											onChange={(e) => {
+												const value = e.target.value.trim();
+												SetNumeroRadicado(value === "" ? null : value);
+											}}
 
-									{isLoading ? (
-										<div className="flex justify-center py-10">
-											<LoadingSpinner />
-										</div>
-									) : solicitudes && solicitudes.length > 0 ? (
-										<div className="divide-y divide-gray-200">
-											{solicitudes.map((solicitud: PqItem) => (
-												<div
-													key={solicitud.id}
-													className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 py-3 px-2 border-b hover:bg-gray-50 transition"
-												>
-													{/* Columna 1 - ID y Tipo */}
-													<div className="flex flex-col w-1/4">
-														<span className="font-semibold text-blue-800 text-sm">
-															#Radicado: {solicitud.numeroRadicado ?? solicitud.id}
-														</span>
-														<span className="text-xs text-gray-500">{solicitud.tipoPQ?.nombre}</span>
-													</div>
-
-													{/* Columna 2 - Asunto */}
-													<div className="w-1/3 text-sm truncate">
-														<strong>Asunto:</strong> {solicitud.detalleAsunto}
-													</div>
-
-													{/* Columna 3 - Fecha */}
-													<div className="w-1/6 text-xs text-gray-600">
-														{new Date(solicitud.fechaRadicacion).toLocaleDateString()}
-													</div>
-
-													{/* Columna 4 - Estado */}
-													<div className="w-1/6 badge">
-														<Badge
-															variant="secondary"
-															className="text-white"
-															style={{
-																backgroundColor:
-																	solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
-															}}
-														>
-															{solicitud.nombreUltimoEstado}
-														</Badge>
-
-													</div>
-
-													{/* Columna 5 - Botón */}
-													<div className="w-auto">
-														<Button
-															variant="outline"
-															size="sm"
-															className="text-xs"
-															onClick={() => handleVerClick(solicitud)}
-														>
-															<UndoIcon className="w-3 h-3 mr-1" />
-															Ver Detalles
-														</Button>
-													</div>
-												</div>
-											))}
-										</div>
-									) : (
-										<div className="text-center py-10 text-gray-500">
-											No hay solicitudes registradas
-										</div>
-									)}
-
-									<div className="flex flex-wrap justify-center mt-4 gap-2 items-center text-xs sm:text-sm">
-										{/* Ir al inicio */}
-										<Button
-											variant="outline"
-											size="sm"
-											disabled={currentPage === 1}
-											onClick={() => setCurrentPage(1)}
-											className="min-w-[70px]"
+										/>
+										<Select
+											value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+											onValueChange={(value) => {
+												setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+											}}
 										>
-											⏮ Primero
-										</Button>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Tipo Solicitud" />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="TODOS">Todos los tipos</SelectItem>
+												{tipoPQ.map((tipo) => (
+													<SelectItem key={tipo.id} value={String(tipo.id)}>
+														{tipo.nombre}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 
-										{/* Página anterior */}
-										<Button
-											variant="outline"
-											size="sm"
-											disabled={currentPage === 1}
-											onClick={() => setCurrentPage(prev => prev - 1)}
-											className="min-w-[90px]"
+										<Select
+											value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
+											onValueChange={(value) => {
+												setEstadoSeleccionado(value === "TODOS" ? null : Number(value));
+											}}
 										>
-											◀ Anterior
-										</Button>
+											<SelectTrigger className="w-full">
+												<SelectValue placeholder="Estado" />
+											</SelectTrigger>
 
-										<span className="px-3 whitespace-nowrap">
-											Página {currentPage} de {totalPages}
-										</span>
+											<SelectContent>
+												<SelectItem value="TODOS">Todos los estados</SelectItem>
+												{estadosPq.map((estado) => (
+													<SelectItem key={estado.id} value={String(estado.id)}>
+														{estado.nombre}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
 
-										{/* Página siguiente */}
 										<Button
-											variant="outline"
-											size="sm"
-											disabled={currentPage === totalPages}
-											onClick={() => setCurrentPage(prev => prev + 1)}
-											className="min-w-[90px]"
+											className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+											onClick={() => {
+												setEstadoSeleccionado(null)
+												setTipoPqSeleccdionado(null)
+												SetNumeroRadicado(null)
+											}}
 										>
-											Siguiente ▶
-										</Button>
-
-										{/* Ir al final */}
-										<Button
-											variant="outline"
-											size="sm"
-											disabled={currentPage === totalPages}
-											onClick={() => setCurrentPage(totalPages)}
-											className="min-w-[70px]"
-										>
-											Último ⏭
+											Limpiar filtros
 										</Button>
 									</div>
-
 								</CardContent>
 							</Card>
 						</div>
-					)}
-				</div>
+						<Card className="bg-white mx-auto max-w-7xl">
+							<CardContent >
+								<h2 className="text-lg mb-2 font-semibold">Mis Solicitudes</h2>
+
+								{isLoading ? (
+									<div className="flex justify-center py-10">
+										<LoadingSpinner />
+									</div>
+								) : solicitudes && solicitudes.length > 0 ? (
+									<div className="divide-y divide-gray-200">
+										{solicitudes.map((solicitud: PqItem) => (
+											<div
+												key={solicitud.id}
+												className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3 px-2 border-b hover:bg-gray-50 transition"
+											>
+												{/* Columna 1 - ID y Tipo */}
+												<div className="flex flex-col min-w-0 flex-1 sm:basis-2/5">
+													<span className="font-semibold text-blue-800 text-sm truncate">
+														#Radicado: {solicitud.numeroRadicado ?? solicitud.id}
+													</span>
+													<span className="text-xs text-gray-500 truncate">{solicitud.tipoPQ?.nombre}</span>
+												</div>
+
+												{/* Columna 2 - Asunto */}
+												<div className="min-w-0 flex-1 sm:basis-2/5 text-sm truncate">
+													<strong>Asunto:</strong> {solicitud.detalleAsunto}
+												</div>
+
+												{/* Columna 3 - Fecha */}
+												<div className="min-w-0 flex-1 sm:basis-1/5 text-xs text-gray-600 truncate">
+													{new Date(solicitud.fechaRadicacion).toLocaleDateString()}
+												</div>
+
+												{/* Columna 4 - Estado */}
+												<div className="min-w-0 flex-1 sm:basis-1/5">
+													<Badge
+														variant="secondary"
+														className="text-white truncate"
+														style={{
+															backgroundColor:
+																estadosPq.filter(estado => estado.nombre === solicitud.nombreUltimoEstado)[0]?.color || "#6B7280"
+														}}
+													>
+														{solicitud.nombreUltimoEstado}
+													</Badge>
+												</div>
+
+												{/* Columna 5 - Botón */}
+												<div className="w-auto flex-shrink-0">
+													<Button
+														variant="outline"
+														size="sm"
+														className="text-xs"
+														onClick={() => handleVerClick(solicitud)}
+													>
+														<UndoIcon className="w-3 h-3 mr-1" />
+														Ver Detalles
+													</Button>
+												</div>
+											</div>
+										))}
+									</div>
+								) : (
+									<div className="text-center py-10 text-gray-500">
+										No hay solicitudes registradas
+									</div>
+								)}
+
+								<div className="text-center space-x-2">
+									{/* Ir al inicio */}
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={currentPage === 1}
+										onClick={() => setCurrentPage(1)}
+										className="w-auto flex-shrink-0 px-2"
+									>
+										⏮ Primero
+									</Button>
+
+									{/* Página anterior */}
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={currentPage === 1}
+										onClick={() => setCurrentPage(prev => prev - 1)}
+										className="w-auto flex-shrink-0 px-2"
+									>
+										◀ Anterior
+									</Button>
+
+									{/* Info de página */}
+									<span className="px-2 whitespace-nowrap text-center">
+										Página {currentPage} de {totalPages}
+									</span>
+
+									{/* Página siguiente */}
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={currentPage === totalPages}
+										onClick={() => setCurrentPage(prev => prev + 1)}
+										className="w-auto flex-shrink-0 px-2"
+									>
+										Siguiente ▶
+									</Button>
+
+									{/* Ir al final */}
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={currentPage === totalPages}
+										onClick={() => setCurrentPage(totalPages)}
+										className="w-auto flex-shrink-0 px-2"
+									>
+										Último ⏭
+									</Button>
+								</div>
+
+							</CardContent>
+						</Card>
+					</div>
+				)}
 			</div>
 
-
 			{modalOpen && selectedSolicitud && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50  ">
 					<div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
 						{/* Header del Modal */}
 						<div className="bg-blue-900 text-white p-6">
@@ -666,46 +670,6 @@ const Dashboard: React.FC = () => {
 								</div>
 							</div>
 
-
-							<div className="bg-white rounded-lg p-6 border border-gray-200 mt-6">
-								<h3 className="text-xl font-semibold text-gray-800 mb-4">Historial de Estados</h3>
-								<p className="text-sm text-gray-500 mb-6">
-									Pasa el cursor sobre cada nodo para ver las observaciones de cada estado.
-								</p>
-								{selectedSolicitud.historialEstados && selectedSolicitud.historialEstados.length > 0 ? (
-									<div className="relative flex items-start justify-between w-full">
-										{/* Línea atravesando las bolitas */}
-										<div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 z-0"></div>
-										{selectedSolicitud.historialEstados.map((estado: HistorialEstado, index: number) => (
-											<div
-												key={estado.id ?? index}
-												className="flex flex-col items-center relative w-1/4 min-w-0"
-											>
-												{/* Nodo y Tooltip */}
-												<div className="group relative">
-													<div className="w-5 h-5 rounded-full ring-2 transition-all duration-300 bg-blue-600 ring-blue-600"></div>
-													<div className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal w-40 text-center pointer-events-none">
-														{estado.observacion ?? "Sin observación"}
-													</div>
-												</div>
-												{/* Texto del estado */}
-												<div className="mt-4 text-center">
-													<p className="text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-														{estado.estado.nombre}
-													</p>
-													<p className="text-xs text-gray-500 mt-1">
-														{new Date(estado.fechaCambio).toLocaleDateString()}
-													</p>
-												</div>
-											</div>
-										))}
-
-									</div>
-								) : (
-									<p className="text-sm text-gray-500">Sin historial disponible.</p>
-								)}
-							</div>
-
 							<div className="mt-2 px-1 pb-4">
 								<h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
 									Documentos Radicados
@@ -745,14 +709,13 @@ const Dashboard: React.FC = () => {
 									Documentos de Respuesta
 								</h3>
 								<div className="bg-gray-50 p-4 rounded-lg space-y-4">
-									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
+									{selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.filter(a => a.respuesta).length > 0 ? (
 										<ul className="text-sm text-blue-600 space-y-2">
-											{selectedSolicitud.adjuntos.map((archivo: Adjunto, i: number) => (
-												(archivo.respuesta && (
+											{selectedSolicitud.adjuntos
+												.filter((archivo: Adjunto) => archivo.respuesta)
+												.map((archivo: Adjunto, i: number) => (
 													<li key={i} className="flex items-center gap-2">
-														{/* Ícono del archivo */}
 														<FileText className="w-5 h-5 text-blue-600" />
-														{/* Enlace para ver/descargar el archivo */}
 														<a
 															href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
 															download
@@ -760,22 +723,18 @@ const Dashboard: React.FC = () => {
 														>
 															{archivo.nombreArchivo}
 														</a>
-														{/* Fecha opcional */}
 														<span className="text-[10px] text-gray-500 ml-auto">
 															{new Date(archivo.createdAt).toLocaleDateString()}
 														</span>
 													</li>
-												))
-											))}
+												))}
 										</ul>
 									) : (
-										<p className="text-sm text-gray-500">No hay documentos cargados.</p>
+										<p className="text-sm text-gray-500">No hay documentos cargados</p>
 									)}
 								</div>
 							</div>
-
 						</div>
-
 						{/* Footer del Modal */}
 						<div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center sticky bottom-0">
 							<div className="text-sm text-gray-500">

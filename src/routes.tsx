@@ -20,7 +20,7 @@ import InicioContratista from "./components/Inicio/InicioContratista";
 import DashboardUsuarios from "./pages/DashboardUsuarios";
 import AdminDashboard from "./pages/DashboardAdmin";
 import DashboardRadicador from "./pages/DashboardRadicador";
-import DashboardContratista from "./pages/DashboardContratistas";
+import PeticionesPendientes from "./pages/PeticionesPendientes";
 
 // Admin modules
 import GestionUsuarios from "./pages/GestionUsuarios";
@@ -32,6 +32,8 @@ import GestionAdjuntos from "./pages/GesstionAdjuntos";
 import GenericCrud from "./components/GenericCrud";
 import InicioUsuario from "./components/Inicio/InicioUsuario";
 import DashboardAdmin from "./pages/DashboardAdmin";
+import InicioRadicador from "./components/Inicio/InicioRadicador";
+import HistorialPeticiones from "./pages/HistorialPeticiones";
 
 export default function App() {
   return (
@@ -55,15 +57,19 @@ export default function App() {
 
             {/* Radicador */}
             <Route path="/radicador" element={<DashboardLayoutRadicador />}>
-              <Route index element={<DashboardRadicador />} />
+              <Route index element={<Navigate to="inicio" />} />
+              <Route path="inicio" element={<InicioRadicador />} />
+              <Route path="peticiones" element={<DashboardRadicador />} />
               <Route path="perfil" element={<MostrarPerfil />} />
             </Route>
 
             {/* Contratistas */}
             <Route path="/contratista" element={<DashboardLayoutContratistas />}>
               <Route index element={<Navigate to="inicio" />} />
+              {/* Inicio con subrutas */}
               <Route path="inicio" element={<InicioContratista />} />
-              <Route path="peticiones" element={<DashboardContratista />} />
+              <Route path="peticiones_pendientes" element={<PeticionesPendientes />} />
+              <Route path="historial_peticiones" element={<HistorialPeticiones />} />
               <Route path="perfil" element={<MostrarPerfil />} />
             </Route>
 

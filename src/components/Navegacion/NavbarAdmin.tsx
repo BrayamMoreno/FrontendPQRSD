@@ -7,8 +7,8 @@ import {
     Settings2,
     User,
     LogOut,
-    Menu,
-    X,
+    VenusAndMarsIcon,
+    Building,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
 import {
@@ -25,12 +25,9 @@ import {
     FaUsersCog,
     FaUserShield,
 } from "react-icons/fa"
-import { VenusAndMarsIcon, Building } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuItem,
-} from "@radix-ui/react-dropdown-menu"
-import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
@@ -40,8 +37,6 @@ const NavbarAdmin: React.FC = () => {
     const { logout, permisos, user } = useAuth()
 
     const [showDashboards, setShowDashboards] = useState(false)
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [openMenu, setOpenMenu] = useState<string | null>(null) // 🔹 Nuevo estado para acordeones
 
     const userInfo = {
         nombre:
@@ -99,17 +94,9 @@ const NavbarAdmin: React.FC = () => {
                         <span className="text-lg sm:text-xl">Plataforma PQRSDF</span>
                     </div>
 
-                    {/* Botón hamburguesa en mobile */}
-                    <button
-                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        className="sm:hidden bg-[#173A5E] text-white hover:text-gray-200"
-                    >
-                        {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
-
                     {/* Avatar + Nombre + Menú (oculto en mobile) */}
                     <div className="hidden sm:flex items-center gap-2">
-                        <DropdownMenu>
+                        <DropdownMenu modal={false}>
                             <DropdownMenuTrigger className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
                                 {userInfo.nombre}
                                 <ChevronDown size={16} />
@@ -140,13 +127,13 @@ const NavbarAdmin: React.FC = () => {
                 </div>
             </div>
 
-            {/* Segunda fila (desktop) */}
+            {/* Segunda fila */}
             <div className="w-full bg-[#173A5E] hidden sm:flex">
                 <div className="max-w-7xl mx-auto px-4 flex items-center h-12 gap-6 w-full">
                     {/* Menú horizontal */}
                     <div className="flex items-center gap-3">
                         {menuItems.map(({ label, icon, action, children }) => (
-                            <DropdownMenu key={label}>
+                            <DropdownMenu modal={false} key={label}>
                                 <DropdownMenuTrigger
                                     className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1"
                                     onClick={!children ? action : undefined}
@@ -212,109 +199,6 @@ const NavbarAdmin: React.FC = () => {
                     )}
                 </div>
             </div>
-
-            {/* Menú lateral (mobile) */}
-            {mobileMenuOpen && (
-                <div className="sm:hidden bg-[#173A5E]  px-4 py-3 space-y-3">
-                    {menuItems.map(({ label, icon, action, children }) => (
-                        <div key={label}>
-                            <button
-                                onClick={() => {
-                                    if (children) {
-                                        setOpenMenu(openMenu === label ? null : label)
-                                    } else {
-                                        action?.()
-                                        setMobileMenuOpen(false)
-                                    }
-                                }}
-                                className="flex items-center justify-between w-full py-2 bg-[#173A5E] text-white hover:bg-blue-700 rounded px-2"
-                            >
-                                <span className="flex items-center gap-2">
-                                    {React.cloneElement(icon, { size: 18 })}
-                                    {label}
-                                </span>
-                                {children && (
-                                    <ChevronDown
-                                        size={16}
-                                        className={`transition-transform ${openMenu === label ? "rotate-180" : ""
-                                            }`}
-                                    />
-                                )}
-                            </button>
-
-                            {/* Submenú desplegable */}
-                            {children && openMenu === label && (
-                                <div className="pl-6 space-y-2">
-                                    {children.map((child) => (
-                                        <button
-                                            key={child.label}
-                                            onClick={() => {
-                                                child.action?.()
-                                                setMobileMenuOpen(false)
-                                            }}
-                                            className="flex items-center mt-2 gap-2 w-full text-left text-sm py-1 bg-[#173A5E] text-white hover:bg-blue-600 rounded px-2"
-                                        >
-                                            {React.cloneElement(child.icon, { size: 14 })}
-                                            {child.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-
-                    {/* Botón dashboard */}
-                    {dashboards.length > 1 && (
-                        <div className="pt-2 border-t border-blue-700 mt-3">
-                            <p className="text-xs uppercase text-gray-300 mb-2">Dashboards</p>
-                            {dashboards.map((d) => (
-                                <button
-                                    key={d.tabla}
-                                    onClick={() => {
-                                        navigate(`/${d.tabla}/inicio`)
-                                        setMobileMenuOpen(false)
-                                    }}
-                                    className="block w-full text-left bg-[#173A5E] text-white py-2 px-2 rounded hover:bg-blue-600"
-                                >
-                                    {d.tabla.charAt(0).toUpperCase() + d.tabla.slice(1)}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Menú de usuario (mobile) */}
-                    <div className="pt-3 border-t border-blue-700">
-                        <p className="text-xs uppercase  text-gray-300 mb-2">Usuario</p>
-                        <button
-                            onClick={() => {
-                                navigate(`/${currentRole}/perfil`)
-                                setMobileMenuOpen(false)
-                            }}
-                            className="flex items-center gap-2 w-full text-left py-2 mb-2 px-2 bg-[#173A5E] text-white hover:bg-blue-700 rounded"
-                        >
-                            <User size={14} /> Mi Perfil
-                        </button>
-                        <button
-                            onClick={() => {
-                                navigate("/perfil")
-                                setMobileMenuOpen(false)
-                            }}
-                            className="flex items-center gap-2 w-full text-left py-2 px-2 mb-2 bg-[#173A5E] text-white hover:bg-blue-700 rounded"
-                        >
-                            <Settings2 size={14} /> Configuración
-                        </button>
-                        <button
-                            onClick={async () => {
-                                await logout()
-                                setMobileMenuOpen(false)
-                            }}
-                            className="flex items-center gap-2 w-full text-left py-2 px-2 mb-2 bg-[#173A5E]  text-red-400 hover:bg-red-700 rounded"
-                        >
-                            <LogOut size={14} /> Cerrar sesión
-                        </button>
-                    </div>
-                </div>
-            )}
         </header>
     )
 }

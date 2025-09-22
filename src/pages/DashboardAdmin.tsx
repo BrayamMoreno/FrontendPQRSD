@@ -1,10 +1,9 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     BarChart, Bar, LineChart, Line, PieChart, Pie,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
 import type { PaginatedResponse } from "../models/PaginatedResponse";
-import type { RequestPq } from "../models/RequestPq";
 import type { PqItem } from "../models/PqItem";
 
 
@@ -75,10 +74,9 @@ const DashboardAdmin: React.FC = () => {
         fetchAllData()
     }, []);
 
-
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100">
-            <div className="w-full p-32">
+        <div className="min-h-screen w-full bg-gray-100">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32">
                 <div className="max-w-7xl mx-auto">
                     {/* Título */}
                     <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>

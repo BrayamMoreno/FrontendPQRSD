@@ -2,18 +2,19 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navegacion/Navbar";
-
+import Footer from "../components/Navegacion/Footer";
 
 const DashboardLayoutUsuarios: React.FC = () => {
   return (
     <div>
       <Navbar />
-      <main >
+      <main>
         <Outlet />
       </main>
+      <Footer />
     </div>
+  )
+}
 
-  );
-};
 
 export default DashboardLayoutUsuarios;

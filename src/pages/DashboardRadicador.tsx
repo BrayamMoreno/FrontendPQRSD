@@ -15,6 +15,9 @@ import type { Usuario } from "../models/Usuario"
 import ReactQuill from "react-quill-new"
 import { useAuth } from "../context/AuthProvider"
 import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
+import { Input } from "../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import type { TipoPQ } from "../models/TipoPQ"
 
 interface Radicacion {
     id: number;
@@ -44,6 +47,12 @@ const DashboardRadicador: React.FC = () => {
     const [responsables, setResponsables] = useState<Usuario[]>([]);
     const [tab, setTab] = useState("aceptar");
 
+    const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
+    const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
+
+    const [numeroRadicado, setNumeroRadicado] = useState<string | null>(null)
+
+
     const [formdata, setFormdata] = useState<Radicacion>({
         id: 0,
         responsableId: "",
@@ -72,7 +81,18 @@ const DashboardRadicador: React.FC = () => {
 
     useEffect(() => {
         fecthSolicitudes()
+        fetchAllData()
     }, [currentPage])
+
+    const fetchAllData = async () => {
+            try {
+                await Promise.all([
+                    fetchData<TipoPQ>("tipos_pqs", setTipoPQ)
+                ])
+            } catch (error) {
+                console.error("Error al cargar datos iniciales:", error)
+            }
+        }
 
 
     const fetchData = async <T,>(
@@ -157,8 +177,8 @@ const DashboardRadicador: React.FC = () => {
     };
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-50 ">
-            <div className="w-full p-32">
+        <div className="min-h-screen w-full bg-gray-50 ">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     <div className="mb-6">
                         {/* Breadcrumbs arriba */}
@@ -167,6 +187,53 @@ const DashboardRadicador: React.FC = () => {
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-2xl font-bold text-blue-900">Solicitudes PQRSD Pendites de Asignacion</h1>
                         </div>
+                    </div>
+
+                    <div className="max-w-7xl mx-auto">
+                        <Card className="mb-4">
+                            <CardContent className="p-2">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 ">
+                                    <Input
+                                        className="w-full"
+                                        placeholder="Buscar por Numero de Radicado"
+                                        value={numeroRadicado ? String(numeroRadicado) : ""}
+                                        onChange={(e) => {
+                                            const value = e.target.value.trim();
+                                            setNumeroRadicado(value === "" ? null : value);
+                                        }}
+
+                                    />
+                                    <Select
+                                        value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+                                        onValueChange={(value) => {
+                                            setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Tipo Solicitud" />
+                                        </SelectTrigger>
+                                        <SelectContent side="bottom" avoidCollisions={false}>
+                                            <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                                            {tipoPQ.map((tipo) => (
+                                                <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                    {tipo.nombre}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
+                                    <Button
+                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
+                                        onClick={() => {
+                                            setTipoPqSeleccionado(null)
+                                            setNumeroRadicado(null)
+                                        }}
+                                    >
+                                        Limpiar filtros
+                                    </Button>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                     {/* Listado de PQRSD */}
                     <Card className="bg-white shadow-sm">
