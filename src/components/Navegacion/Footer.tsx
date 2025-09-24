@@ -2,9 +2,9 @@ import { Facebook, Twitter, Instagram, Mail, Phone } from "lucide-react"
 
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-blue-900 text-gray-200">
+    <footer className="bg-[#173A5E] text-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-        
+
         {/* Columna 1 - Logo / Descripción */}
         <div>
           <h2 className="text-xl font-bold text-white mb-3">Mi Aplicación</h2>

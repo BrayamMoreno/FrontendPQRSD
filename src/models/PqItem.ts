@@ -1,6 +1,5 @@
 import type { HistorialEstado } from "./HistorialEstado";
 import type { Responsable } from "./Responsable";
-import type { Solicitante } from "./Solicitante";
 import type { TipoPQ } from "./TipoPQ";
 import type { Adjunto } from "./Adjunto";
 import type { Persona } from "./Persona";

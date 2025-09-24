@@ -1,11 +1,10 @@
-import { Calendar, CheckCircle, FileText, UndoIcon, UserPlus, XCircle } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { CheckCircle, FileText, UndoIcon, UserPlus, XCircle } from "lucide-react"
+import { useEffect, useState } from "react"
 
 import { LoadingSpinner } from "../components/LoadingSpinner"
 import { Button } from "../components/ui/button"
 import { Card, CardContent } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
-import { useNavigate } from "react-router-dom"
 import apiServiceWrapper from "../api/ApiService"
 
 import config from "../config";
@@ -18,6 +17,7 @@ import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
 import { Input } from "../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import type { TipoPQ } from "../models/TipoPQ"
+import AceptarPeticon from "../components/RadicadorComponets/AceptarPeticon"
 
 interface Radicacion {
     id: number;
@@ -31,7 +31,6 @@ interface Radicacion {
 const DashboardRadicador: React.FC = () => {
 
     const API_URL = config.apiBaseUrl;
-    const navigate = useNavigate()
     const api = apiServiceWrapper
 
     const { user } = useAuth()
@@ -48,10 +47,11 @@ const DashboardRadicador: React.FC = () => {
     const [tab, setTab] = useState("aceptar");
 
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
-    const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
+    const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
+    const [numeroRadicado, SetNumeroRadicado] = useState<String | null>(null)
 
-    const [numeroRadicado, setNumeroRadicado] = useState<string | null>(null)
-
+    const [fechaInicio, setFechaInicio] = useState<string | null>(null);
+    const [fechaFin, setFechaFin] = useState<string | null>(null);
 
     const [formdata, setFormdata] = useState<Radicacion>({
         id: 0,
@@ -64,12 +64,24 @@ const DashboardRadicador: React.FC = () => {
     const fecthSolicitudes = async () => {
         setIsLoading(true)
         try {
-            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/sin_responsable", {
-                page: currentPage - 1,
-                size: itemsPerPage
-            })
-            setSolicitudes(response.data)
 
+            const params: Record<string, any> = {
+                page: currentPage,
+                size: itemsPerPage,
+            };
+
+            if (tipoPqSeleccionado !== null) params.tipoId = tipoPqSeleccionado;
+            if (numeroRadicado && numeroRadicado.trim() !== "")
+                params.numeroRadicado = numeroRadicado;
+            if (fechaInicio) params.fechaInicio = fechaInicio;
+            if (fechaFin) params.fechaFin = fechaFin;
+
+            const response = await api.get<PaginatedResponse<PqItem>>(
+                "/pqs/sin_responsable",
+                params
+            );
+
+            setSolicitudes(response.data || []);
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage)
             setTotalPages(totalPages)
         } catch (error) {
@@ -84,16 +96,21 @@ const DashboardRadicador: React.FC = () => {
         fetchAllData()
     }, [currentPage])
 
-    const fetchAllData = async () => {
-            try {
-                await Promise.all([
-                    fetchData<TipoPQ>("tipos_pqs", setTipoPQ)
-                ])
-            } catch (error) {
-                console.error("Error al cargar datos iniciales:", error)
-            }
-        }
+    useEffect(() => {
+        const delayDebounce = setTimeout(fecthSolicitudes, 500);
+        return () => clearTimeout(delayDebounce);
+    }, [currentPage, tipoPqSeleccionado, numeroRadicado, fechaInicio, fechaFin]);
 
+
+    const fetchAllData = async () => {
+        try {
+            await Promise.all([
+                fetchData<TipoPQ>("tipos_pqs", setTipoPQ)
+            ])
+        } catch (error) {
+            console.error("Error al cargar datos iniciales:", error)
+        }
+    }
 
     const fetchData = async <T,>(
         endpoint: string,
@@ -191,46 +208,79 @@ const DashboardRadicador: React.FC = () => {
 
                     <div className="max-w-7xl mx-auto">
                         <Card className="mb-4">
-                            <CardContent className="p-2">
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 ">
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Buscar por Numero de Radicado"
-                                        value={numeroRadicado ? String(numeroRadicado) : ""}
-                                        onChange={(e) => {
-                                            const value = e.target.value.trim();
-                                            setNumeroRadicado(value === "" ? null : value);
-                                        }}
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                    {/* Numero Radicado */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">N° Radicado</label>
+                                        <Input
+                                            placeholder="Buscar por N° Radicado"
+                                            value={numeroRadicado ? String(numeroRadicado) : ""}
+                                            onChange={(e) => {
+                                                const value = e.target.value.trim();
+                                                SetNumeroRadicado(value === "" ? null : value);
+                                            }}
+                                        />
+                                    </div>
 
-                                    />
-                                    <Select
-                                        value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
-                                        onValueChange={(value) => {
-                                            setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Tipo Solicitud" />
-                                        </SelectTrigger>
-                                        <SelectContent side="bottom" avoidCollisions={false}>
-                                            <SelectItem value="TODOS">Todos los tipos</SelectItem>
-                                            {tipoPQ.map((tipo) => (
-                                                <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                                    {tipo.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {/* Tipo PQ */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Tipo Solicitud</label>
+                                        <Select
+                                            value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Tipo Solicitud" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                                                {tipoPQ.map((tipo) => (
+                                                    <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                        {tipo.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                    <Button
-                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                                        onClick={() => {
-                                            setTipoPqSeleccionado(null)
-                                            setNumeroRadicado(null)
-                                        }}
-                                    >
-                                        Limpiar filtros
-                                    </Button>
+                                    {/* Fecha Inicio */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Inicio</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaInicio ?? ""}
+                                            onChange={(e) => setFechaInicio(e.target.value || null)}
+                                        />
+                                    </div>
+
+                                    {/* Fecha Fin */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Fin</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaFin ?? ""}
+                                            onChange={(e) => setFechaFin(e.target.value || null)}
+                                        />
+                                    </div>
+
+                                    {/* Botón limpiar */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-transparent mb-1">.</label>
+                                        <Button
+                                            className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                                            onClick={() => {
+                                                setTipoPqSeleccdionado(null);
+                                                SetNumeroRadicado(null);
+                                                setFechaInicio(null);
+                                                setFechaFin(null);
+                                            }}
+                                        >
+                                            Limpiar filtros
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -244,7 +294,7 @@ const DashboardRadicador: React.FC = () => {
                                 <div className="flex justify-center py-10">
                                     <LoadingSpinner />
                                 </div>
-                            ) : (
+                            ) : solicitudes.length > 0 ? (
                                 <div className="divide-y divide-gray-200">
                                     {solicitudes.map((solicitud: any) => (
                                         <div
@@ -296,6 +346,10 @@ const DashboardRadicador: React.FC = () => {
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-10 text-gray-500">
+                                    No hay solicitudes registradas
                                 </div>
                             )}
 
@@ -769,7 +823,12 @@ const DashboardRadicador: React.FC = () => {
                     </div>
                 )
             }
-
+            <AceptarPeticon
+                isOpen={modalOpen}
+                selectedSolicitud={selectedSolicitud}
+                responsables={responsables}
+                onClose={() => setModalOpen(false)}
+            />
         </div >
     )
 }
