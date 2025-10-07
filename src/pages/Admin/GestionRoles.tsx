@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { Pencil, Trash2, PlusCircle, Users, Eye } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Checkbox } from "../components/ui/checkbox";
-import apiServiceWrapper from "../api/ApiService";
-import type { Rol } from "../models/Rol";
-import type { Permiso } from "../models/Permiso";
-import type { PaginatedResponse } from "../models/PaginatedResponse";
+import { Button } from "../../components/ui/button";
+import { Checkbox } from "../../components/ui/checkbox";
+import apiServiceWrapper from "../../api/ApiService";
+import type { Rol } from "../../models/Rol";
+import type { Permiso } from "../../models/Permiso";
+import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { useAuth } from "../../context/AuthProvider";
+
 
 type RolFormData = {
     id: number;
     nombre: string;
     descripcion: string;
-    permisos: number[]; // 👈 aquí permisos son solo IDs
+    permisos: number[];
 };
-
 
 function GestionRoles() {
     const api = apiServiceWrapper;
+    const { permisos: permisosAuth } = useAuth();
 
     const [roles, setRoles] = useState<Rol[]>([]);
     const [permisos, setPermisos] = useState<Permiso[]>([]);
@@ -26,7 +29,6 @@ function GestionRoles() {
 
     const [readOnly, setReadOnly] = useState(false);
 
-    // FormData separado del modelo Rol
     const [formData, setFormData] = useState<RolFormData>({
         id: 0,
         nombre: "",
@@ -36,7 +38,6 @@ function GestionRoles() {
 
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
-    // 🔹 Helpers para transformar datos
     const mapRolToFormData = (rol: Rol): RolFormData => ({
         id: rol.id,
         nombre: rol.nombre,
@@ -47,17 +48,15 @@ function GestionRoles() {
     const mapFormDataToPayload = () => ({
         nombre: formData.nombre,
         descripcion: formData.descripcion,
-        permisos: formData.permisos.map((id) => ({ id })), // 👈 backend espera objetos
+        permisos: formData.permisos.map((id) => ({ id })),
     });
 
-    // 🔹 Método genérico para cargar datos
     const fetchData = async <T,>(
         endpoint: string,
         setter: React.Dispatch<React.SetStateAction<T[]>>
     ): Promise<void> => {
         try {
-            const response = await api.get<PaginatedResponse<T>>(endpoint, { page: 0, size: 100 });
-            // 👇 ojo: si tu backend devuelve {data, meta}, asegúrate de extraer bien
+            const response = await api.get<PaginatedResponse<T>>(endpoint, { page: 0, size: 1000 });
             const result = response.data ?? [];
             setter(result);
         } catch (error) {
@@ -67,18 +66,17 @@ function GestionRoles() {
 
     const loadData = async () => {
         setLoading(true);
-        await fetchData<Rol>("/roles", setRoles);
-        await fetchData<Permiso>("/permisos", setPermisos);
+        await Promise.all([
+            fetchData<Rol>("/roles", setRoles),
+            fetchData<Permiso>("/permisos", setPermisos)
+        ]);
         setLoading(false);
     };
-
-
 
     useEffect(() => {
         loadData();
     }, []);
 
-    // ✅ Validación del formulario
     const validateForm = () => {
         const newErrors: { [key: string]: string } = {};
 
@@ -105,7 +103,6 @@ function GestionRoles() {
         setErrors({ ...errors, [e.target.name]: "" });
     };
 
-    // ✅ Manejo de checkboxes con IDs
     const handlePermisoToggle = (permisoId: number | string) => {
         const id = Number(permisoId);
         const isSelected = formData.permisos.includes(id);
@@ -148,7 +145,7 @@ function GestionRoles() {
     const handleView = (rol: Rol) => {
         setEditingRol(rol);
         setFormData(mapRolToFormData(rol));
-        setReadOnly(true);    // 🔹 solo vista
+        setReadOnly(true);
         setShowForm(true);
     };
 
@@ -163,9 +160,9 @@ function GestionRoles() {
     };
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100 z-15">
-            <div className="ml-14 w-full">
-                <div className="max-w-7xl mx-auto p-10">
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
+                <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -173,24 +170,26 @@ function GestionRoles() {
                                 Gestión de Roles y Permisos
                             </h1>
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={() => {
-                                    setShowForm(true);
-                                    setEditingRol(null);
-                                    setFormData({
-                                        id: 0,
-                                        nombre: "",
-                                        descripcion: "",
-                                        permisos: [],
-                                    });
-                                    setErrors({});
-                                }}
-                                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-                            >
-                                <PlusCircle size={18} /> Nuevo Registro
-                            </Button>
-                        </div>
+                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'roles') && (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => {
+                                        setShowForm(true);
+                                        setEditingRol(null);
+                                        setFormData({
+                                            id: 0,
+                                            nombre: "",
+                                            descripcion: "",
+                                            permisos: [],
+                                        });
+                                        setErrors({});
+                                    }}
+                                    className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                                >
+                                    <PlusCircle size={18} /> Nuevo Registro
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Tabla de Roles */}
@@ -209,11 +208,10 @@ function GestionRoles() {
                             <tbody>
                                 {loading ? (
                                     <tr>
-                                        <td
-                                            colSpan={4}
-                                            className="text-center py-6 text-gray-500"
-                                        >
-                                            Cargando...
+                                        <td colSpan={6} className="py-10">
+                                            <div className="flex justify-center">
+                                                <LoadingSpinner />
+                                            </div>
                                         </td>
                                     </tr>
                                 ) : roles.length > 0 ? (
@@ -251,24 +249,28 @@ function GestionRoles() {
                                             </td>
                                             <td className="px-6 py-2 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        onClick={() => handleEdit(rol)}
-                                                        className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
-                                                    >
-                                                        <Pencil size={16} />
-                                                    </Button>
+                                                    {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === 'roles') && (
+                                                        <Button
+                                                            onClick={() => handleEdit(rol)}
+                                                            className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
+                                                        >
+                                                            <Pencil size={16} />
+                                                        </Button>
+                                                    )}
                                                     <Button
                                                         onClick={() => handleView(rol)}
                                                         className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
                                                     >
                                                         <Eye size={16} />
                                                     </Button>
-                                                    <Button
-                                                        onClick={() => handleDelete(rol.id)}
-                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
+                                                    {permisosAuth.some(p => p.accion === 'eliminar' && p.tabla === 'roles') && (
+                                                        <Button
+                                                            onClick={() => handleDelete(rol.id)}
+                                                            className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -285,10 +287,6 @@ function GestionRoles() {
                                 )}
                             </tbody>
                         </table>
-
-                        <p className="text-center text-gray-500 py-3 text-sm">
-                            Lista de Roles y Permisos
-                        </p>
                     </div>
                 </div>
             </div>

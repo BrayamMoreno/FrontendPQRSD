@@ -1,9 +1,12 @@
-import React, { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
 import { type CrudProps } from "../models/CrudProps";
 import apiServiceWrapper from "../api/ApiService";
 import { Button } from "./ui/button";
 import type { PaginatedResponse } from "../models/PaginatedResponse";
+import Breadcrumbs from "./Navegacion/Breadcrumbs";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { useAuth } from "../context/AuthProvider";
 
 function GenericCrud<T extends { id: number | string }>({
     endpoint,
@@ -23,6 +26,8 @@ function GenericCrud<T extends { id: number | string }>({
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
+    const tabla = endpoint.split('/').pop() || 'desconocida';
+    const { permisos: permisosAuth } = useAuth();
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -46,11 +51,10 @@ function GenericCrud<T extends { id: number | string }>({
     }, [endpoint, currentPage, itemsPerPage]);
 
 
-    // 🔹 Validación simple
     const validateForm = () => {
         const newErrors: { [key: string]: string } = {};
         Columns.forEach((col) => {
-            const value = formData[col.key]; // 👈 variable temporal
+            const value = formData[col.key];
 
             if (
                 col.key !== "id" &&
@@ -63,16 +67,13 @@ function GenericCrud<T extends { id: number | string }>({
         return Object.keys(newErrors).length === 0;
     };
 
-
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         setErrors({ ...errors, [e.target.name]: "" });
     };
 
-
     const handleSave = async () => {
         if (!validateForm()) return;
-
         try {
             if (editingItem) {
                 await api.put(`${endpoint}/${editingItem.id}`, formData);
@@ -91,14 +92,14 @@ function GenericCrud<T extends { id: number | string }>({
     const handleEdit = (item: T) => {
         setEditingItem(item);
         setFormData(item);
-        setReadOnly(false);   // 🔹 resetear
+        setReadOnly(false);
         setShowForm(true);
     };
 
     const handleView = (item: T) => {
         setEditingItem(item);
         setFormData(item);
-        setReadOnly(true);    // 🔹 solo vista
+        setReadOnly(true);
         setShowForm(true);
     };
 
@@ -117,160 +118,171 @@ function GenericCrud<T extends { id: number | string }>({
     };
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100">
-            <div className="w-full">
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
+                    <Breadcrumbs />
                     <div className="flex items-center justify-between mb-4">
                         <h1 className="text-2xl font-bold text-blue-900">{titulo}</h1>
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={() => {
-                                    setShowForm(true);
-                                    setEditingItem(null);
-                                    setFormData({});
-                                    setErrors({});
-                                    setReadOnly(false);
-                                }}
-                                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-                            >
-                                <PlusCircle size={18} /> Nuevo Registro
-                            </Button>
-                        </div>
+                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === tabla) && (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => {
+                                        setShowForm(true);
+                                        setEditingItem(null);
+                                        setFormData({});
+                                        setErrors({});
+                                        setReadOnly(false);
+                                    }}
+                                    className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                                >
+                                    <PlusCircle size={18} /> Nuevo Registro
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Tabla */}
                     <div className="bg-white shadow-md rounded-lg overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-blue-50 text-blue-700 uppercase text-sm">
-                                <tr>
-                                    {Columns.map((col) => (
-                                        <th key={String(col.key)} className="px-6 py-3">
-                                            {col.label}
-                                        </th>
-                                    ))}
-                                    <th className="px-6 py-3 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td
-                                            colSpan={Columns.length + 1}
-                                            className="text-center py-6 text-gray-500"
-                                        >
-                                            Cargando...
-                                        </td>
-                                    </tr>
-                                ) : data.length > 0 ? (
-                                    data.map((item) => (
-                                        <tr
-                                            key={item.id}
-                                            className="border-b hover:bg-blue-50 transition"
-                                        >
-                                            {Columns.map((col) => (
-                                                <td key={String(col.key)} className="px-6 py-3">
-                                                    {col.type === "color" ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div
-                                                                className="w-6 h-6 rounded border"
-                                                                style={{ backgroundColor: String(getNestedValue(item, col.key) ?? "#ffffff") }}
-                                                            ></div>
-                                                            <span>{String(getNestedValue(item, col.key) ?? "Sin Valor")}</span>
-                                                        </div>
-                                                    ) : col.type === "date" ? (
-                                                        new Date(String(getNestedValue(item, col.key))).toLocaleString("es-CO", {
-                                                            year: "numeric",
-                                                            month: "2-digit",
-                                                            day: "2-digit",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit"
-                                                        })
-                                                    ) : (
-                                                        String(getNestedValue(item, col.key) ?? "Sin Valor")
-                                                    )}
-                                                </td>
-
-                                            ))}
-
-                                            <td className="px-6 py-2 text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        onClick={() => handleEdit(item)}
-                                                        className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
+                        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+                            {loading ? (
+                                <div className="flex justify-center items-center py-20">
+                                    <LoadingSpinner />
+                                </div>
+                            ) : (
+                                <>
+                                    <table className="w-full text-left">
+                                        <thead className="bg-blue-50 text-blue-700 uppercase text-sm">
+                                            <tr>
+                                                {Columns.map((col) => (
+                                                    <th key={String(col.key)} className="px-6 py-3">
+                                                        {col.label}
+                                                    </th>
+                                                ))}
+                                                <th className="px-6 py-3 text-right">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {data.length > 0 ? (
+                                                data.map((item) => (
+                                                    <tr
+                                                        key={item.id}
+                                                        className="border-b hover:bg-blue-50 transition"
                                                     >
-                                                        <Pencil size={16} />
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => handleView(item)}
-                                                        className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                        {Columns.map((col) => (
+                                                            <td key={String(col.key)} className="px-6 py-3">
+                                                                {col.type === "color" ? (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div
+                                                                            className="w-6 h-6 rounded border"
+                                                                            style={{
+                                                                                backgroundColor: String(
+                                                                                    getNestedValue(item, col.key) ?? "#ffffff"
+                                                                                ),
+                                                                            }}
+                                                                        ></div>
+                                                                        <span>
+                                                                            {String(getNestedValue(item, col.key) ?? "Sin Valor")}
+                                                                        </span>
+                                                                    </div>
+                                                                ) : col.type === "date" ? (
+                                                                    new Date(
+                                                                        String(getNestedValue(item, col.key))
+                                                                    ).toLocaleString("es-CO", {
+                                                                        year: "numeric",
+                                                                        month: "2-digit",
+                                                                        day: "2-digit",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit",
+                                                                    })
+                                                                ) : (
+                                                                    String(getNestedValue(item, col.key) ?? "Sin Valor")
+                                                                )}
+                                                            </td>
+                                                        ))}
+
+                                                        <td className="px-6 py-2 text-right">
+                                                            <div className="flex justify-end gap-2">
+                                                                {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === tabla) && (
+                                                                    <Button
+                                                                        onClick={() => handleEdit(item)}
+                                                                        className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
+                                                                    >
+                                                                        <Pencil size={16} />
+                                                                    </Button>
+                                                                )}
+                                                                <Button
+                                                                    onClick={() => handleView(item)}
+                                                                    className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                                >
+                                                                    <Eye size={16} />
+                                                                </Button>
+                                                                {permisosAuth.some(p => p.accion === 'eliminar' && p.tabla === tabla) && (
+                                                                    <Button
+                                                                        onClick={() => handleDelete(item.id)}
+                                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td
+                                                        colSpan={Columns.length + 1}
+                                                        className="text-center py-6 text-gray-500"
                                                     >
-                                                        <Eye size={16} />
-                                                    </Button>
-                                                    <Button
-                                                        onClick={() => handleDelete(item.id)}
-                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan={Columns.length + 1}
-                                            className="text-center py-6 text-gray-500"
+                                                        No hay registros
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+
+                                    {/* Paginación */}
+                                    <div className="flex justify-center mt-4 gap-2 items-center">
+                                        <Button
+                                            variant="outline"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage(1)}
                                         >
-                                            No hay registros
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                            ⏮ Primero
+                                        </Button>
 
-                        {/* Paginación */}
-                        <div className="flex justify-center mt-4 gap-2 items-center">
-                            {/* Ir al inicio */}
-                            <Button
-                                variant="outline"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(1)}
-                            >
-                                ⏮ Primero
-                            </Button>
+                                        <Button
+                                            variant="outline"
+                                            disabled={currentPage === 1}
+                                            onClick={() => setCurrentPage((prev) => prev - 1)}
+                                        >
+                                            ◀ Anterior
+                                        </Button>
 
-                            {/* Página anterior */}
-                            <Button
-                                variant="outline"
-                                disabled={currentPage === 1}
-                                onClick={() => setCurrentPage(prev => prev - 1)}
-                            >
-                                ◀ Anterior
-                            </Button>
+                                        <span className="text-sm px-3">
+                                            Página {currentPage} de {totalPages}
+                                        </span>
 
-                            <span className="text-sm px-3">
-                                Página {currentPage} de {totalPages}
-                            </span>
+                                        <Button
+                                            variant="outline"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage((prev) => prev + 1)}
+                                        >
+                                            Siguiente ▶
+                                        </Button>
 
-                            {/* Página siguiente */}
-                            <Button
-                                variant="outline"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(prev => prev + 1)}
-                            >
-                                Siguiente ▶
-                            </Button>
-
-                            {/* Ir al final */}
-                            <Button
-                                variant="outline"
-                                disabled={currentPage === totalPages}
-                                onClick={() => setCurrentPage(totalPages)}
-                            >
-                                Último ⏭
-                            </Button>
+                                        <Button
+                                            variant="outline"
+                                            disabled={currentPage === totalPages}
+                                            onClick={() => setCurrentPage(totalPages)}
+                                        >
+                                            Último ⏭
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -324,8 +336,8 @@ function GenericCrud<T extends { id: number | string }>({
                                                         disabled={col.key === "id"}
                                                         readOnly={readOnly}
                                                         className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 ${errors[col.key as string]
-                                                                ? "border-red-500 focus:ring-red-500"
-                                                                : "border-blue-300 focus:ring-blue-500"
+                                                            ? "border-red-500 focus:ring-red-500"
+                                                            : "border-blue-300 focus:ring-blue-500"
                                                             } ${col.key === "id"
                                                                 ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                                                                 : "bg-white"
@@ -352,7 +364,6 @@ function GenericCrud<T extends { id: number | string }>({
                                     >
                                         {readOnly ? "Cerrar" : "Cancelar"}
                                     </Button>
-
                                     {!readOnly && (
                                         <Button
                                             type="submit"
@@ -367,7 +378,6 @@ function GenericCrud<T extends { id: number | string }>({
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

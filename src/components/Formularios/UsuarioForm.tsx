@@ -8,8 +8,8 @@ import type { Genero } from "../../models/Genero"
 import type { TipoPersona } from "../../models/TipoPersona"
 import type { Usuario } from "../../models/Usuario"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
-import { set } from "react-hook-form"
 import type { Rol } from "../../models/Rol"
+import { LoadingSpinner } from "../LoadingSpinner"
 
 interface UsuarioFormProps {
     usuario?: Usuario;
@@ -35,15 +35,11 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         correo: "",
         contrasena: "",
         isEnable: false,
-        accountNoExpired: true,
-        accountNoLocked: true,
-        credentialNoExpired: true,
         resetToken: null,
         persona: {
             id: 0,
             nombre: "",
             apellido: "",
-            codigoRadicador: "",
             tipoDoc: { id: "", nombre: "" },
             dni: "",
             tipoPersona: { id: "", nombre: "" },
@@ -82,9 +78,6 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                         correo: usuario.correo ?? "",
                         contrasena: "",
                         isEnable: usuario.isEnable ?? true,
-                        accountNoExpired: usuario.accountNoExpired ?? true,
-                        accountNoLocked: usuario.accountNoLocked ?? true,
-                        credentialNoExpired: usuario.credentialNoExpired ?? true,
                         resetToken: usuario.resetToken ?? null,
                         persona: {
                             id: usuario.persona?.id ?? 0,
@@ -94,7 +87,6 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                             dni: usuario.persona?.dni ?? "",
                             telefono: usuario.persona?.telefono ?? "",
                             direccion: usuario.persona?.direccion ?? "",
-                            codigoRadicador: usuario.persona?.codigoRadicador ?? "",
                             tratamientoDatos: usuario.persona?.tratamientoDatos ?? false,
                             tipoDoc: {
                                 id: usuario.persona?.tipoDoc?.id ?? "",
@@ -198,11 +190,6 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
 
-                {isLoading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-                        <span className="text-white">Cargando...</span>
-                    </div>
-                )}
 
                 <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
                     <h2 className="text-xl font-bold">
@@ -222,63 +209,67 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                             </div>
                         )}
 
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos Personales</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="Nombre" value={formData.persona.nombre} error={errors.nombre} onChange={(val: string) => handleChange("persona.nombre", val)} readOnly={readOnly} />
-                                <InputField label="Apellido" value={formData.persona.apellido} error={errors.apellido} onChange={(val: string) => handleChange("persona.apellido", val)} readOnly={readOnly} />
-                                <InputField label="Número de Documento" value={formData.persona.dni} error={errors.dni} onChange={(val: string) => handleChange("persona.dni", val)} readOnly={readOnly} />
-                                <SelectField
-                                    label="Tipo de Documento"
-                                    value={String(formData.persona.tipoDoc.id || "")}
-                                    error={errors.tipoDoc}
-                                    readOnly={readOnly}
-                                    onChange={(val: string) => handleChange("persona.tipoDoc.id", val ? parseInt(val) : null)}
-                                    options={tipoDoc}
-                                />
+                        {isLoading ? (
+                            <LoadingSpinner />
+                        ) : (
 
-                                <SelectField label="Tipo de Persona" value={String(formData.persona.tipoPersona.id)} error={errors.tipoPersona} onChange={(val: string) => handleChange("persona.tipoPersona.id", parseInt(val))} options={tiposPersonas} readOnly={readOnly} />
-                                <SelectField label="Género" value={String(formData.persona.genero.id)} error={errors.genero} onChange={(val: string) => handleChange("persona.genero.id", parseInt(val))} options={generos} readOnly={readOnly} />
-                                <InputField label="Teléfono" value={formData.persona.telefono} onChange={(val: string) => handleChange("persona.telefono", val)} readOnly={readOnly} />
-                                <InputField label="Dirección" value={formData.persona.direccion} onChange={(val: string) => handleChange("persona.direccion", val)} readOnly={readOnly} />
-                                <InputField label="Código Radicador" value={formData.persona.codigoRadicador} onChange={(val: string) => handleChange("persona.codigoRadicador", val)} readOnly={readOnly} />
-                            </div>
-                        </div>
+                            <>
 
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos de Usuario</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <InputField label="Correo" type="email" value={formData.correo} error={errors.correo} onChange={(val: string) => handleChange("correo", val)} readOnly={readOnly} />
-                                {!usuario && (
-                                    <InputField
-                                        label="Contraseña"
-                                        type="password"
-                                        value={formData.contrasena}
-                                        error={errors.contrasena}
-                                        onChange={(val: string) => handleChange("contrasena", val)}
-                                        readOnly={readOnly}
-                                    />
-                                )}
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos Personales</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <InputField label="Nombre" value={formData.persona.nombre} error={errors.nombre} onChange={(val: string) => handleChange("persona.nombre", val)} readOnly={readOnly} />
+                                        <InputField label="Apellido" value={formData.persona.apellido} error={errors.apellido} onChange={(val: string) => handleChange("persona.apellido", val)} readOnly={readOnly} />
+                                        <InputField label="Número de Documento" value={formData.persona.dni} error={errors.dni} onChange={(val: string) => handleChange("persona.dni", val)} readOnly={readOnly} />
+                                        <SelectField
+                                            label="Tipo de Documento"
+                                            value={String(formData.persona.tipoDoc.id || "")}
+                                            error={errors.tipoDoc}
+                                            readOnly={readOnly}
+                                            onChange={(val: string) => handleChange("persona.tipoDoc.id", val ? parseInt(val) : null)}
+                                            options={tipoDoc}
+                                        />
 
-                                <SelectField label="Rol" value={String(formData.rol.id)} error={errors.rol} onChange={(val: string) => handleChange("rol.id", parseInt(val))} options={roles} readOnly={readOnly} />
-                            </div>
-                        </div>
+                                        <SelectField label="Tipo de Persona" value={String(formData.persona.tipoPersona.id)} error={errors.tipoPersona} onChange={(val: string) => handleChange("persona.tipoPersona.id", parseInt(val))} options={tiposPersonas} readOnly={readOnly} />
+                                        <SelectField label="Género" value={String(formData.persona.genero.id)} error={errors.genero} onChange={(val: string) => handleChange("persona.genero.id", parseInt(val))} options={generos} readOnly={readOnly} />
+                                        <InputField label="Teléfono" value={formData.persona.telefono} onChange={(val: string) => handleChange("persona.telefono", val)} readOnly={readOnly} />
+                                        <InputField label="Dirección" value={formData.persona.direccion} onChange={(val: string) => handleChange("persona.direccion", val)} readOnly={readOnly} />
+                                    </div>
+                                </div>
 
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Configuración</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <SwitchField label="Habilitado" checked={formData.isEnable} onChange={(val: boolean) => handleChange("isEnable", val)} readOnly={readOnly} />
-                                <SwitchField label="Cuenta no expirada" checked={formData.accountNoExpired} onChange={(val: boolean) => handleChange("accountNoExpired", val)} readOnly={readOnly} />
-                                <SwitchField label="Cuenta no bloqueada" checked={formData.accountNoLocked} onChange={(val: boolean) => handleChange("accountNoLocked", val)} readOnly={readOnly} />
-                                <SwitchField label="Credenciales no expiradas" checked={formData.credentialNoExpired} onChange={(val: boolean) => handleChange("credentialNoExpired", val)} readOnly={readOnly} />
-                                <SwitchField label="Tratamiento de datos" checked={formData.persona.tratamientoDatos} onChange={(val: boolean) => handleChange("persona.tratamientoDatos", val)} readOnly={readOnly} />
-                            </div>
-                        </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos de Usuario</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <InputField label="Correo" type="email" value={formData.correo} error={errors.correo} onChange={(val: string) => handleChange("correo", val)} readOnly={readOnly} />
+                                        {!usuario && (
+                                            <InputField
+                                                label="Contraseña"
+                                                type="password"
+                                                value={formData.contrasena}
+                                                error={errors.contrasena}
+                                                onChange={(val: string) => handleChange("contrasena", val)}
+                                                readOnly={readOnly}
+                                            />
+                                        )}
 
-                        <div className="flex justify-end gap-3 mt-4">
-                            <Button variant="outline" type="button" className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition" onClick={onClose}>Cerrar</Button>
-                            {!readOnly && <Button type="submit">{usuario ? "Actualizar" : "Crear"}</Button>}
-                        </div>
+                                        <SelectField label="Rol" value={String(formData.rol.id)} error={errors.rol} onChange={(val: string) => handleChange("rol.id", parseInt(val))} options={roles} readOnly={readOnly} />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Configuración</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <SwitchField label="Habilitado" checked={formData.isEnable} onChange={(val: boolean) => handleChange("isEnable", val)} readOnly={readOnly} />
+                                        <SwitchField label="Tratamiento de datos" checked={formData.persona.tratamientoDatos} onChange={(val: boolean) => handleChange("persona.tratamientoDatos", val)} readOnly={readOnly} />
+                                    </div>
+                                </div>
+
+                                <div className="flex justify-end gap-3 mt-4">
+                                    <Button variant="outline" type="button" className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition" onClick={onClose}>Cerrar</Button>
+                                    {!readOnly && <Button type="submit">{usuario ? "Actualizar" : "Crear"}</Button>}
+                                </div>
+                            </>
+                        )}
                     </form>
                 </div>
             </div>

@@ -6,9 +6,6 @@ export interface Usuario {
     correo: string;
     contrasena: string;
     isEnable: boolean;
-    accountNoExpired: boolean;
-    accountNoLocked: boolean;
-    credentialNoExpired: boolean;
     resetToken: string | null;
     persona: Persona;
     rol: Rol;

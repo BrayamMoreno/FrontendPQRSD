@@ -3,15 +3,15 @@ import { AlertCircle } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useForm, type SubmitHandler } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
-import { Alert, AlertDescription } from "../components/ui/alert"
-import { Button } from "../components/ui/button"
+import { Alert, AlertDescription } from "../../components/ui/alert"
+import { Button } from "../../components/ui/button"
 import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle
-} from "../components/ui/card"
+} from "../../components/ui/card"
 import {
     Form,
     FormControl,
@@ -19,22 +19,22 @@ import {
     FormItem,
     FormLabel,
     FormMessage
-} from "../components/ui/form"
-import { Input } from "../components/ui/input"
+} from "../../components/ui/form"
+import { Input } from "../../components/ui/input"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue
-} from "../components/ui/select"
-import type { RegisterForm } from "../models/RegisterForm"
-import type { TipoPersona } from "../models/TipoPersona"
-import type { Genero } from "../models/Genero"
-import type { TipoDoc } from "../models/TipoDoc"
-import type { Municipios } from "../models/Municipios"
-import type { Departamentos } from "../models/Departamentos"
-import config from "../config"
+} from "../../components/ui/select"
+import type { RegisterForm } from "../../models/RegisterForm"
+import type { TipoPersona } from "../../models/TipoPersona"
+import type { Genero } from "../../models/Genero"
+import type { TipoDoc } from "../../models/TipoDoc"
+import type { Municipios } from "../../models/Municipios"
+import type { Departamentos } from "../../models/Departamentos"
+import config from "../../config"
 
 const Register: React.FC = () => {
     const navigate = useNavigate()
@@ -195,7 +195,7 @@ const Register: React.FC = () => {
                                         {/* Género */}
                                         <FormField name="genero" render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Género Biologico</FormLabel>
+                                                <FormLabel>Sexo Biologico</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
                                                         <SelectTrigger><SelectValue placeholder="Seleccione su genero biologico" /></SelectTrigger>

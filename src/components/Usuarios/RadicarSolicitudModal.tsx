@@ -28,9 +28,10 @@ interface RadicarSolicitudModalProps {
     isOpen: boolean
     tipoPq: TipoPQ[]
     onClose: () => void
+    onSuccess: () => void
 }
 
-export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose }: RadicarSolicitudModalProps) {
+export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSuccess }: RadicarSolicitudModalProps) {
 
     const [errorsRadicacion, setErrorsRadicacion] = useState<string | null>(null);
     const [errors, setErrors] = useState<Partial<FormPeticion>>({})
@@ -55,9 +56,11 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose }: Radic
             detalleAsunto: "",
             detalleDescripcion: "",
             lista_documentos: [],
-        })
-        setErrors({})
-        setAlertFile(null)
+        });
+        setErrors({});
+        setAlertFile(null);
+        setErrorsRadicacion(null);
+
         onClose()
     }
 
@@ -184,12 +187,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose }: Radic
                 lista_documentos: documentosBase64,
             };
 
-            const response = await api.post("/pqs/radicar_pq", payload);
-
-            if (response.status !== 200) {
-                setErrorsRadicacion(response.data.mensaje || "Error al radicar la PQRSD");
-                return;
-            }
+            await api.post("/pqs/radicar_pq", payload);
 
             setFormPeticion({
                 tipo_pq_id: "",
@@ -199,9 +197,13 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose }: Radic
                 lista_documentos: [],
             });
 
+            setErrors({});
+            setAlertFile(null);
+            setErrorsRadicacion(null);
+
+            onSuccess(); // Llamar a la función onSuccess si se proporciona
             onClose();
         } catch (error) {
-            console.error("Error al radicar la PQRSD:", error);
             setErrorsRadicacion("Error al radicar la PQRSD. Por favor, inténtelo de nuevo.");
         } finally {
             setIsSubmitting(false);
@@ -211,7 +213,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose }: Radic
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="fixed w-screen inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
                 {/* Header */}
                 <div className="bg-blue-900 text-white p-6">

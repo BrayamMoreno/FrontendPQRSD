@@ -14,6 +14,7 @@ interface SolicitudModalProps {
 export default function SolicitudModal({ isOpen, solicitud, onClose }: SolicitudModalProps) {
     if (!isOpen || !solicitud) return null;
 
+    console.log("Solicitud en modal:", solicitud);
     const API_URL = config.apiBaseUrl
 
     return (

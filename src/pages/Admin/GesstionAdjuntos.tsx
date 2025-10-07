@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -13,13 +13,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "../components/ui/alert-dialog"
+} from "../../components/ui/alert-dialog"
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
 
-import apiServiceWrapper from "../api/ApiService"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
-import type { Adjunto } from "../models/Adjunto"
-import config from "../config"
+import apiServiceWrapper from "../../api/ApiService"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
+import type { Adjunto } from "../../models/Adjunto"
+import config from "../../config"
+import { LoadingSpinner } from "../../components/LoadingSpinner"
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
+import Toast from "../../components/Toast"
 
 type AdjuntoFormData = Adjunto & {
     lista_documentos: File[]
@@ -33,8 +36,12 @@ const GestionAdjuntos: React.FC = () => {
     const api = apiServiceWrapper
     const API_URL = config.apiBaseUrl;
 
+    const itemsPerPage = 10
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(0)
+
     const [loading, setLoading] = useState(false)
-    const [data, setData] = useState<Adjunto[]>([])
+    const [adjuntos, setAdjuntos] = useState<Adjunto[]>([])
     const [search, setSearch] = useState("")
 
     const [estado, setEstado] = useState<string | "TODOS">("TODOS")
@@ -42,6 +49,11 @@ const GestionAdjuntos: React.FC = () => {
 
     const [editingItem, setEditingItem] = useState<Adjunto | null>(null);
     const [showForm, setShowForm] = useState(false);
+
+    const totalAdjuntosInicial = useRef<number | null>(null);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
+
 
     const [formData, setFormData] = useState<AdjuntoFormData>({
         id: 0,
@@ -56,67 +68,70 @@ const GestionAdjuntos: React.FC = () => {
     const [errors, setErrors] = useState<FormErrors>({})
     const [readOnly, setReadOnly] = useState(false);
 
-    const fetchAllAdjuntos = async () => {
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [fechaFin, setFechaFin] = useState<string | null>(null);
+    const [fechaInicio, setFechaInicio] = useState<string | null>(null);
+
+    const fetchAdjuntos = async () => {
         setLoading(true);
-        let allAdjuntos: Adjunto[] = [];
-        let page = 0;
-        const pageSize = 20;
-        let hasMore = true;
-
         try {
-            while (hasMore) {
-                const response = await api.get<PaginatedResponse<Adjunto>>(`/adjuntosPq?page=${page}&size=${pageSize}`);
 
-                if (!response.data || !Array.isArray(response.data)) {
-                    throw new Error("Error en la respuesta del servidor");
-                }
+            if (fechaInicio && fechaFin) {
+                const inicio = new Date(fechaInicio);
+                const fin = new Date(fechaFin);
 
-                const adjuntos = response.data;
-                allAdjuntos = [...allAdjuntos, ...adjuntos];
-
-                if (response.has_more === false || adjuntos.length < pageSize) {
-                    hasMore = false;
-                } else {
-                    page++;
+                if (inicio > fin) {
+                    handleOpenToast("La fecha de inicio no puede ser mayor que la fecha de fin");
+                    setLoading(false);
+                    return;
                 }
             }
-            setData(allAdjuntos);
-        } catch (e) {
-            console.error("Error cargando adjuntos:", e);
-            setData([]);
+
+            const params: Record<string, any> = {
+                page: currentPage - 1,
+                size: itemsPerPage,
+            };
+
+            if (estado !== "TODOS") params.respuesta = estado
+            if (search) params.nombreRadicado = search
+
+            const response = await api.get<PaginatedResponse<Adjunto>>(
+                "/adjuntos_pq/GetAdjuntosPq",
+                params
+            );
+
+            setAdjuntos(response.data || []);
+
+
+            if (totalAdjuntosInicial.current === null) {
+                totalAdjuntosInicial.current = response.total_count ?? 0;
+            }
+            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
+            setTotalPages(totalPages);
+        } catch (error) {
+            console.error("Error fetching adjuntos:", error);
         } finally {
             setLoading(false);
         }
-    };
-
-    const refreshData = useCallback(() => {
-        fetchAllAdjuntos()
-    }, [])
+    }
 
     useEffect(() => {
-        refreshData()
-    }, [refreshData])
+        fetchAdjuntos();
+    }, []);
 
-    const filtered = useMemo(() => {
-        return data.filter((u) => {
-            const matchText =
-                !search ||
-                u.nombreArchivo.toLowerCase().includes(search.toLowerCase()) ||
-                u.createdAt.toLowerCase().includes(search.toLowerCase())
+    useEffect(() => {
+        fetchAdjuntos();
+    }, [currentPage]);
 
-            const matchEstado =
-                estado === "TODOS" ||
-                (estado === "true" && u.respuesta === true) ||
-                (estado === "false" && u.respuesta === false)
-
-            return matchText && matchEstado
-        })
-    }, [data, search, estado])
+    useEffect(() => {
+        const delayDebounce = setTimeout(fetchAdjuntos, 1500);
+        return () => clearTimeout(delayDebounce);
+    }, [estado, search, fechaInicio, fechaFin]);
 
     const deleteAdjunto = async (id: number) => {
         try {
-            await api.delete(`/adjuntosPq/${id}`, {})
-            refreshData()
+            await api.delete(`/adjuntos_pq/${id}`, {})
+            fetchAdjuntos()
         } catch (e) {
             console.error(e)
         } finally {
@@ -162,7 +177,6 @@ const GestionAdjuntos: React.FC = () => {
             newErrors.general = "Debes adjuntar al menos un archivo PDF antes de guardar."
         }
 
-
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
@@ -191,9 +205,9 @@ const GestionAdjuntos: React.FC = () => {
         }
 
         try {
-            const response = await api.put(`/adjuntosPq/actualizar_adjunto`, payload);
-            fetchAllAdjuntos();
-            return true; // ✅ éxito
+            const response = await api.put(`/adjuntos_pq/actualizar_adjunto`, payload);
+            fetchAdjuntos();
+            return true;
         } catch (error: any) {
             if (error.response?.status === 404) {
                 setErrors(prev => ({
@@ -206,8 +220,18 @@ const GestionAdjuntos: React.FC = () => {
                     general: "Error inesperado al crear el adjunto."
                 }));
             }
-            return false; // ⚡ indicar error
+            return false;
         }
+    };
+
+    const handleOpenToast = (message: string) => {
+        setToastMessage(message);
+        setShowToast(true);
+    }
+
+    const handleCloseToast = () => {
+        setShowToast(false);
+        setToastMessage("");
     };
 
     const handleCreatedAdjunto = async (): Promise<boolean> => {
@@ -230,9 +254,9 @@ const GestionAdjuntos: React.FC = () => {
         }
 
         try {
-            const response = await api.post(`adjuntosPq/crear_adjunto`, payload);
-            fetchAllAdjuntos();
-            return true; // ✅ éxito
+            const response = await api.post(`/adjuntos_pq/crear_adjunto`, payload);
+            fetchAdjuntos();
+            return true;
         } catch (error: any) {
             if (error.response?.status === 404) {
                 setErrors(prev => ({
@@ -245,7 +269,7 @@ const GestionAdjuntos: React.FC = () => {
                     general: "Error inesperado al crear el adjunto."
                 }));
             }
-            return false; // ⚡ indicar error
+            return false;
         }
     };
 
@@ -254,11 +278,11 @@ const GestionAdjuntos: React.FC = () => {
         try {
             if (editingItem) {
                 const edited = await handleEditAdjunto(editingItem.id);
-                if(edited) {
+                if (edited) {
                     setShowForm(false);
                     handleClearFormData();
                     setEditingItem(null);
-                    fetchAllAdjuntos();
+                    fetchAdjuntos();
                 }
             } else {
                 const created = await handleCreatedAdjunto();
@@ -266,7 +290,7 @@ const GestionAdjuntos: React.FC = () => {
                     setShowForm(false);
                     handleClearFormData();
                     setEditingItem(null);
-                    fetchAllAdjuntos();
+                    fetchAdjuntos();
                 }
             }
         } catch (error) {
@@ -274,15 +298,13 @@ const GestionAdjuntos: React.FC = () => {
         }
     };
 
-
-
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.readAsDataURL(file); // O reader.readAsBinaryString(file)
+            reader.readAsDataURL(file);
             reader.onload = () => {
                 const result = reader.result as string;
-                const base64 = result.split(",")[1]; // Quita el "data:..." al inicio
+                const base64 = result.split(",")[1];
                 resolve(base64);
             };
             reader.onerror = reject;
@@ -347,13 +369,13 @@ const GestionAdjuntos: React.FC = () => {
         return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
     }
 
-
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100">
-            <div className="ml-0 md:ml-14 w-full">
-                <div className="max-w-7xl mx-auto p-4 sm:p-6 md:p-10">
+        <div className="flex min-h-screen w-full bg-gray-50 pb-8">
+            <div className="w-full pt-36 px-8">
+                <div className="max-w-7xl mx-auto">
                     {/* Cabecera */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                    <Breadcrumbs />
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
                         <h1 className="text-xl md:text-2xl font-bold text-blue-900">Gestión de Adjuntos</h1>
                         <div className="flex flex-wrap gap-2">
                             <Button onClick={() => setShowForm(true)}
@@ -364,39 +386,84 @@ const GestionAdjuntos: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Filtros */}
                     <Card className="mb-4">
-                        <CardContent className="p-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                                <Input
-                                    className="w-full"
-                                    placeholder="Buscar por nombre o fecha..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                                <Select onValueChange={(v) => setEstado(v)} value={estado}>
-                                    <SelectTrigger className="w-full truncate">
-                                        <SelectValue placeholder="Estado" className="truncate" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="TODOS">Todos los estados</SelectItem>
-                                        <SelectItem value="true">Documentos de Respuesta</SelectItem>
-                                        <SelectItem value="false">Documentos Radicados</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                {/* Numero Radicado */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-gray-600 mb-1"># Radicado o Nombre Archivo</label>
+                                    <Input
+                                        className="w-full"
+                                        placeholder="Buscar por nombre o # radicado..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                </div>
 
-                                <Button
-                                    className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                                    onClick={() => {
-                                        setSearch("")
-                                        setEstado("TODOS")
-                                    }}
-                                >
-                                    Limpiar filtros
-                                </Button>
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-gray-600 mb-1">Tipo Documento</label>
+                                    <Select onValueChange={(v) => setEstado(v)} value={estado}>
+                                        <SelectTrigger className="w-full truncate">
+                                            <SelectValue placeholder="Estado" className="truncate" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="TODOS">Todos los Documentos</SelectItem>
+                                            <SelectItem value="true">Documentos de Respuesta</SelectItem>
+                                            <SelectItem value="false">Documentos Radicados</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                </div>
+
+                                {/* Fecha Inicio */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-gray-600 mb-1">Fecha Inicio</label>
+                                    <Input
+                                        type="date"
+                                        value={fechaInicio ?? ""}
+                                        onChange={(e) => setFechaInicio(e.target.value || null)}
+                                    />
+                                </div>
+
+                                {/* Fecha Fin */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-gray-600 mb-1">Fecha Fin</label>
+                                    <Input
+                                        type="date"
+                                        value={fechaFin ?? ""}
+                                        onChange={(e) => setFechaFin(e.target.value || null)}
+                                    />
+                                </div>
+
+                                {/* Botón limpiar */}
+                                <div className="flex flex-col">
+                                    <label className="text-sm text-transparent mb-1">.</label>
+                                    <Button
+                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                                        onClick={() => {
+                                            setEstado("TODOS");
+                                            setSearch("");
+                                            setFechaInicio(null);
+                                            setFechaFin(null);
+                                        }}
+                                    >
+                                        Limpiar filtros
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* Toast de error */}
+                    <div>
+                        {showToast && (
+                            <Toast
+                                message={toastMessage}
+                                onClose={handleCloseToast}
+                                duration={3000}
+                            />
+                        )}
+                    </div>
 
                     {/* Tabla */}
                     <div className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -405,37 +472,47 @@ const GestionAdjuntos: React.FC = () => {
                                 <thead className="bg-blue-50 text-blue-700 uppercase text-sm">
                                     <tr>
                                         <th className="px-4 py-3">Id</th>
-                                        <th className="px-4 py-3">Radicado Petición</th>
+                                        <th className="px-4 py-3"># Radicado</th>
                                         <th className="px-4 py-3">Nombre</th>
                                         <th className="px-4 py-3">Fecha Creación</th>
                                         <th className="px-4 py-3 text-right">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filtered.length === 0 && (
+                                    {loading ? (
                                         <tr>
-                                            <td colSpan={6}
-                                                className="text-center py-6 text-gray-500">
-                                                {loading ? "Cargando..." : "Sin resultados"}
+                                            <td colSpan={5} className="py-10">
+                                                <div className="flex justify-center items-center">
+                                                    <LoadingSpinner />
+                                                </div>
                                             </td>
                                         </tr>
-                                    )}
-                                    {filtered.map((u) => (
-                                        <tr key={u.id}
+                                    ) : adjuntos.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="text-center py-6 text-gray-500">
+                                                No hay adjuntos disponibles
+                                            </td>
+                                        </tr>
+                                    ) : adjuntos.map((u) => (
+                                        <tr
+                                            key={u.id}
                                             className="border-b hover:bg-blue-50 transition"
                                         >
                                             <td className="px-4 py-4">{u.id}</td>
-                                            <td className="px-4 py-4">{u.pqRadicado}</td>
+                                            <td className="px-4 py-4">{u.pqRadicado || "Sin Radicado"}</td>
                                             <td className="px-4 py-4">
                                                 <a
-                                                    href={`${API_URL}/adjuntosPq/${u.id}/download`}
+                                                    href={`${API_URL}/adjuntos_pq/${u.id}/download`}
                                                     download
                                                     className="hover:underline break-all text-blue-600 underline"
                                                 >
                                                     {u.nombreArchivo}
-                                                </a></td>
+                                                </a>
+                                            </td>
                                             <td className="px-4 py-4">
-                                                {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "Sin Fecha"}
+                                                {u.createdAt
+                                                    ? new Date(u.createdAt).toLocaleDateString()
+                                                    : "Sin Fecha"}
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-2">
@@ -468,6 +545,7 @@ const GestionAdjuntos: React.FC = () => {
                                                                 <Trash2 size={16} />
                                                             </Button>
                                                         </AlertDialogTrigger>
+
                                                         <AlertDialogContent>
                                                             <AlertDialogHeader>
                                                                 <AlertDialogTitle>¿Eliminar adjunto?</AlertDialogTitle>
@@ -475,6 +553,7 @@ const GestionAdjuntos: React.FC = () => {
                                                                     Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
                                                                 </AlertDialogDescription>
                                                             </AlertDialogHeader>
+
                                                             <AlertDialogFooter>
                                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                                                 <AlertDialogAction
@@ -494,7 +573,51 @@ const GestionAdjuntos: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* 🔹 Paginación afuera de la tabla */}
+                        <div className="flex justify-center items-center gap-2 py-4 border-t">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(1)}
+                            >
+                                ⏮ Primero
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage((prev) => prev - 1)}
+                            >
+                                ◀ Anterior
+                            </Button>
+
+                            <span className="px-2 text-sm whitespace-nowrap">
+                                Página {currentPage} de {totalPages}
+                            </span>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage((prev) => prev + 1)}
+                            >
+                                Siguiente ▶
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(totalPages)}
+                            >
+                                Último ⏭
+                            </Button>
+                        </div>
                     </div>
+
                 </div>
             </div>
 
@@ -506,7 +629,6 @@ const GestionAdjuntos: React.FC = () => {
                             {readOnly ? "Detalle de Adjunto" : editingItem ? "Editar Adjunto" : "Nuevo Adjunto"}
                         </h3>
 
-                        {/* 🔴 Bloque de error general */}
                         {errors.general && (
                             <div className="mb-4 p-3 rounded-md bg-red-100 border border-red-300 text-red-700 text-sm">
                                 {errors.general}
@@ -520,11 +642,10 @@ const GestionAdjuntos: React.FC = () => {
                             }}
                         >
                             <div className="space-y-4">
-
                                 {/* Radicado */}
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-gray-700">
-                                        Petición (Numero de Radicado)
+                                        Petición (Id de la Petición)
                                     </label>
                                     <Input
                                         type="text"
@@ -558,8 +679,6 @@ const GestionAdjuntos: React.FC = () => {
                                         )}
                                     </div>
                                 ) : null}
-
-
 
                                 {/* Zona de archivos */}
                                 {!editingItem && (
@@ -682,15 +801,17 @@ const GestionAdjuntos: React.FC = () => {
 
                                 {/* Es respuesta */}
                                 <div className="flex items-center gap-2">
-                                    <span>Es documento de respuesta</span>
                                     <input
                                         type="checkbox"
                                         name="respuesta"
                                         checked={formData?.respuesta ?? false}
                                         onChange={handleChange}
                                         disabled={readOnly}
+                                        className="w-4 h-4 appearance-none rounded border border-gray-400 checked:bg-blue-600 checked:border-blue-600 disabled:bg-gray-200 disabled:cursor-not-allowed"
                                     />
+                                    <span className="text-sm text-gray-700">Es documento de respuesta</span>
                                 </div>
+
                             </div>
 
                             <div className="flex justify-end gap-3 mt-8">

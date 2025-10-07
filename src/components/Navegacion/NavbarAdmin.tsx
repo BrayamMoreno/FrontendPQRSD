@@ -9,6 +9,11 @@ import {
     LogOut,
     VenusAndMarsIcon,
     Building,
+    RollerCoaster,
+    AppWindow,
+    Landmark,
+    MapPin,
+    MapIcon,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
 import {
@@ -21,6 +26,7 @@ import {
     FaPaperclip,
     FaQuestion,
     FaTasks,
+    FaUserCog,
     FaUsers,
     FaUsersCog,
     FaUserShield,
@@ -55,17 +61,17 @@ const NavbarAdmin: React.FC = () => {
         { label: "Pagina Principal", icon: <FaChartBar />, action: () => navigate("/admin") },
         { label: "Gestion Usuarios", icon: <FaAddressCard />, action: () => navigate("/admin/usuarios") },
         {
-            label: "Administración",
+            label: "Tablas de Soporte",
             icon: <FaUsersCog />,
             children: [
                 { label: "Roles", icon: <FaUserShield />, action: () => navigate("/admin/roles") },
                 { label: "Tipos de Documentos", icon: <FaIdCard />, action: () => navigate("/admin/tipos_documentos") },
                 { label: "Tipos de Personas", icon: <FaUsers />, action: () => navigate("/admin/tipos_personas") },
                 { label: "Géneros", icon: <VenusAndMarsIcon />, action: () => navigate("/admin/generos") },
-                { label: "Tipos de Solicitudes", icon: <FaArchive />, action: () => navigate("/admin/tipos_solicitudes") },
-                { label: "Áreas Responsables", icon: <Building />, action: () => navigate("/admin/areas_responsables") },
-                { label: "Departamentos", icon: <Building />, action: () => navigate("/admin/departamentos") },
-                { label: "Municipios", icon: <Building />, action: () => navigate("/admin/municipios") },
+                { label: "Tipos de Solicitudes", icon: <FaArchive />, action: () => navigate("/admin/tipos_pqs") },
+                { label: "Áreas Responsables", icon: <Landmark />, action: () => navigate("/admin/areas_responsables") },
+                { label: "Departamentos", icon: <MapIcon />, action: () => navigate("/admin/departamentos") },
+                { label: "Municipios", icon: <MapPin />, action: () => navigate("/admin/municipios") },
             ],
         },
         {
@@ -84,7 +90,7 @@ const NavbarAdmin: React.FC = () => {
     const dashboards = permisos.filter((p) => p.accion === "dashboard")
 
     return (
-        <header className="fixed top-0 left-0 z-50 w-full shadow-md">
+        <header className="fixed z-50 w-screen shadow-md">
             {/* Primera fila */}
             <div className="w-full bg-[#0A192F]">
                 <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
@@ -94,8 +100,10 @@ const NavbarAdmin: React.FC = () => {
                         <span className="text-lg sm:text-xl">Plataforma PQRSDF</span>
                     </div>
 
-                    {/* Avatar + Nombre + Menú (oculto en mobile) */}
                     <div className="hidden sm:flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-full bg-[#173A5E] flex items-center justify-center text-white font-semibold">
+                            {userInfo.iniciales}
+                        </div>
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
                                 {userInfo.nombre}
@@ -109,12 +117,50 @@ const NavbarAdmin: React.FC = () => {
                                 >
                                     <User size={14} /> Mi Perfil
                                 </DropdownMenuItem>
+
+
+                                <DropdownMenuItem
+                                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 cursor-default"
+                                >
+                                    <FaUserCog size={14} /> Rol:{" "}
+                                    {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}
+                                </DropdownMenuItem>
+
+                                {dashboards.length > 1 && (
+                                    <div
+                                        onClick={() => setShowDashboards(!showDashboards)}
+                                        className="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <LayoutDashboard size={14} /> Dashboards
+                                        </span>
+                                        <ChevronDown size={12} />
+                                    </div>
+                                )}
+
+                                {showDashboards &&
+                                    dashboards.map((d) => (
+                                        <DropdownMenuItem
+                                            key={d.tabla}
+                                            onClick={() => {
+                                                navigate(`/${d.tabla}/inicio`)
+                                                setShowDashboards(false)
+                                            }}
+                                            className="pl-8 pr-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded"
+                                        >
+                                            <AppWindow size={14} />
+                                            {d.tabla.charAt(0).toUpperCase() + d.tabla.slice(1)}
+                                        </DropdownMenuItem>
+                                    ))
+                                }
+
                                 <DropdownMenuItem
                                     onClick={() => navigate("/perfil")}
                                     className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded"
                                 >
                                     <Settings2 size={14} /> Configuración
                                 </DropdownMenuItem>
+
                                 <DropdownMenuItem
                                     onClick={async () => await logout()}
                                     className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer rounded"
@@ -165,38 +211,6 @@ const NavbarAdmin: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Dashboard button */}
-                    {dashboards.length > 1 && (
-                        <div className="ml-auto relative">
-                            <button
-                                onClick={() => setShowDashboards(!showDashboards)}
-                                className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-600 text-white rounded-md shadow hover:bg-blue-700 transition"
-                            >
-                                <LayoutDashboard size={14} />
-                                Dashboard
-                                <ChevronDown size={12} />
-                            </button>
-
-                            {showDashboards && (
-                                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                                    <ul className="py-1">
-                                        {dashboards.map((d) => (
-                                            <li
-                                                key={d.tabla}
-                                                onClick={() => {
-                                                    navigate(`/${d.tabla}/inicio`)
-                                                    setShowDashboards(false)
-                                                }}
-                                                className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                            >
-                                                {d.tabla.charAt(0).toUpperCase() + d.tabla.slice(1)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
         </header>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { Input } from "../components/ui/input"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,13 +12,13 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "../components/ui/alert-dialog"
+} from "../../components/ui/alert-dialog"
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
 
-import apiServiceWrapper from "../api/ApiService"
-import PersonaForm from "../components/Formularios/PersonaForm"
-import type { Persona } from "../models/Persona"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
+import apiServiceWrapper from "../../api/ApiService"
+import PersonaForm from "../../components/Formularios/PersonaForm"
+import type { Persona } from "../../models/Persona"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
 
 const GestionPersonas: React.FC = () => {
 

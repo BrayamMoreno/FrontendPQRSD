@@ -1,17 +1,19 @@
 import { AlertCircle } from "lucide-react";
 import React, { useState } from "react";
-import { Alert, AlertDescription } from "../components/ui/alert";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { useAuth } from "../context/AuthProvider";
-import type { LoginForm } from "../models/LoginForm";
-import logo from "../assets/Logo.webp"
-import fondo1 from "../assets/fondo1.svg"
+import { Alert, AlertDescription } from "../../components/ui/alert";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { useAuth } from "../../context/AuthProvider";
+import type { LoginForm } from "../../models/LoginForm";
+import logo from "../../assets/Logo.webp"
+import fondo1 from "../../assets/fondo1.svg"
+import { useNavigate } from "react-router-dom";
 
 const Login: React.FC = () => {
 	const { login } = useAuth();
+	const navigate = useNavigate();
 
 	const [loginForm, setLoginForm] = useState<LoginForm>({
 		correo: "",
@@ -117,7 +119,7 @@ const Login: React.FC = () => {
 				<CardFooter className="flex flex-col items-center gap-2">
 					<p className="text-sm text-gray-600 text-center">
 						¿No tienes una cuenta?{" "}
-						<a href="#" className="text-blue-700 hover:underline hover:text-blue-800">
+						<a onClick={() => navigate("/register")} className="text-blue-700 hover:underline hover:text-blue-800">
 							Regístrate
 						</a>
 					</p>

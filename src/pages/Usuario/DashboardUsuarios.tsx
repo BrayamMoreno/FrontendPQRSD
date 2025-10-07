@@ -1,25 +1,26 @@
 import { FileText, UndoIcon } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
-import { LoadingSpinner } from "../components/LoadingSpinner"
+import { LoadingSpinner } from "../../components/LoadingSpinner"
 
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Badge } from "../components/ui/badge"
-import apiServiceWrapper from "../api/ApiService"
-import type { PqItem } from "../models/PqItem"
-import type { TipoPQ } from "../models/TipoPQ"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
-import type { Estado } from "../models/Estado"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import { Badge } from "../../components/ui/badge"
+import apiServiceWrapper from "../../api/ApiService"
+import type { PqItem } from "../../models/PqItem"
+import type { TipoPQ } from "../../models/TipoPQ"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
+import type { Estado } from "../../models/Estado"
 
-import { useAuth } from "../context/AuthProvider"
-import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
+import { useAuth } from "../../context/AuthProvider"
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import "react-quill-new/dist/quill.snow.css"
 import { useLocation } from "react-router-dom"
-import SolicitudModal from "../components/UsuariosComponets/SolicitudModal"
-import RadicarSolicitudModal from "../components/UsuariosComponets/RadicarSolicitudModal"
+import SolicitudModal from "../../components/Usuarios/SolicitudModal"
+import RadicarSolicitudModal from "../../components/Usuarios/RadicarSolicitudModal"
+import Toast from "../../components/Toast"
 
 const Dashboard: React.FC = () => {
 
@@ -51,6 +52,9 @@ const Dashboard: React.FC = () => {
 	const totalSolicitudesInicial = useRef<number | null>(null);
 	const location = useLocation();
 
+	const [showToast, setShowToast] = useState(false);
+	const [toastMessage, setToastMessage] = useState("");
+
 	useEffect(() => {
 		if (location.state?.modal) {
 			setModalRadicarSolicitud(true);
@@ -63,6 +67,17 @@ const Dashboard: React.FC = () => {
 		try {
 			const rawId = user?.persona.id;
 			const solicitanteId = rawId ? Number(rawId) : null;
+
+			if (fechaInicio && fechaFin) {
+				const inicio = new Date(fechaInicio);
+				const fin = new Date(fechaFin);
+
+				if (inicio > fin) {
+					handleOpenToast("La fecha de inicio no puede ser mayor que la fecha de fin");
+					setIsLoading(false);
+					return;
+				}
+			}
 
 			const params: Record<string, any> = {
 				solicitanteId,
@@ -96,14 +111,33 @@ const Dashboard: React.FC = () => {
 			setIsLoadingFilters(false)
 		}
 	};
-	useEffect(() => {
-		fetchAllData();
-	}, []);
 
+	useEffect(() => {
+		if (modalRadicarSolicitud || modalOpen) {
+			document.body.style.overflow = "hidden";
+		} else {
+			document.body.style.overflow = "auto";
+		}
+		return () => {
+			document.body.style.overflow = "auto";
+		};
+	}, [modalRadicarSolicitud, modalOpen]);
+
+
+	useEffect(() => {
+		fetchAllData()
+	}, [])
+
+	// carga inicial y cuando cambia de página (sin debounce)
+	useEffect(() => {
+		fetchSolicitudes();
+	}, [currentPage]);
+
+	// debounce para filtros
 	useEffect(() => {
 		const delayDebounce = setTimeout(fetchSolicitudes, 500);
 		return () => clearTimeout(delayDebounce);
-	}, [currentPage, estadoSeleccionado, tipoPqSeleccionado, numeroRadicado, modalRadicarSolicitud, fechaInicio, fechaFin]);
+	}, [estadoSeleccionado, tipoPqSeleccionado, numeroRadicado, fechaInicio, fechaFin]);
 
 
 	const fetchData = async <T,>(
@@ -139,6 +173,16 @@ const Dashboard: React.FC = () => {
 			console.error("Error al cargar datos iniciales:", error)
 		}
 	}
+
+	const handleOpenToast = (message: string) => {
+		setToastMessage(message);
+		setShowToast(true);
+	}
+
+	const handleCloseToast = () => {
+		setShowToast(false);
+		setToastMessage("");
+	};
 
 	return (
 		<div className="min-h-screen w-full bg-gray-50">
@@ -298,7 +342,16 @@ const Dashboard: React.FC = () => {
 									</div>
 								</CardContent>
 							</Card>
-
+							{/* Toast de error */}
+							<div>
+								{showToast && (
+									<Toast
+										message={toastMessage}
+										onClose={handleCloseToast}
+										duration={4000}
+									/>
+								)}
+							</div>
 						</div>
 						<Card className="bg-white mx-auto max-w-7xl">
 							<CardContent >
@@ -350,9 +403,7 @@ const Dashboard: React.FC = () => {
 												{/* Columna 5 - Botón */}
 												<div className="w-auto flex-shrink-0">
 													<Button
-														variant="outline"
-														size="sm"
-														className="text-xs"
+														className="text-xs flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
 														onClick={() => handleVerClick(solicitud)}
 													>
 														<UndoIcon className="w-3 h-3 mr-1" />
@@ -435,8 +486,13 @@ const Dashboard: React.FC = () => {
 				isOpen={modalRadicarSolicitud}
 				tipoPq={tipoPQ}
 				onClose={() => setModalRadicarSolicitud(false)}
+				onSuccess={() => {
+					// Refrescar la lista después de radicar una nueva solicitud
+					setCurrentPage(1); // Volver a la primera página
+					totalSolicitudesInicial.current = null; // Resetear el total inicial para que se recalcule
+					fetchSolicitudes();
+				}}
 			/>
-
 		</div>
 	)
 }

@@ -10,7 +10,6 @@ export interface Persona {
     dni: string;
     telefono: string;
     direccion: string;
-    codigoRadicador: string;
     tratamientoDatos: boolean;
     tipoDoc: TipoDoc;
     tipoPersona: TipoPersona;

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "../ui/card";
 import { CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { Calendar, FileText, CheckCircle, XCircle, UserPlus, BarChart3, ClipboardList, User, Users } from "lucide-react";
+import { FileText, BarChart3, ClipboardList, User, Users } from "lucide-react";
 import Breadcrumbs from "../Navegacion/Breadcrumbs";
 import apiServiceWrapper from "../../api/ApiService";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
@@ -155,7 +155,6 @@ const InicioRadicador: React.FC = () => {
                         <li>1. Revisa las <b>solicitudes pendientes</b> en tu tablero.</li>
                         <li>2. Asigna responsables según el tipo de solicitud.</li>
                         <li>3. Marca como <b>aceptada</b> o <b>rechazada</b> según corresponda.</li>
-                        <li>4. Consulta los <b>reportes</b> para dar seguimiento.</li>
                     </ul>
                 </div>
             </div>

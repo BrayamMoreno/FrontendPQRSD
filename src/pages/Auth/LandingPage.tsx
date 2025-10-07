@@ -1,8 +1,8 @@
 import type React from "react"
 import { useNavigate } from "react-router-dom"
-import landing from "../assets/landing.webp"
-import Logo from "../assets/Logo.webp"
-import { useAuth } from "../context/AuthProvider"
+import landing from "../../assets/landing.webp"
+import Logo from "../../assets/Logo.webp"
+import { useAuth } from "../../context/AuthProvider"
 import { useState } from "react"
 import { Menu, X } from "lucide-react"
 

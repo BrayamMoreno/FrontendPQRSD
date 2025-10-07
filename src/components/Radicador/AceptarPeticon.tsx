@@ -7,7 +7,6 @@ import { Button } from "../ui/button";
 import "react-quill-new/dist/quill.snow.css";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthProvider";
-import type { Adjunto } from "../../models/Adjunto";
 import config from "../../config";
 import apiServiceWrapper from "../../api/ApiService";
 
@@ -24,7 +23,7 @@ interface AceptarPeticonProps {
     isOpen: boolean;
     selectedSolicitud: PqItem | null;
     responsables: Usuario[];
-    onClose: () => void;
+    onClose: (shouldRefresh?: boolean) => void;
 }
 
 export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables, onClose }: AceptarPeticonProps) {
@@ -65,7 +64,7 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
             await api.post(`pqs/aprobacion_pq`, JSON.stringify(payload));
 
             clearFormData();
-            onClose();
+            onClose(true);
         } catch (error) {
             console.error(error);
         }
@@ -87,6 +86,10 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
         return div.textContent || div.innerText || "";
     };
 
+    const handleClearFormData = () => {
+        clearFormData();
+        onClose(false);
+    }
 
     if (!isOpen || !selectedSolicitud) return null;
 
@@ -143,7 +146,7 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                                 <p className="text-gray-900">{selectedSolicitud.solicitante?.direccion || "No registrada"}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-medium text-gray-600">Genero:</label>
+                                <label className="text-sm font-medium text-gray-600">Sexo Biologico:</label>
                                 <p className="text-gray-900">{selectedSolicitud.solicitante?.genero.nombre || "No registrada"}</p>
                             </div>
                             <div>
@@ -156,7 +159,6 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Información Principal */}
                         <div className="space-y-4">
-
                             <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Información Principal</h3>
                             <div className="space-y-3">
                                 <div>
@@ -245,32 +247,10 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                         </div>
                     </div>
 
-                    {/* Información Adicional */}
-                    {(selectedSolicitud.historialEstados || selectedSolicitud.adjuntos) && (
-                        <div className="mt-6 pt-6 border-t">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Información Adicional</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {selectedSolicitud.historialEstados && (
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="text-sm font-medium text-gray-600">Observaciones:</label>
-                                        <p className="text-gray-900 mt-2 text-sm leading-relaxed">{selectedSolicitud.historialEstados.map((estado) => estado.observacion).join(", ") || "Sin observaciones"}</p>
-                                    </div>
-                                )}
-                                {selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 && (
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <label className="text-sm font-medium text-gray-600">Documentos Adjuntos:</label>
-                                        <div className="mt-2 space-y-1">
-                                            {selectedSolicitud.adjuntos.map((doc: Adjunto, index: number) => (
-                                                <div key={index} className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
-                                                    📄 <span>{doc.nombreArchivo || `Documento ${index + 1}`}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+                    <div className="mt-6 pt-6 border-t">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Información Adicional</h3>
+                    </div>
+
                     <div className="bg-white rounded-lg p-6 border border-gray-200 mt-6">
                         <h3 className="text-xl font-semibold text-gray-800 mb-4">Historial de Estados</h3>
                         <p className="text-sm text-gray-500 mb-6">
@@ -308,7 +288,6 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                             <p className="text-sm text-gray-500">Sin historial disponible.</p>
                         )}
                     </div>
-
 
                     <div className="mt-2 px-1 pb-4">
                         <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
@@ -490,8 +469,6 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                             )}
                         </div>
                     </div>
-
-
                 </div>
 
                 {/* Footer del Modal */}
@@ -502,8 +479,9 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                     </div>
                     <div className="flex gap-3 border broder-black">
                         <Button
+                            type="button"
                             variant="outline"
-                            onClick={onClose}
+                            onClick={handleClearFormData}
                         >
                             Cerrar
                         </Button>

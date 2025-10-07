@@ -3,8 +3,8 @@ import {
     BarChart, Bar, LineChart, Line, PieChart, Pie,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell
 } from "recharts";
-import type { PaginatedResponse } from "../models/PaginatedResponse";
-import type { PqItem } from "../models/PqItem";
+import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import type { PqItem } from "../../models/PqItem";
 
 
 const COLORS = [
@@ -18,8 +18,8 @@ const COLORS = [
     "#BB8FCE"  // lila
 ];
 
-
-import apiServiceWrapper from "../api/ApiService";
+import apiServiceWrapper from "../../api/ApiService";
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
 
 const DashboardAdmin: React.FC = () => {
 
@@ -75,13 +75,13 @@ const DashboardAdmin: React.FC = () => {
     }, []);
 
     return (
-        <div className="min-h-screen w-full bg-gray-100">
-            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32">
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
-                    {/* Título */}
+
+                    <Breadcrumbs />
                     <h1 className="text-3xl font-bold mb-6">Panel de Administración</h1>
 
-                    {/* Resumen general */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
                         <div className="bg-white rounded-lg p-4 shadow text-center">
                             <p className="text-sm text-gray-500">Total de Peticiones</p>

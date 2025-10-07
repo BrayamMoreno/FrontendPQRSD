@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react"
-import { Badge } from "../components/ui/badge"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
+import { Badge } from "../../components/ui/badge"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -14,14 +14,16 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "../components/ui/alert-dialog"
+} from "../../components/ui/alert-dialog"
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
 
-import apiServiceWrapper from "../api/ApiService"
-import UsuarioForm from "../components/Formularios/UsuarioForm"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
-import type { Usuario } from "../models/Usuario"
-import type { Rol } from "../models/Rol"
+import apiServiceWrapper from "../../api/ApiService"
+import UsuarioForm from "../../components/Formularios/UsuarioForm"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
+import type { Usuario } from "../../models/Usuario"
+import type { Rol } from "../../models/Rol"
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
+import { LoadingSpinner } from "../../components/LoadingSpinner"
 
 const GestionCuentas: React.FC = () => {
 
@@ -31,8 +33,11 @@ const GestionCuentas: React.FC = () => {
     const [data, setData] = useState<Usuario[]>([])
     const [search, setSearch] = useState("")
 
-    const [roles, setRoles] = useState<Rol[]>([]) // lista de roles
-    const [rolSeleccionado, setRolSeleccionado] = useState<string>("TODOS") // filtro actual
+    const [isLoading, setIsLoading] = useState<boolean>(false)
+
+
+    const [roles, setRoles] = useState<Rol[]>([])
+    const [rolSeleccionado, setRolSeleccionado] = useState<string>("TODOS")
 
     const [estado, setEstado] = useState<string | "TODOS">("TODOS")
     const [formOpen, setFormOpen] = useState(false)
@@ -40,82 +45,90 @@ const GestionCuentas: React.FC = () => {
     const [toDelete, setToDelete] = useState<Usuario | null>(null)
     const [readOnly, setReadOnly] = useState(false);
 
-    const fetchAllUsers = async () => {
-        setLoading(true);
-        let allUsers: Usuario[] = [];
-        let page = 0;
-        const pageSize = 20; // ajusta según tu API
-        let hasMore = true;
+    const itemsPerPage = 10
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(0)
 
+    const fetchUser = async () => {
+        setLoading(true)
         try {
-            while (hasMore) {
-                const response = await api.get<PaginatedResponse<Usuario>>(`/usuarios?page=${page}&size=${pageSize}`);
-
-                if (!response.data || !Array.isArray(response.data)) {
-                    throw new Error("Error en la respuesta del servidor");
-                }
-
-                const users = response.data;
-                allUsers = [...allUsers, ...users];
-
-                if (response.has_more === false || users.length < pageSize) {
-                    hasMore = false;
-                } else {
-                    page++;
-                }
-            }
-            setData(allUsers);
-        } catch (e) {
-            console.error("Error cargando usuarios:", e);
-            setData([]);
+            const params: Record<string, any> = {
+                page: currentPage - 1,
+                size: itemsPerPage,
+            };
+            const response = await api.get<PaginatedResponse<Usuario>>('/usuarios', params)
+            setData(response.data || [])
+            setTotalPages(Math.ceil((response.total_count ?? 0) / itemsPerPage));
         } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchAllUsers()
-        fetchRoles()
-    }, [])
-
-    const filtered = useMemo(() => {
-        const safeData = Array.isArray(data) ? data : []
-
-        return safeData.filter((u) => {
-            const matchText =
-                !search ||
-                `${u.persona.nombre} ${u.persona.apellido}`.toLowerCase().includes(search.toLowerCase()) ||
-                u.correo.toLowerCase().includes(search.toLowerCase()) ||
-                u.persona.dni.toLowerCase().includes(search.toLowerCase())
-
-            const matchRol = rolSeleccionado === "TODOS" || u.rol.nombre === rolSeleccionado
-
-            const matchEstado =
-                estado === "TODOS" ||
-                (estado === "true" && u.isEnable === true) ||
-                (estado === "false" && u.isEnable === false)
-
-            return matchText && matchRol && matchEstado
-        })
-    }, [data, search, rolSeleccionado, estado])
-
-
-    const fetchRoles = async () => {
-        try {
-            const response = await api.get<PaginatedResponse<Rol>>('/roles')
-            setRoles(Array.isArray(response.data) ? response.data : [])
-        } catch (e) {
-            console.error(e)
-            setRoles([])
+            setLoading(false)
         }
     }
+
+
+
+    const fetchSolicitudes = async () => {
+        setIsLoading(true)
+        try {
+            const params: Record<string, any> = {
+                page: currentPage - 1,
+                size: itemsPerPage,
+            };
+
+            if (search) params.busqueda = search;
+            if (rolSeleccionado && rolSeleccionado !== "TODOS") params.rolId = rolSeleccionado;
+            if (estado && estado !== "TODOS") {
+                params.estado = estado === "true";
+            }
+
+
+            const response = await api.get<PaginatedResponse<Usuario>>(
+                "/usuarios/search",
+                params
+            );
+
+            setData(response.data || []);
+            setTotalPages(Math.ceil((response.total_count ?? 0) / itemsPerPage));
+        } catch (error) {
+            console.error("Error al obtener las solicitudes:", error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const fetchAllData = async () => {
+        await Promise.all([
+            fetchData<Rol>('/roles', setRoles),
+        ]);
+    }
+
+    useEffect(() => {
+        fetchAllData()
+    }, []);
+
+    useEffect(() => {
+        fetchSolicitudes()
+    }, [currentPage, search, rolSeleccionado, estado]);
+
+
+    const fetchData = async <T,>(
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>
+    ): Promise<void> => {
+        try {
+            const response = await api.get<PaginatedResponse<T>>(endpoint, { page: 0, size: 1000 });
+            const result = response.data ?? [];
+            setter(result);
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
+        }
+    };
 
     const handleStatusAccount = async (id: number, isEnable: boolean) => {
         try {
             const action = isEnable ? 'disable-account' : 'enable-account';
-            await api.post(`/usuarios/${action}/${id}`, {});
+            await api.patch(`/usuarios/${action}/${id}`, {});
 
-            await fetchAllUsers();
+            await fetchUser();
         } catch (e) {
             console.error("Error actualizando estado de cuenta:", e);
         }
@@ -125,7 +138,7 @@ const GestionCuentas: React.FC = () => {
         try {
             await api.delete(`/usuarios/${id}`, {})
 
-            await fetchAllUsers()
+            await fetchUser()
         } catch (e) {
             console.error(e)
         } finally {
@@ -134,17 +147,26 @@ const GestionCuentas: React.FC = () => {
     }
 
     return (
-        <div className="flex min-h-screen w-screen bg-gray-100 z-15">
-            <div className="ml-14 w-full">
-                <div className="max-w-7xl mx-auto p-10">
-                    <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-2xl font-bold text-blue-900">Gestión de Usuarios</h1>
-                        <div className="flex gap-2">
-                            <Button onClick={() => setFormOpen(true)}
-                                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition">
-                                <PlusCircleIcon size={18} />
-                                Nuevo usuario
-                            </Button>
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
+                <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col mb-4 gap-2">
+                        {/* Breadcrumbs arriba */}
+                        <Breadcrumbs />
+
+                        {/* Título + Botón en la misma fila */}
+                        <div className="flex items-center justify-between">
+                            <h1 className="text-2xl font-bold text-blue-900">Gestión de Usuarios</h1>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={() => setFormOpen(true)}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition"
+                                >
+                                    <PlusCircleIcon size={18} />
+                                    Nuevo usuario
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
@@ -164,7 +186,7 @@ const GestionCuentas: React.FC = () => {
                                     <SelectContent>
                                         <SelectItem value="TODOS">Todos los roles</SelectItem>
                                         {roles.map((r) => (
-                                            <SelectItem key={r.id} value={r.nombre}>
+                                            <SelectItem key={r.id} value={r.id.toString()}>
                                                 {r.nombre}
                                             </SelectItem>
                                         ))}
@@ -197,8 +219,6 @@ const GestionCuentas: React.FC = () => {
                         </CardContent>
                     </Card>
 
-
-
                     <div className="bg-white shadow-md rounded-lg overflow-hidden">
                         <table className="w-full text-left">
                             <thead className="bg-blue-50 text-blue-700 uppercase text-sm">
@@ -213,15 +233,19 @@ const GestionCuentas: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.length === 0 && (
+                                {isLoading ? (
                                     <tr>
-                                        <td colSpan={6}
-                                            className="text-center py-6 text-gray-500">
-                                            {loading ? "Cargando..." : "Sin resultados"}
+                                        <td colSpan={7} className="text-center py-6 text-gray-500">
+                                            <LoadingSpinner />
                                         </td>
                                     </tr>
-                                )}
-                                {filtered.map((u) => (
+                                ) : data.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="text-center py-6 text-gray-500">
+                                            No hay usuarios disponibles
+                                        </td>
+                                    </tr>
+                                ) : data.map((u) => (
                                     <tr key={u.id}
                                         className="border-b hover:bg-blue-50 transition"
                                     >
@@ -265,7 +289,7 @@ const GestionCuentas: React.FC = () => {
 
                                                 {/* Editar */}
                                                 <Button
-                                                    className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"onClick={() => {
+                                                    className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1" onClick={() => {
                                                         setEditing(u)
                                                         setReadOnly(false)
                                                         setFormOpen(true)
@@ -324,6 +348,44 @@ const GestionCuentas: React.FC = () => {
                                 ))}
                             </tbody>
                         </table>
+                        {/* Paginación */}
+                        <div className="flex justify-center mt-4 gap-2 items-center">
+                            <Button
+                                variant="outline"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage(1)}
+                            >
+                                ⏮ Primero
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                disabled={currentPage === 1}
+                                onClick={() => setCurrentPage((prev) => prev - 1)}
+                            >
+                                ◀ Anterior
+                            </Button>
+
+                            <span className="text-sm px-3">
+                                Página {currentPage} de {totalPages}
+                            </span>
+
+                            <Button
+                                variant="outline"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage((prev) => prev + 1)}
+                            >
+                                Siguiente ▶
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage(totalPages)}
+                            >
+                                Último ⏭
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -345,7 +407,7 @@ const GestionCuentas: React.FC = () => {
                                 } else {
                                     await api.post(`/usuarios`, payload)
                                 }
-                                await fetchAllUsers()
+                                await fetchUser()
                                 setFormOpen(false)
                                 setEditing(null)
                             } catch (e) {

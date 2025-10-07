@@ -1,25 +1,22 @@
-import { CheckCircle, CheckCircle2, FileText, PlusCircle, XCircle } from "lucide-react"
+import { CheckCircle, CheckCircle2, FileText, PlusCircle } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
-import { Badge } from "../components/ui/badge"
-import apiServiceWrapper from "../api/ApiService"
-import type { PaginatedResponse } from "../models/PaginatedResponse"
-import config from "../config"
-import type { PqItem } from "../models/PqItem"
+import { Button } from "../../components/ui/button"
+import { Card, CardContent } from "../../components/ui/card"
+import { Badge } from "../../components/ui/badge"
+import apiServiceWrapper from "../../api/ApiService"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
+import config from "../../config"
+import type { PqItem } from "../../models/PqItem"
 
-import ReactQuill from "react-quill-new";
-import "react-quill-new/dist/quill.snow.css"
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 
-import Breadcrumbs from "../components/Navegacion/Breadcrumbs"
-
-import { useAuth } from "../context/AuthProvider"
-import { Input } from "../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import type { TipoPQ } from "../models/TipoPQ"
-import { LoadingSpinner } from "../components/LoadingSpinner"
-import { useLocation } from "react-router-dom"
-import { set } from "react-hook-form"
+import { useAuth } from "../../context/AuthProvider"
+import { Input } from "../../components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
+import type { TipoPQ } from "../../models/TipoPQ"
+import { LoadingSpinner } from "../../components/LoadingSpinner"
+import type { Estado } from "../../models/Estado"
+import type { Adjunto } from "../../models/Adjunto"
 
 type FormPeticion = {
     para: string;
@@ -28,36 +25,32 @@ type FormPeticion = {
     lista_documentos: File[];
 };
 
-
-const PeticionesPendientes: React.FC = () => {
+const HistorialPeticiones: React.FC = () => {
 
     const api = apiServiceWrapper
     const API_URL = config.apiBaseUrl
 
     const { user } = useAuth()
 
-    const location = useLocation();
-
     const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
+
+    const [modalOpen, setModalOpen] = useState(false)
     const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
-    const [modalOpen, setModalOpen] = useState(false)
-
     const [fechaSeleccionada, setFechaSeleccionada] = useState<string>("")
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
-    const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
+    const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
 
-    const [isLoading, setIsLoading] = useState(false)
-    const [adjuntarModalOpen, setAdjuntarModalOpen] = useState(false)
-    const [adjuntosPeticion, setAdjuntosPeticion] = useState<File[]>([])
 
-    const [alertFilePeticion, setAlertFilePeticion] = useState<string | null>(null)
-    const [alertFileRespuesta, setAlertFileRespuesta] = useState<string | null>(null)
+    const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
+    const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
+
+    const [isLoading, setIsLoading] = useState(false)
 
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
         para: "",
@@ -65,15 +58,6 @@ const PeticionesPendientes: React.FC = () => {
         respuesta: "",
         lista_documentos: []
     });
-
-    useEffect(() => {
-        if (location.state?.modalOpen) {
-            setModalOpen(true);
-            if (location.state?.selectPq) {
-                setSelectedSolicitud(location.state.selectPq);
-            }
-        }
-    }, [location.state]);
 
     const fetchSolicitudes = async () => {
         setIsLoading(true);
@@ -86,7 +70,6 @@ const PeticionesPendientes: React.FC = () => {
                 responsableId,
                 page: currentPage - 1,
                 size: itemsPerPage,
-                estadoId: 2 // Pendiente por responder
             };
 
             if (tipoPqSeleccionado !== null) {
@@ -101,6 +84,9 @@ const PeticionesPendientes: React.FC = () => {
                 params.fechaRadicacion = fechaSeleccionada;
             }
 
+            if (estadoSeleccionado !== null) {
+                params.estadoId = estadoSeleccionado;
+            }
             const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_contratistas", params);
             setSolicitudes(response.data || []);
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
@@ -144,6 +130,7 @@ const PeticionesPendientes: React.FC = () => {
         try {
             await Promise.all([
                 fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
+                fetchData<Estado>("estados_pqs", SetEstadosPq)
             ])
         } catch (error) {
             console.error("Error al cargar datos iniciales:", error)
@@ -203,121 +190,14 @@ const PeticionesPendientes: React.FC = () => {
     const fileToBase64 = (file: File): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file); // O reader.readAsBinaryString(file)
             reader.onload = () => {
                 const result = reader.result as string;
-                const base64 = result.split(",")[1];
+                const base64 = result.split(",")[1]; // Quita el "data:..." al inicio
                 resolve(base64);
             };
             reader.onerror = reject;
         });
-    };
-
-    const addFiles = (files: File[], tipo: "peticion" | "respuesta") => {
-        const validFiles = validateFiles(files, tipo);
-        if (tipo === "peticion") {
-            addFilesPeticion(validFiles);
-
-        } else {
-            addFilesRespuesta(validFiles);
-        }
-    };
-
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault()
-    }
-
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault()
-    }
-
-    const removeFilePeticion = (index: number) => {
-        setAdjuntosPeticion((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    const removeFile = (index: number) => {
-        setFormPeticion((prev) => ({
-            ...prev,
-            lista_documentos: prev.lista_documentos.filter((_: File, i: number) => i !== index),
-        }));
-    };
-
-    const addFilesPeticion = (files: File[]) => {
-        const validFiles = validateFiles(files, "peticion");
-        setAdjuntosPeticion((prev) => [...prev, ...validFiles]);
-    };
-
-
-    const addFilesRespuesta = (files: File[]) => {
-        const validFiles = validateFiles(files, "respuesta");
-        setFormPeticion((prev) => ({
-            ...prev,
-            documentosRespuesta: [...prev.lista_documentos, ...validFiles],
-        }));
-    };
-
-
-    const validateFiles = (files: File[], tipo: "peticion" | "respuesta") => {
-        const validTypes = [
-            "application/pdf",
-            "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "image/jpeg",
-            "image/jpg",
-            "image/png",
-        ];
-        const maxSize = 5 * 1024 * 1024; // 5MB
-
-        if (tipo === "peticion") {
-            return files.filter((file) => {
-                if (!validTypes.includes(file.type)) {
-                    setAlertFilePeticion(null)
-                    setAlertFilePeticion(`El archivo ${file.name} no es un formato válido`)
-                    return false
-                }
-                if (file.size > maxSize) {
-                    setAlertFilePeticion(null)
-                    setAlertFilePeticion(`El archivo ${file.name} excede el tamaño máximo de 5MB`)
-                    return false;
-                }
-                return true;
-            });
-        } else {
-            return files.filter((file) => {
-                if (!validTypes.includes(file.type)) {
-                    alert(`El archivo ${file.name} no tiene un formato válido`);
-                    return false;
-                }
-                if (file.size > maxSize) {
-                    setAlertFileRespuesta(null)
-                    setAlertFileRespuesta(`El archivo ${file.name} excede el tamaño máximo de 5MB`)
-                    return false;
-                }
-                return true;
-            });
-        }
-    };
-
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return "0 Bytes"
-        const k = 1024
-        const sizes = ["Bytes", "KB", "MB", "GB"]
-        const i = Math.floor(Math.log(bytes) / Math.log(k))
-        return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-    }
-
-    const handleFileSelect = (
-        e: React.ChangeEvent<HTMLInputElement>,
-        tipo: "peticion" | "respuesta"
-    ) => {
-        const files = Array.from(e.target.files || []);
-        addFiles(files, tipo);
-    };
-
-    const handleDrop = (e: React.DragEvent, tipo: "peticion" | "respuesta") => {
-        e.preventDefault();
-        const files = Array.from(e.dataTransfer.files);
-        addFiles(files, tipo);
     };
 
     return (
@@ -329,7 +209,7 @@ const PeticionesPendientes: React.FC = () => {
                         <Breadcrumbs />
                         {/* Contenedor de título y botón */}
                         <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Peticiones Pendientes</h1>
+                            <h1 className="text-2xl font-bold text-blue-900">Historial de Penticiones</h1>
                         </div>
                     </div>
 
@@ -350,13 +230,13 @@ const PeticionesPendientes: React.FC = () => {
                                     <Select
                                         value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
                                         onValueChange={(value) => {
-                                            setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+                                            setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
                                         }}
                                     >
                                         <SelectTrigger className="w-full">
                                             <SelectValue placeholder="Tipo Solicitud" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent side="bottom" avoidCollisions={false}>
                                             <SelectItem value="TODOS">Todos los tipos</SelectItem>
                                             {tipoPQ.map((tipo) => (
                                                 <SelectItem key={tipo.id} value={String(tipo.id)}>
@@ -365,19 +245,38 @@ const PeticionesPendientes: React.FC = () => {
                                             ))}
                                         </SelectContent>
                                     </Select>
+
+                                    <Select
+                                        value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
+                                        onValueChange={(value) => {
+                                            setEstadoSeleccionado(value === "TODOS" ? null : Number(value));
+                                        }}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Estado" />
+                                        </SelectTrigger>
+
+                                        <SelectContent>
+                                            <SelectItem value="TODOS">Todos los estados</SelectItem>
+                                            {estadosPq.map((estado) => (
+                                                <SelectItem key={estado.id} value={String(estado.id)}>
+                                                    {estado.nombre}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+
                                     <input
-                                        id="fecha-radicacion"
                                         type="date"
                                         value={fechaSeleccionada}
                                         onChange={(e) => setFechaSeleccionada(e.target.value)}
-                                        placeholder="Fecha de Radicación"
                                         className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
 
                                     <Button
                                         className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
                                         onClick={() => {
-                                            setTipoPqSeleccdionado(null)
+                                            setTipoPqSeleccionado(null)
                                             setNumeroRadicado(null)
                                             setFechaSeleccionada("")
                                         }}
@@ -393,6 +292,7 @@ const PeticionesPendientes: React.FC = () => {
                     <Card className="bg-white shadow-sm">
                         <CardContent className="p-2">
                             <h2 className="text-lg mb-2 font-semibold">Solicitudes Asignadas</h2>
+
                             {isLoading ? (
                                 <div className="flex items-center justify-center py-4">
                                     <LoadingSpinner />
@@ -446,7 +346,7 @@ const PeticionesPendientes: React.FC = () => {
                                                     onClick={() => handleVerClick(solicitud)}
                                                 >
                                                     <CheckCircle2 className="w-3 h-3 mr-1" />
-                                                    Dar Respuesta
+                                                    Ver Detalles
                                                 </Button>
                                             </div>
                                         </div>
@@ -500,7 +400,6 @@ const PeticionesPendientes: React.FC = () => {
                                     Último ⏭
                                 </Button>
                             </div>
-
                         </CardContent>
                     </Card>
                 </div>
@@ -703,14 +602,13 @@ const PeticionesPendientes: React.FC = () => {
                                     Documentos Radicados
                                 </h3>
                                 <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-                                    {selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.length > 0 ? (
+                                    {selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.filter(a => a.respuesta).length > 0 ? (
                                         <ul className="text-sm text-blue-600 space-y-2">
-                                            {selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
-                                                (!archivo.respuesta && (
+                                            {selectedSolicitud.adjuntos
+                                                .filter((archivo: Adjunto) => !archivo.respuesta)
+                                                .map((archivo: Adjunto, i: number) => (
                                                     <li key={i} className="flex items-center gap-2">
-                                                        {/* Ícono del archivo */}
                                                         <FileText className="w-5 h-5 text-blue-600" />
-                                                        {/* Enlace para ver/descargar el archivo */}
                                                         <a
                                                             href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
                                                             download
@@ -718,299 +616,45 @@ const PeticionesPendientes: React.FC = () => {
                                                         >
                                                             {archivo.nombreArchivo}
                                                         </a>
-                                                        {/* Fecha opcional */}
                                                         <span className="text-[10px] text-gray-500 ml-auto">
                                                             {new Date(archivo.createdAt).toLocaleDateString()}
                                                         </span>
                                                     </li>
-                                                ))
-                                            ))}
+                                                ))}
                                         </ul>
-                                    ) : (<div className="flex items-center justify-between">
-                                        <p className="text-sm text-gray-500">
-                                            No hay documentos cargados.
-                                        </p>
-                                        <Button
-                                            onClick={() => setAdjuntarModalOpen(!adjuntarModalOpen)}
-                                            className={`flex items-center px-4 py-2 text-white focus:ring-2 focus:outline-none
-                                            ${adjuntarModalOpen
-                                                    ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                                                    : "bg-green-600 hover:bg-green-700 focus:ring-green-500"}`}
-                                        >
-                                            {adjuntarModalOpen ? (
-                                                <>
-                                                    <XCircle size={18} /> Cerrar Adjuntos Documentos
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <PlusCircle size={18} /> Adjuntar Documento
-                                                </>
-                                            )}
-                                        </Button>
-
-                                    </div>
-
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No hay documentos cargados</p>
                                     )}
                                 </div>
                             </div>
 
-                            {adjuntarModalOpen && (
-                                <div className="space-y-4">
-                                    {/* Dropzone */}
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Adjuntar Documentos de la Petición</h3>
-
-                                    {alertFilePeticion && (
-                                        <p className="text-sm text-red-500">{alertFilePeticion}</p>
-                                    )}
-
-                                    <div
-                                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                                        onDrop={(e) => handleDrop(e, "peticion")}
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onClick={() => document.getElementById("file-input")?.click()}
-                                    >
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                    />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-medium text-gray-700">Arrastra y suelta tu archivo aquí</p>
-                                                <p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar el archivo</p>
-                                            </div>
-                                            <p className="text-xs text-gray-400">
-                                                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (máximo MB)
-                                            </p>
-                                        </div>
-
-                                        <input
-                                            id="file-input"
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                            onChange={(e) => handleFileSelect(e, "peticion")}
-                                            className="hidden"
-                                        />
-
-                                    </div>
-
-                                    {adjuntosPeticion.length > 0 && (
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium text-gray-700">Archivos seleccionados:</h4>
-                                            <div className="space-y-2">
-                                                {adjuntosPeticion.map((file: File, index: number) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
-                                                                <svg
-                                                                    className="w-4 h-4 text-blue-500"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        strokeWidth={2}
-                                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                                                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                                                            </div>
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeFilePeticion(index)}
-                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M6 18L18 6M6 6l12 12"
-                                                                />
-                                                            </svg>
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Área para escribir la respuesta */}
-                            <div className="pt-6">
-
+                            <div className="mt-2 px-1 pb-4">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
-                                    Respuesta de la Solicitud
+                                    Documentos de Respuesta
                                 </h3>
-
-                                {/* Campo PARA */}
-                                <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Para:
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formPeticion.para}
-                                        onChange={(e) =>
-                                            setFormPeticion((prev) => ({ ...prev, para: e.target.value }))
-                                        }
-                                        placeholder="correo1@ejemplo.com, correo2@ejemplo.com"
-                                        className="w-full border rounded-lg px-3 py-2 mt-1"
-                                    />
-
-                                </div>
-
-                                {/* Campo ASUNTO */}
-                                <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Asunto:
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={formPeticion.asunto}
-                                        onChange={(e) =>
-                                            setFormPeticion((prev) => ({ ...prev, asunto: e.target.value }))
-                                        }
-                                        placeholder="Escribe el asunto..."
-                                        className="w-full border rounded-lg px-3 py-2 mt-1"
-                                    />
-                                </div>
-
-                                {/* Campo ASUNTO */}
-                                <div className="mb-3">
-                                    <label className="block text-sm font-medium text-gray-700">
-                                        Mensaje:
-                                    </label>
-                                    {/* Editor de texto */}
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={formPeticion.respuesta}
-                                        onChange={(value) =>
-                                            setFormPeticion((prev) => ({ ...prev, respuesta: value }))
-                                        }
-                                        className="bg-white rounded-lg mb-3 h-36 mt-1"
-                                        placeholder="Escribe tu respuesta aquí..."
-                                        modules={{
-                                            toolbar: [
-                                                [{ header: [1, 2, false] }],
-                                                ["bold", "italic", "underline", "strike"],
-                                                [{ list: "ordered" }, { list: "bullet" }],
-                                                ["link"],
-                                                ["clean"],
-                                            ],
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="space-y-4 mt-12">
-                                    {/* Dropzone */}
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Adjuntar archivos</h3>
-
-                                    {alertFileRespuesta && (
-                                        <p className="text-sm text-red-500">{alertFileRespuesta}</p>
-                                    )}
-
-                                    <div
-                                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer"
-                                        onDrop={(e) => handleDrop(e, "respuesta")}
-                                        onDragOver={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onClick={() => document.getElementById("file-input")?.click()}
-                                    >
-                                        <div className="flex flex-col items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                                                <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                                    />
-                                                </svg>
-                                            </div>
-                                            <div>
-                                                <p className="text-lg font-medium text-gray-700">Arrastra y suelta tu archivo aquí</p>
-                                                <p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar el archivo</p>
-                                            </div>
-                                            <p className="text-xs text-gray-400">
-                                                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (máximo MB)
-                                            </p>
-                                        </div>
-
-                                        <input
-                                            id="file-input"
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                                            onChange={(e) => handleFileSelect(e, "respuesta")}
-                                            className="hidden"
-                                        />
-
-                                    </div>
-
-                                    {formPeticion.lista_documentos.length > 0 && (
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium text-gray-700">Archivos seleccionados:</h4>
-                                            <div className="space-y-2">
-                                                {formPeticion.lista_documentos.map((file: File, index: number) => (
-                                                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
-                                                                <svg
-                                                                    className="w-4 h-4 text-blue-500"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    viewBox="0 0 24 24"
-                                                                >
-                                                                    <path
-                                                                        strokeLinecap="round"
-                                                                        strokeLinejoin="round"
-                                                                        strokeWidth={2}
-                                                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                                                    />
-                                                                </svg>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                                                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                                                            </div>
-                                                        </div>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => removeFile(index)}
-                                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                <div className="bg-gray-50 p-4 rounded-lg space-y-4">
+                                    {selectedSolicitud.adjuntos && selectedSolicitud.adjuntos.filter(a => a.respuesta).length > 0 ? (
+                                        <ul className="text-sm text-blue-600 space-y-2">
+                                            {selectedSolicitud.adjuntos
+                                                .filter((archivo: Adjunto) => archivo.respuesta)
+                                                .map((archivo: Adjunto, i: number) => (
+                                                    <li key={i} className="flex items-center gap-2">
+                                                        <FileText className="w-5 h-5 text-blue-600" />
+                                                        <a
+                                                            href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
+                                                            download
+                                                            className="hover:underline break-all"
                                                         >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path
-                                                                    strokeLinecap="round"
-                                                                    strokeLinejoin="round"
-                                                                    strokeWidth={2}
-                                                                    d="M6 18L18 6M6 6l12 12"
-                                                                />
-                                                            </svg>
-                                                        </Button>
-                                                    </div>
+                                                            {archivo.nombreArchivo}
+                                                        </a>
+                                                        <span className="text-[10px] text-gray-500 ml-auto">
+                                                            {new Date(archivo.createdAt).toLocaleDateString()}
+                                                        </span>
+                                                    </li>
                                                 ))}
-                                            </div>
-                                        </div>
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-gray-500">No hay documentos cargados</p>
                                     )}
                                 </div>
                             </div>
@@ -1030,8 +674,6 @@ const PeticionesPendientes: React.FC = () => {
                                     variant="outline"
                                     onClick={() => {
                                         handleCloseModal();
-                                        setAlertFileRespuesta("")
-                                        setAlertFilePeticion("")
                                     }}
                                 >
                                     Cerrar
@@ -1042,10 +684,7 @@ const PeticionesPendientes: React.FC = () => {
                                     onClick={() => {
                                         handleDarResolucion()
                                         handleCloseModal()
-                                        setAlertFileRespuesta("")
-                                        setAlertFilePeticion("")
                                     }}
-                                    disabled={formPeticion.asunto === "" || formPeticion.para === "" || formPeticion.respuesta === ""}
                                 >
                                     <CheckCircle className="w-4 h-4" />
                                     Dar Resolución
@@ -1059,4 +698,4 @@ const PeticionesPendientes: React.FC = () => {
     )
 }
 
-export default PeticionesPendientes
+export default HistorialPeticiones

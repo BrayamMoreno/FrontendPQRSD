@@ -11,6 +11,7 @@ import type { PqItem } from "../../models/PqItem"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import apiServiceWrapper from "../../api/ApiService"
 import { LoadingSpinner } from "../LoadingSpinner"
+import clsx from "clsx"
 
 const InicioContratista: React.FC = () => {
 
@@ -109,7 +110,30 @@ const InicioContratista: React.FC = () => {
                             </CardContent>
                         </Card>
 
-                        <Card className="w-full text-center shadow hover:shadow-lg transition">
+                        <Card
+                            className={clsx(
+                                "w-full text-center shadow transition rounded-2xl",
+                                vencidasCount > 1
+                                    ? "border-2 border-red-300 animate-pulse bg-red-100"
+                                    : "hover:shadow-lg"
+                            )}
+                            style={
+                                vencidasCount > 1
+                                    ? {
+                                        animation: "flashBg 1s infinite",
+                                    }
+                                    : {}
+                            }
+                        >
+                            <style>
+                                {`
+                                    @keyframes flashBg {
+                                        0%, 100% { background-color: #fee2e2; } /* rojo claro */
+                                        50% { background-color: #fecaca; } /* rojo medio */
+                                    }
+                                `}
+                            </style>
+
                             <CardContent className="p-6 flex flex-col items-center">
                                 {isLoading ? (
                                     <div className="flex items-center justify-center py-4">
@@ -117,12 +141,22 @@ const InicioContratista: React.FC = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <p className="text-3xl font-bold text-orange-500">{vencidasCount}</p>
+                                        <p
+                                            className={clsx(
+                                                "text-3xl font-bold",
+                                                vencidasCount > 1
+                                                    ? "text-red-700 animate-pulse"
+                                                    : "text-orange-500"
+                                            )}
+                                        >
+                                            {vencidasCount}
+                                        </p>
                                         <p className="text-gray-600">Solicitudes Vencidas</p>
                                     </>
                                 )}
                             </CardContent>
                         </Card>
+
                     </div>
 
 

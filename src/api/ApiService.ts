@@ -12,13 +12,13 @@ const apiService = axios.create({
     baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
+
     },
 });
 
-// Interceptor para añadir el token
 apiService.interceptors.request.use(
     (config) => {
-        const token = sessionStorage.getItem("token");
+        const token = sessionStorage.getItem("jwt");
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -27,7 +27,6 @@ apiService.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Manejador centralizado de errores
 const handleRequest = async <T>(
     request: Promise<AxiosResponse<T>>
 ): Promise<T> => {
@@ -48,14 +47,12 @@ const handleRequest = async <T>(
 
         console.error("Error en la petición:", friendlyMessage);
 
-        // lo lanzamos para que el componente pueda mostrarlo
         throw new Error(friendlyMessage);
 
         throw axiosError; // Se relanza para que el componente pueda manejarlo
     }
 };
 
-// Wrapper con métodos HTTP
 const apiServiceWrapper = {
     get: <T>(endpoint: string, params?: AxiosRequestConfig["params"]): Promise<T> =>
         handleRequest<T>(apiService.get<T>(endpoint, { params })),
