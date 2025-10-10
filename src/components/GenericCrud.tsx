@@ -123,8 +123,8 @@ function GenericCrud<T extends { id: number | string }>({
                 <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
                     <Breadcrumbs />
-                    <div className="flex items-center justify-between mb-4">
-                        <h1 className="text-2xl font-bold text-blue-900">{titulo}</h1>
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold text-blue-900 mb-6">{titulo}</h1>
                         {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === tabla) && (
                             <div className="flex gap-2">
                                 <Button

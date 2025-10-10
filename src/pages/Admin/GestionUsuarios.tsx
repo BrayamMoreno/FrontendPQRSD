@@ -24,17 +24,20 @@ import type { Usuario } from "../../models/Usuario"
 import type { Rol } from "../../models/Rol"
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
+import { useAuth } from "../../context/AuthProvider"
 
 const GestionCuentas: React.FC = () => {
 
     const api = apiServiceWrapper
 
     const [loading, setLoading] = useState(false)
+
+    const { permisos: permisosAuth } = useAuth();
+
     const [data, setData] = useState<Usuario[]>([])
     const [search, setSearch] = useState("")
 
     const [isLoading, setIsLoading] = useState<boolean>(false)
-
 
     const [roles, setRoles] = useState<Rol[]>([])
     const [rolSeleccionado, setRolSeleccionado] = useState<string>("TODOS")
@@ -64,8 +67,6 @@ const GestionCuentas: React.FC = () => {
         }
     }
 
-
-
     const fetchSolicitudes = async () => {
         setIsLoading(true)
         try {
@@ -79,7 +80,6 @@ const GestionCuentas: React.FC = () => {
             if (estado && estado !== "TODOS") {
                 params.estado = estado === "true";
             }
-
 
             const response = await api.get<PaginatedResponse<Usuario>>(
                 "/usuarios/search",
@@ -107,8 +107,19 @@ const GestionCuentas: React.FC = () => {
 
     useEffect(() => {
         fetchSolicitudes()
-    }, [currentPage, search, rolSeleccionado, estado]);
+    }, [currentPage, rolSeleccionado, estado]);
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [search, rolSeleccionado, estado]);
+
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            fetchSolicitudes();
+        }, 1500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [search]);
 
     const fetchData = async <T,>(
         endpoint: string,
@@ -137,7 +148,6 @@ const GestionCuentas: React.FC = () => {
     const deleteUser = async (id: number) => {
         try {
             await api.delete(`/usuarios/${id}`, {})
-
             await fetchUser()
         } catch (e) {
             console.error(e)
@@ -150,24 +160,18 @@ const GestionCuentas: React.FC = () => {
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col mb-4 gap-2">
-                        {/* Breadcrumbs arriba */}
-                        <Breadcrumbs />
-
-                        {/* Título + Botón en la misma fila */}
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-bold text-blue-900">Gestión de Usuarios</h1>
-
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={() => setFormOpen(true)}
-                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition"
-                                >
-                                    <PlusCircleIcon size={18} />
-                                    Nuevo usuario
-                                </Button>
-                            </div>
-                        </div>
+                    <Breadcrumbs />
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Usuarios</h1>
+                        {permisosAuth.some(p => p.accion === "agregar" && p.tabla === 'usuarios') && (
+                            <Button
+                                onClick={() => setFormOpen(true)}
+                                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                            >
+                                <PlusCircleIcon size={18} />
+                                Nuevo usuario
+                            </Button>
+                        )}
                     </div>
 
                     <Card className="mb-4">
@@ -273,31 +277,31 @@ const GestionCuentas: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex justify-end gap-2">
-                                                {/* Activar / Desactivar */}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className={`h-9 min-w-[90px] flex items-center justify-center
+                                                {permisosAuth.some(p => p.accion === "modificar" && p.tabla === 'usuarios') && (
+                                                    <>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className={`h-9 min-w-[90px] flex items-center justify-center
                                                                 ${u.isEnable
-                                                            ? "border-yellow-500 text-yellow-700"
-                                                            : "border-green-600 text-green-700"
-                                                        }`}
-                                                    onClick={() => handleStatusAccount(u.id, u.isEnable)}
-                                                >
-                                                    {u.isEnable ? "Desactivar" : "Activar"}
-                                                </Button>
-
-                                                {/* Editar */}
-                                                <Button
-                                                    className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1" onClick={() => {
-                                                        setEditing(u)
-                                                        setReadOnly(false)
-                                                        setFormOpen(true)
-                                                    }}
-                                                >
-                                                    <Edit3 className="h-4 w-4 mr-1" />
-                                                </Button>
-
+                                                                    ? "border-yellow-500 text-yellow-700"
+                                                                    : "border-green-600 text-green-700"
+                                                                }`}
+                                                            onClick={() => handleStatusAccount(u.id, u.isEnable)}
+                                                        >
+                                                            {u.isEnable ? "Desactivar" : "Activar"}
+                                                        </Button>
+                                                        <Button
+                                                            className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1" onClick={() => {
+                                                                setEditing(u)
+                                                                setReadOnly(false)
+                                                                setFormOpen(true)
+                                                            }}
+                                                        >
+                                                            <Edit3 className="h-4 w-4 mr-1" />
+                                                        </Button>
+                                                    </>
+                                                )}
                                                 <Button
                                                     onClick={() => {
                                                         setReadOnly(true)
@@ -309,39 +313,39 @@ const GestionCuentas: React.FC = () => {
                                                     <Eye className="h-4 w-4" />
 
                                                 </Button>
-
-                                                {/* Eliminar */}
-                                                <AlertDialog
-                                                    open={toDelete?.id === u.id}
-                                                    onOpenChange={(open: any) => !open && setToDelete(null)}
-                                                >
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button
-                                                            className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
-                                                            onClick={() => setToDelete(u)}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                            <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
-                                                            </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                            <AlertDialogCancel className="">Cancelar</AlertDialogCancel>
-                                                            <AlertDialogAction
-                                                                className="bg-red-600 hover:bg-red-700 text-white flex items-center"
-                                                                onClick={() => deleteUser(u.id)}
+                                                {permisosAuth.some(p => p.accion === "eliminar" && p.tabla === 'usuarios') && (
+                                                    <AlertDialog
+                                                        open={toDelete?.id === u.id}
+                                                        onOpenChange={(open: any) => !open && setToDelete(null)}
+                                                    >
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button
+                                                                className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
+                                                                onClick={() => setToDelete(u)}
                                                             >
-                                                                <Trash2 className="h-4 w-4 mr-1" />
-                                                                Eliminar
-                                                            </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
+                                                                <Trash2 size={16} />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Esta acción no se puede deshacer. Se eliminará permanentemente el usuario
+                                                                </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel className="">Cancelar</AlertDialogCancel>
+                                                                <AlertDialogAction
+                                                                    className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                    onClick={() => deleteUser(u.id)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                                    Eliminar
+                                                                </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>

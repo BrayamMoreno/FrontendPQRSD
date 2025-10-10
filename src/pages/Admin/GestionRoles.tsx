@@ -8,6 +8,8 @@ import type { Permiso } from "../../models/Permiso";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useAuth } from "../../context/AuthProvider";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../../components/ui/alert-dialog";
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
 
 
 type RolFormData = {
@@ -26,6 +28,7 @@ function GestionRoles() {
     const [loading, setLoading] = useState(true);
     const [editingRol, setEditingRol] = useState<Rol | null>(null);
     const [showForm, setShowForm] = useState(false);
+    const [toDelete, setToDelete] = useState<Rol | null>(null)
 
     const [readOnly, setReadOnly] = useState(false);
 
@@ -39,7 +42,7 @@ function GestionRoles() {
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     const mapRolToFormData = (rol: Rol): RolFormData => ({
-        id: rol.id,
+        id: Number(rol.id),
         nombre: rol.nombre,
         descripcion: rol.descripcion,
         permisos: rol.permisos.map((p) => Number(p.id)),
@@ -149,14 +152,11 @@ function GestionRoles() {
         setShowForm(true);
     };
 
-    const handleDelete = async (id: number) => {
-        if (!window.confirm("¿Seguro que quieres eliminar este rol?")) return;
-        try {
-            await api.delete(`/roles/${id}`, { method: 'DELETE' });
-            loadData();
-        } catch (error) {
-            console.error("Error al eliminar:", error);
-        }
+    const handleDelete = async (id: string) => {
+
+        await api.delete(`/roles/${id}`, { method: 'DELETE' });
+        loadData();
+
     };
 
     return (
@@ -164,13 +164,11 @@ function GestionRoles() {
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-blue-900">
-                                Gestión de Roles y Permisos
-                            </h1>
-                        </div>
-                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'roles') && (
+
+                    <Breadcrumbs />
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Usuarios</h1>
+                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'usuarios') && (
                             <div className="flex gap-2">
                                 <Button
                                     onClick={() => {
@@ -264,12 +262,44 @@ function GestionRoles() {
                                                         <Eye size={16} />
                                                     </Button>
                                                     {permisosAuth.some(p => p.accion === 'eliminar' && p.tabla === 'roles') && (
-                                                        <Button
-                                                            onClick={() => handleDelete(rol.id)}
-                                                            className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                        <AlertDialog
+                                                            open={toDelete?.id === rol.id}
+                                                            onOpenChange={(open: boolean) => {
+                                                                if (!open) setToDelete(null);
+                                                            }}
                                                         >
-                                                            <Trash2 size={16} />
-                                                        </Button>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    onClick={() => setToDelete(rol)} // ✅ abre el diálogo, no elimina aún
+                                                                    className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                                >
+                                                                    <Trash2 size={16} />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>¿Eliminar rol?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta acción no se puede deshacer. Se eliminará permanentemente el rol
+                                                                        <strong> {rol.nombre}</strong>.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                        onClick={async () => {
+                                                                            await handleDelete(rol.id);
+                                                                            setToDelete(null);
+                                                                        }}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Eliminar
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
                                                     )}
                                                 </div>
                                             </td>

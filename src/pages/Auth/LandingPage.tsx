@@ -103,11 +103,6 @@ const LandingPage: React.FC = () => {
             >
               Radicar PQRSDF
             </button>
-            <a href="#como-funciona" className="w-full sm:w-auto">
-              <button className="px-6 py-3 rounded-lg border border-white hover:bg-white hover:text-[#0A192F] transition font-semibold w-full sm:w-auto">
-                ¿Cómo funciona?
-              </button>
-            </a>
           </div>
         </div>
 

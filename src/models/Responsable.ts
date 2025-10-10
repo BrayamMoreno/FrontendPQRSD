@@ -5,5 +5,5 @@ export interface Responsable {
     id: number;
     personaResponsable: Persona;
     area: Area;
-    fechaAsignacion: string; // ISO Date string
+    fechaAsignacion: string;
 }

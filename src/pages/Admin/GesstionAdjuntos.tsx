@@ -22,7 +22,8 @@ import type { Adjunto } from "../../models/Adjunto"
 import config from "../../config"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
-import Toast from "../../components/Toast"
+import { useAuth } from "../../context/AuthProvider"
+import { useAlert } from "../../context/AlertContext"
 
 type AdjuntoFormData = Adjunto & {
     lista_documentos: File[]
@@ -35,6 +36,7 @@ type FormErrors = Partial<Record<keyof AdjuntoFormData, string>> & {
 const GestionAdjuntos: React.FC = () => {
     const api = apiServiceWrapper
     const API_URL = config.apiBaseUrl;
+    const { showAlert } = useAlert();
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
@@ -51,9 +53,6 @@ const GestionAdjuntos: React.FC = () => {
     const [showForm, setShowForm] = useState(false);
 
     const totalAdjuntosInicial = useRef<number | null>(null);
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-
 
     const [formData, setFormData] = useState<AdjuntoFormData>({
         id: 0,
@@ -68,7 +67,7 @@ const GestionAdjuntos: React.FC = () => {
     const [errors, setErrors] = useState<FormErrors>({})
     const [readOnly, setReadOnly] = useState(false);
 
-    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const { permisos: permisosAuth } = useAuth();
     const [fechaFin, setFechaFin] = useState<string | null>(null);
     const [fechaInicio, setFechaInicio] = useState<string | null>(null);
 
@@ -81,7 +80,7 @@ const GestionAdjuntos: React.FC = () => {
                 const fin = new Date(fechaFin);
 
                 if (inicio > fin) {
-                    handleOpenToast("La fecha de inicio no puede ser mayor que la fecha de fin");
+                    showAlert("La fecha de inicio no puede ser mayor a la fecha fin.", "error");
                     setLoading(false);
                     return;
                 }
@@ -205,7 +204,7 @@ const GestionAdjuntos: React.FC = () => {
         }
 
         try {
-            const response = await api.put(`/adjuntos_pq/actualizar_adjunto`, payload);
+            await api.put(`/adjuntos_pq/actualizar_adjunto`, payload);
             fetchAdjuntos();
             return true;
         } catch (error: any) {
@@ -224,15 +223,6 @@ const GestionAdjuntos: React.FC = () => {
         }
     };
 
-    const handleOpenToast = (message: string) => {
-        setToastMessage(message);
-        setShowToast(true);
-    }
-
-    const handleCloseToast = () => {
-        setShowToast(false);
-        setToastMessage("");
-    };
 
     const handleCreatedAdjunto = async (): Promise<boolean> => {
         if (!validateForm()) return false;
@@ -254,7 +244,7 @@ const GestionAdjuntos: React.FC = () => {
         }
 
         try {
-            const response = await api.post(`/adjuntos_pq/crear_adjunto`, payload);
+            await api.post(`/adjuntos_pq/crear_adjunto`, payload);
             fetchAdjuntos();
             return true;
         } catch (error: any) {
@@ -370,21 +360,24 @@ const GestionAdjuntos: React.FC = () => {
     }
 
     return (
-        <div className="flex min-h-screen w-full bg-gray-50 pb-8">
-            <div className="w-full pt-36 px-8">
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     {/* Cabecera */}
                     <Breadcrumbs />
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                        <h1 className="text-xl md:text-2xl font-bold text-blue-900">Gestión de Adjuntos</h1>
-                        <div className="flex flex-wrap gap-2">
-                            <Button onClick={() => setShowForm(true)}
-                                className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;">
-                                <PlusCircleIcon size={18} />
-                                Nuevo adjunto
-                            </Button>
-                        </div>
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Usuarios</h1>
+                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'adjuntos_pq') && (
+                            <div className="flex gap-2">
+                                <Button onClick={() => setShowForm(true)}
+                                    className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;">
+                                    <PlusCircleIcon size={18} />
+                                    Nuevo adjunto
+                                </Button>
+                            </div>
+                        )}
                     </div>
+
 
                     <Card className="mb-4">
                         <CardContent>
@@ -454,17 +447,6 @@ const GestionAdjuntos: React.FC = () => {
                         </CardContent>
                     </Card>
 
-                    {/* Toast de error */}
-                    <div>
-                        {showToast && (
-                            <Toast
-                                message={toastMessage}
-                                onClose={handleCloseToast}
-                                duration={3000}
-                            />
-                        )}
-                    </div>
-
                     {/* Tabla */}
                     <div className="bg-white shadow-md rounded-lg overflow-hidden">
                         <div className="overflow-x-auto">
@@ -532,7 +514,6 @@ const GestionAdjuntos: React.FC = () => {
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
 
-                                                    {/* Eliminar */}
                                                     <AlertDialog
                                                         open={toDelete?.id === u.id}
                                                         onOpenChange={(open: any) => !open && setToDelete(null)}

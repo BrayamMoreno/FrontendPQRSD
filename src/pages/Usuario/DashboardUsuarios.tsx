@@ -43,8 +43,8 @@ const Dashboard: React.FC = () => {
 	const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
 	const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
 	const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
-	const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
-	const [numeroRadicado, SetNumeroRadicado] = useState<String | null>(null)
+	const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
+	const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
 
 	const [fechaInicio, setFechaInicio] = useState<string | null>(null);
 	const [fechaFin, setFechaFin] = useState<string | null>(null);
@@ -101,7 +101,7 @@ const Dashboard: React.FC = () => {
 
 			if (totalSolicitudesInicial.current === null) {
 				totalSolicitudesInicial.current = response.total_count ?? 0;
-			}// ✅ ahora guardamos el total global
+			}
 			const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
 			setTotalPages(totalPages);
 		} catch (error) {
@@ -123,17 +123,14 @@ const Dashboard: React.FC = () => {
 		};
 	}, [modalRadicarSolicitud, modalOpen]);
 
-
 	useEffect(() => {
 		fetchAllData()
 	}, [])
 
-	// carga inicial y cuando cambia de página (sin debounce)
 	useEffect(() => {
 		fetchSolicitudes();
 	}, [currentPage]);
 
-	// debounce para filtros
 	useEffect(() => {
 		const delayDebounce = setTimeout(fetchSolicitudes, 500);
 		return () => clearTimeout(delayDebounce);
@@ -252,7 +249,7 @@ const Dashboard: React.FC = () => {
 												value={numeroRadicado ? String(numeroRadicado) : ""}
 												onChange={(e) => {
 													const value = e.target.value.trim();
-													SetNumeroRadicado(value === "" ? null : value);
+													setNumeroRadicado(value === "" ? null : value);
 												}}
 											/>
 										</div>
@@ -263,7 +260,7 @@ const Dashboard: React.FC = () => {
 											<Select
 												value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
 												onValueChange={(value) =>
-													setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+													setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
 												}
 											>
 												<SelectTrigger className="w-full">
@@ -330,8 +327,8 @@ const Dashboard: React.FC = () => {
 												className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
 												onClick={() => {
 													setEstadoSeleccionado(null);
-													setTipoPqSeleccdionado(null);
-													SetNumeroRadicado(null);
+													setTipoPqSeleccionado(null);
+													setNumeroRadicado(null);
 													setFechaInicio(null);
 													setFechaFin(null);
 												}}

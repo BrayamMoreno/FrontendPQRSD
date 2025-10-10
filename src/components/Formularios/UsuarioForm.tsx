@@ -37,7 +37,7 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         isEnable: false,
         resetToken: null,
         persona: {
-            id: 0,
+            id: "",
             nombre: "",
             apellido: "",
             tipoDoc: { id: "", nombre: "" },
@@ -52,7 +52,7 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
             correoUsuario: ""
         },
         rol: {
-            id: 0,
+            id: "",
             nombre: "",
             descripcion: "",
             createdAt: "",
@@ -152,6 +152,14 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         if (!formData.persona.genero.id) newErrors.genero = "Debe seleccionar un género"
         if (!formData.rol.id) newErrors.rol = "Debe seleccionar un rol"
 
+        if (!formData.isEnable) {
+            newErrors.isEnable = "El usuario debe estar habilitado"
+        }
+
+        if (!formData.persona.tratamientoDatos) {
+            newErrors.tratamientoDatos = "Debe aceptar el tratamiento de datos personales"
+        }
+
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
@@ -187,9 +195,8 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto">
-
+        <div className="fixed w-screen inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
 
                 <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
                     <h2 className="text-xl font-bold">
@@ -212,9 +219,7 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                         {isLoading ? (
                             <LoadingSpinner />
                         ) : (
-
                             <>
-
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos Personales</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -259,14 +264,34 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Configuración</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <SwitchField label="Habilitado" checked={formData.isEnable} onChange={(val: boolean) => handleChange("isEnable", val)} readOnly={readOnly} />
-                                        <SwitchField label="Tratamiento de datos" checked={formData.persona.tratamientoDatos} onChange={(val: boolean) => handleChange("persona.tratamientoDatos", val)} readOnly={readOnly} />
+                                        <div>
+                                            <SwitchField
+                                                label="Habilitado"
+                                                checked={formData.isEnable}
+                                                onChange={(val: boolean) => handleChange("isEnable", val)}
+                                                readOnly={readOnly}
+                                            />
+                                            {errors.isEnable && (
+                                                <p className="text-red-500 text-xs mt-1">{errors.isEnable}</p>
+                                            )}
+                                        </div>
+                                        <div>
+                                            <SwitchField
+                                                label="Tratamiento de datos"
+                                                checked={formData.persona.tratamientoDatos}
+                                                onChange={(val: boolean) => handleChange("persona.tratamientoDatos", val)}
+                                                readOnly={readOnly}
+                                            />
+                                            {errors.tratamientoDatos && (
+                                                <p className="text-red-500 text-xs mt-1">{errors.tratamientoDatos}</p>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-4">
                                     <Button variant="outline" type="button" className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition" onClick={onClose}>Cerrar</Button>
-                                    {!readOnly && <Button type="submit">{usuario ? "Actualizar" : "Crear"}</Button>}
+                                    {!readOnly && <Button type="submit" className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500">{usuario ? "Actualizar" : "Crear"}</Button>}
                                 </div>
                             </>
                         )}

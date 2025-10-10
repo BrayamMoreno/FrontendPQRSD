@@ -1,14 +1,48 @@
-
+/* ========== Fix autofill (colocar AL FINAL de app.css) ========== */
 input:-webkit-autofill,
-input:-webkit-autofill:hover,
-input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
+input:-webkit-autofill:hover,
+textarea:-webkit-autofill:hover,
 select:-webkit-autofill:hover,
-select:-webkit-autofill:focus {
-  transition: background-color 5000s ease-in-out 0s;
-  -webkit-text-fill-color: #000 !important;
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill:focus,
+input:-internal-autofill-selected {
+  -webkit-text-fill-color: #000 !important;         /* texto */
+  color: #000 !important;
+  background-color: transparent !important;
+  background-image: none !important;                /* elimina gradientes */
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,1) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(255,255,255,1) inset !important;
+  background-clip: padding-box !important;
+  -webkit-background-clip: padding-box !important;
+  transition: background-color 9999s ease-in-out 0s !important;
 }
 
+/* Asegura color dentro del texto autofill en algunas versiones */
+input:-webkit-autofill::first-line,
+textarea:-webkit-autofill::first-line {
+  -webkit-text-fill-color: #000 !important;
+  color: #000 !important;
+  font-family: inherit;
+}
+
+/* ===== Modo oscuro ===== */
+.dark input:-webkit-autofill,
+.dark textarea:-webkit-autofill,
+.dark select:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:hover,
+.dark select:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill:focus,
+.dark select:-webkit-autofill:focus,
+.dark input:-internal-autofill-selected {
+  -webkit-text-fill-color: #fff !important;
+  color: #fff !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(10,10,10,1) inset !important;
+  box-shadow: 0 0 0px 1000px rgba(10,10,10,1) inset !important;
+  background-clip: padding-box !important;
+  -webkit-background-clip: padding-box !important;
+}

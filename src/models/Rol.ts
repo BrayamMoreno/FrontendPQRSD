@@ -1,7 +1,7 @@
 import type { Permiso } from "./Permiso";
 
 export interface Rol {
-  id: number;
+  id: string;
   nombre: string;
   descripcion: string;
   createdAt: string;

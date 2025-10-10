@@ -1,20 +1,21 @@
-import { useState } from "react"
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
-import { Label } from "../../components/ui/label"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { Button } from "../ui/button"
+import { Input } from "../ui/input"
+import { Label } from "../ui/label"
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../../components/ui/select"
+} from "../ui/select"
 import ReactQuill from "react-quill-new"
 import "react-quill-new/dist/quill.snow.css"
 import type { TipoPQ } from "../../models/TipoPQ"
-import type { RequestPq } from "../../models/RequestPq"
 import apiServiceWrapper from "../../api/ApiService"
-import { useAuth } from "../../context/AuthProvider"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
+import type { Usuario } from "../../models/Usuario"
+import { useAlert } from "../../context/AlertContext"
 
 interface FormPeticion {
     tipo_pq_id: string
@@ -24,30 +25,21 @@ interface FormPeticion {
     lista_documentos: File[]
 }
 
-interface RadicarSolicitudModalProps {
+interface RadicarModalAdminProps {
     isOpen: boolean
     tipoPq: TipoPQ[]
     onClose: () => void
     onSuccess: () => void
 }
 
-export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSuccess }: RadicarSolicitudModalProps) {
+export default function RadicarModalAdmin({
+    isOpen,
+    tipoPq,
+    onClose,
+    onSuccess,
+}: RadicarModalAdminProps) {
 
-    const [errorsRadicacion, setErrorsRadicacion] = useState<string | null>(null);
-    const [errors, setErrors] = useState<Partial<FormPeticion>>({})
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [alertFile, setAlertFile] = useState<string | null>(null)
-
-    const [formPeticion, setFormPeticion] = useState<FormPeticion>({
-        tipo_pq_id: "",
-        solicitante_id: "",
-        detalleAsunto: "",
-        detalleDescripcion: "",
-        lista_documentos: [],
-    })
-
-    const api = apiServiceWrapper
-    const { user } = useAuth();
+    const { showAlert } = useAlert();
 
     const closeModal = () => {
         setFormPeticion({
@@ -57,22 +49,125 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
             detalleDescripcion: "",
             lista_documentos: [],
         });
-        setErrors({});
-        setAlertFile(null);
-        setErrorsRadicacion(null);
+        setErrors({
+            tipo_pq_id: undefined,
+            solicitante_id: undefined,
+            detalleAsunto: undefined,
+            detalleDescripcion: undefined,
+            lista_documentos: undefined,
+        });
+        setUsuarios([]);
+        setPage(1);
         onClose()
     }
 
-    const handleInputChange = (field: keyof RequestPq, value: string) => {
-        setFormPeticion((prev) => ({
-            ...prev!,
-            [field]: value
-        }))
-        if (errors[field]) {
-            setErrors((prev) => ({
-                ...prev,
-                [field]: undefined
-            }))
+    const [formPeticion, setFormPeticion] = useState<FormPeticion>({
+        tipo_pq_id: "",
+        solicitante_id: "",
+        detalleAsunto: "",
+        detalleDescripcion: "",
+        lista_documentos: [],
+    })
+
+    const [usuarios, setUsuarios] = useState<Usuario[]>([])
+    const [page, setPage] = useState(1)
+    const [hasMore, setHasMore] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+    const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+
+    const [errors, setErrors] = useState<Partial<FormPeticion>>({})
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    const api = apiServiceWrapper
+    const observerRef = useRef<HTMLDivElement | null>(null)
+
+    const fetchUsuarios = useCallback(
+        async (reset = false) => {
+            if (isLoadingUsers || (!hasMore && !reset)) return
+            setIsLoadingUsers(true)
+
+            const params: Record<string, any> = {
+                page: 0,
+                size: 10,
+                rolId: 5, // Rol de "Usuario"
+            };
+
+            if (searchTerm.trim()) {
+                params.busqueda = searchTerm.trim();
+            }
+
+            try {
+                const currentPage = reset ? 1 : page
+
+                const response = await api.get<PaginatedResponse<Usuario>>("/usuarios/search", params)
+
+                const nuevosUsuarios = response.data || []
+
+                setUsuarios((prev) => (reset ? nuevosUsuarios : [...prev, ...nuevosUsuarios]))
+
+                setHasMore(response.has_more)
+                setPage(currentPage + 1)
+            } catch (err) {
+                console.error("Error cargando usuarios:", err)
+                showAlert(`Error cargando usuarios: ${err instanceof Error ? err.message : String(err)}`, "error")
+
+            } finally {
+                setIsLoadingUsers(false)
+            }
+        },
+        [page, searchTerm, hasMore, isLoadingUsers, api]
+    )
+
+    useEffect(() => {
+        if (isOpen) fetchUsuarios(true)
+    }, [isOpen])
+
+    useEffect(() => {
+        fetchUsuarios(true)
+    }, [searchTerm])
+
+    const handleInputChange = (field: keyof FormPeticion, value: any) => {
+        setFormPeticion(prev => ({ ...prev, [field]: value }))
+        if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }))
+    }
+
+    const validateForm = (): boolean => {
+        const newErrors: Partial<FormPeticion> = {}
+        if (!formPeticion.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
+        if (!formPeticion.solicitante_id) newErrors.solicitante_id = "Debe seleccionar un solicitante"
+        if (!formPeticion.detalleAsunto.trim()) newErrors.detalleAsunto = "El asunto es requerido"
+        if (!formPeticion.detalleDescripcion.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
+        setErrors(newErrors)
+        return Object.keys(newErrors).length === 0
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!validateForm()) return
+        setIsSubmitting(true)
+        try {
+            const documentosBase64 = await Promise.all(
+                formPeticion.lista_documentos.map(async (file) => {
+                    const base64 = await fileToBase64(file);
+                    return {
+                        Nombre: file.name,
+                        Tipo: file.type,
+                        Contenido: base64,
+                    };
+                })
+            );
+
+            const payload = {
+                ...formPeticion,
+                lista_documentos: documentosBase64,
+            }
+            await api.post("/pqs/radicar_pq", payload)
+            onSuccess()
+            onClose()
+        } catch (error) {
+            console.error("Error al radicar:", error)
+        } finally {
+            setIsSubmitting(false)
         }
     }
 
@@ -121,12 +216,12 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
             const maxSize = 2 * 1024 * 1024 // 2MB
 
             if (!validTypes.includes(file.type)) {
-                setAlertFile(`El archivo ${file.name} no es un PDF válido`)
+                showAlert(`El archivo ${file.name} no es un PDF válido`, "warning")
                 return false
             }
 
             if (file.size > maxSize) {
-                setAlertFile(`El archivo ${file.name} excede el tamaño máximo de 2MB`)
+                showAlert(`El archivo ${file.name} excede el tamaño máximo de 2MB`, "warning")
                 return false
             }
 
@@ -147,164 +242,105 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
         return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
     }
 
-    const validateForm = (): boolean => {
-        const newErrors: Partial<FormPeticion> = {}
-        if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
-        if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
-        if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        const rawId = user?.persona.id;
-        const solicitanteId = rawId ? Number(rawId) : null;
-
-        if (!validateForm()) return;
-
-        setIsSubmitting(true);
-
-        try {
-            const documentosBase64 = await Promise.all(
-                formPeticion.lista_documentos.map(async (file) => {
-                    const base64 = await fileToBase64(file);
-                    return {
-                        Nombre: file.name,
-                        Tipo: file.type,
-                        Contenido: base64,
-                    };
-                })
-            );
-
-            const payload = {
-                tipo_pq_id: formPeticion.tipo_pq_id,
-                solicitante_id: solicitanteId,
-                detalleAsunto: formPeticion.detalleAsunto,
-                detalleDescripcion: formPeticion.detalleDescripcion,
-                lista_documentos: documentosBase64,
-            };
-
-            await api.post("/pqs/radicar_pq", payload);
-
-            setFormPeticion({
-                tipo_pq_id: "",
-                solicitante_id: "",
-                detalleAsunto: "",
-                detalleDescripcion: "",
-                lista_documentos: [],
-            });
-
-            setErrors({});
-            setAlertFile(null);
-            setErrorsRadicacion(null);
-
-            onSuccess(); // Llamar a la función onSuccess si se proporciona
-            onClose();
-        } catch (error) {
-            setErrorsRadicacion("Error al radicar la PQRSD. Por favor, inténtelo de nuevo.");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
 
     if (!isOpen) return null
 
     return (
         <div className="fixed w-screen inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
-                {/* Header */}
-                <div className="bg-blue-900 text-white p-6">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold">Radicar Petición</h2>
-                    </div>
+                <div className="bg-blue-900 text-white px-6 py-4  flex justify-between">
+                    <h2 className="text-lg font-semibold">Radicar PQRSD (Administrador)</h2>
                 </div>
 
-                {errorsRadicacion && (
-                    <div className="p-4 bg-red-100 border border-red-300 text-red-700 rounded">
-                        {errorsRadicacion}
-                    </div>
-                )}
-
-                {/* Contenido */}
                 <div className="p-6 space-y-4">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Tipo de PQRSD */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label htmlFor="tipo" className="text-sm font-medium">
-                                    Tipo de PQRSD <span className="text-red-500">*</span>
-                                </Label>
-                                {errors.tipo_pq_id && <p className="text-sm text-red-500">{errors.tipo_pq_id}</p>}
-                                <Select
-                                    value={formPeticion.tipo_pq_id}
-                                    onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
-                                >
-                                    <SelectTrigger className={errors.tipo_pq_id ? "border-red-500" : ""}>
-                                        <SelectValue placeholder="Seleccione el tipo" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {tipoPq.map((tipo) => (
-                                            <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                                {tipo.nombre}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+
+                        <div className="space-y-2">
+                            <Label>Tipo de PQRSD</Label>
+                            <Select
+                                value={formPeticion.tipo_pq_id}
+                                onValueChange={(v) => handleInputChange("tipo_pq_id", v)}
+                            >
+                                <SelectTrigger className={errors.tipo_pq_id ? "border-red-500" : ""}>
+                                    <SelectValue placeholder="Seleccione un tipo" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {tipoPq.map((tipo) => (
+                                        <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                            {tipo.nombre}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {errors.tipo_pq_id && <p className="text-red-500 text-sm">{errors.tipo_pq_id}</p>}
                         </div>
 
-                        {/* Asunto */}
                         <div className="space-y-2">
-                            <Label htmlFor="asunto" className="text-sm font-medium">
-                                Asunto <span className="text-red-500">*</span>
-                            </Label>
-                            {errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
+                            <Label>Solicitante</Label>
                             <Input
-                                id="asunto"
-                                type="text"
-                                placeholder="Ingrese el asunto de su PQRSD"
+                                placeholder="Buscar por nombre o identificación..."
+                                value={searchTerm}
+                                onChange={(e) => {
+                                    setSearchTerm(e.target.value)
+                                    setPage(1)
+                                }}
+                            />
+                            <div
+                                className="border rounded-md max-h-52 overflow-y-auto p-2"
+                            >
+                                {usuarios.map((u) => (
+                                    <div
+                                        key={u.id}
+                                        onClick={() => handleInputChange("solicitante_id", String(u.id))}
+                                        className={`cursor-pointer px-3 py-2 rounded-md hover:bg-blue-50 ${formPeticion.solicitante_id === String(u.id) ? "bg-blue-100" : ""}`}
+                                    >
+                                        <p className="font-medium text-gray-800">{u.persona.nombre}</p>
+                                        <p className="text-sm text-gray-500">{u.persona.dni}</p>
+                                    </div>
+                                ))}
+                                {isLoadingUsers && (
+                                    <p className="text-center text-gray-500 text-sm py-2">Cargando...</p>
+                                )}
+                                {!isLoadingUsers && usuarios.length === 0 && (
+                                    <p className="text-center text-gray-400 text-sm py-2">Sin resultados</p>
+                                )}
+                                <div ref={observerRef} className="h-2" />
+                            </div>
+                            {errors.solicitante_id && (
+                                <p className="text-red-500 text-sm">{errors.solicitante_id}</p>
+                            )}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label>Asunto</Label>
+                            <Input
                                 value={formPeticion.detalleAsunto}
                                 onChange={(e) => handleInputChange("detalleAsunto", e.target.value)}
+                                placeholder="Ingrese el asunto"
                                 className={errors.detalleAsunto ? "border-red-500" : ""}
                             />
+                            {errors.detalleAsunto && <p className="text-red-500 text-sm">{errors.detalleAsunto}</p>}
                         </div>
 
-                        {/* Descripción */}
                         <div className="space-y-2">
-                            <Label htmlFor="descripcion" className="text-sm font-medium">
-                                Descripción detallada <span className="text-red-500">*</span>
-                            </Label>
-                            {errors.detalleDescripcion && <p className="text-sm text-red-500">{errors.detalleDescripcion}</p>}
+                            <Label>Descripción</Label>
                             <ReactQuill
                                 theme="snow"
                                 value={formPeticion.detalleDescripcion}
-                                onChange={(value) => handleInputChange("detalleDescripcion", value)}
-                                className="bg-white rounded-lg mb-3 h-36"
-                                placeholder="Escribe la descripción aquí..."
-                                modules={{
-                                    toolbar: [
-                                        [{ header: [1, 2, false] }],
-                                        ["bold", "italic", "underline", "strike"],
-                                        [{ list: "ordered" }, { list: "bullet" }],
-                                        ["link"],
-                                        ["clean"],
-                                    ],
-                                }}
+                                onChange={(v) => handleInputChange("detalleDescripcion", v)}
+                                className={errors.detalleDescripcion ? "border-red-500" : ""}
                             />
+                            {errors.detalleDescripcion && (
+                                <p className="text-red-500 text-sm">{errors.detalleDescripcion}</p>
+                            )}
                         </div>
 
-                        <div className="pt-10">
+                        <div>
                             <h3 className="text-lg font-semibold text-blue-900 mb-4">
                                 Archivo adjunto (Solo se puede adjuntar un archivo)
                             </h3>
                             <div className="space-y-4">
 
-                                {alertFile && (
-                                    <p className="text-sm text-red-500">{alertFile}</p>
-                                )}
-                                {/* Dropzone */}
                                 <div
                                     className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
                                         ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
@@ -420,23 +456,12 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                             </div>
                         </div>
 
-
-                        {/* Botones */}
-                        <div className="flex justify-end gap-4 pt-6 border-t">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={closeModal}
-                                disabled={isSubmitting}
-                            >
+                        <div className="flex justify-end gap-4 pt-4 border-t">
+                            <Button variant="outline" onClick={closeModal} disabled={isSubmitting}>
                                 Cancelar
                             </Button>
-                            <Button
-                                type="submit"
-                                className="bg-blue-600 text-white hover:bg-blue-700"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? "Enviando..." : "Radicar PQRSD"}
+                            <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                                {isSubmitting ? "Guardando..." : "Radicar PQRSD"}
                             </Button>
                         </div>
                     </form>

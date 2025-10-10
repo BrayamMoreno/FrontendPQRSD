@@ -64,7 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
 
         if (isAuthenticated) {
-            interval = setInterval(refreshToken, 1 * 60 * 1000);
+            interval = setInterval(refreshToken, 13 * 60 * 1000);
         }
 
         return () => {

@@ -8,12 +8,12 @@ import {
     User,
     LogOut,
     VenusAndMarsIcon,
-    Building,
-    RollerCoaster,
     AppWindow,
     Landmark,
     MapPin,
     MapIcon,
+    Icon,
+    User2,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
 import {
@@ -79,7 +79,8 @@ const NavbarAdmin: React.FC = () => {
             icon: <FaUsersCog />,
             children: [
                 { label: "Adjuntos", icon: <FaPaperclip />, action: () => navigate("/admin/adjuntos") },
-                { label: "Estados PQs", icon: <FaTasks />, action: () => navigate("/admin/estados_peticiones") },
+                { label: "Estados PQs", icon: <FaTasks />, action: () => navigate("/admin/estados_pqs") },
+                { label: "Responsables PQs", icon: <User2 />, action: () => navigate("/admin/responsables_pqs") },
                 { label: "PQs", icon: <FaInbox />, action: () => navigate("/admin/gestion_pqs") },
                 { label: "Historial PQs", icon: <FaHistory />, action: () => navigate("/admin/historial_estados") },
             ],
@@ -93,7 +94,7 @@ const NavbarAdmin: React.FC = () => {
         <header className="fixed z-50 w-screen shadow-md">
             {/* Primera fila */}
             <div className="w-full bg-[#0A192F]">
-                <div className="max-w-7xl mx-auto px-4 flex justify-between items-center h-16">
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
                     {/* Logo */}
                     <div className="flex items-center gap-2 font-bold text-white">
                         <img src={logo} alt="Logo" className="w-8 h-8" />
@@ -175,7 +176,7 @@ const NavbarAdmin: React.FC = () => {
 
             {/* Segunda fila */}
             <div className="w-full bg-[#173A5E] hidden sm:flex">
-                <div className="max-w-7xl mx-auto px-4 flex items-center h-12 gap-6 w-full">
+                <div className="max-w-7xl mx-auto flex items-center h-12 gap-6 w-full">
                     {/* Menú horizontal */}
                     <div className="flex items-center gap-3">
                         {menuItems.map(({ label, icon, action, children }) => (
