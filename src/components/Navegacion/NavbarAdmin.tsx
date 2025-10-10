@@ -105,7 +105,7 @@ const NavbarAdmin: React.FC = () => {
                             {userInfo.iniciales}
                         </div>
                         <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
+                            <DropdownMenuTrigger className="px-3 py-2 text-sm text-white bg-[#0A192F] hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
                                 {userInfo.nombre}
                                 <ChevronDown size={16} />
                             </DropdownMenuTrigger>
@@ -181,7 +181,7 @@ const NavbarAdmin: React.FC = () => {
                         {menuItems.map(({ label, icon, action, children }) => (
                             <DropdownMenu modal={false} key={label}>
                                 <DropdownMenuTrigger
-                                    className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1"
+                                    className="px-3 py-2 text-sm text-white bg-[#173A5E] hover:bg-blue-700 rounded-md flex items-center gap-1"
                                     onClick={!children ? action : undefined}
                                 >
                                     <span className="flex items-center gap-2">

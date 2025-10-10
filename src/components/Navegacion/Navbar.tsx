@@ -143,7 +143,7 @@ const Navbar: React.FC = () => {
                             {userInfo.iniciales}
                         </div>
                         <DropdownMenu modal={false}>
-                            <DropdownMenuTrigger className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
+                            <DropdownMenuTrigger className="px-3 py-2 text-sm text-white bg-[#0A192F] hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
                                 {userInfo.nombre}
                                 <ChevronDown size={16} />
                             </DropdownMenuTrigger>
