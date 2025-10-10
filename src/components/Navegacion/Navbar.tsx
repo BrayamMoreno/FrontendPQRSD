@@ -219,7 +219,7 @@ const Navbar: React.FC = () => {
                         {acciones.map(({ label, icon, action }) => (
                             <DropdownMenu modal={false} key={label}>
                                 <DropdownMenuTrigger
-                                    className="px-3 py-2 text-sm text-white hover:bg-blue-700 rounded-md flex items-center gap-1"
+                                    className="px-3 py-2 text-sm bg-[#173A5E] text-white hover:bg-blue-700 rounded-md flex items-center gap-1"
                                     onClick={(e) => {
                                         action()
                                         e.currentTarget.blur()
