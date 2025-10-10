@@ -1,10 +1,10 @@
-import { FileText, User, HelpCircle, ClipboardList, Bell } from "lucide-react"
+import { FileText, User, HelpCircle } from "lucide-react"
 import { useAuth } from "../../context/AuthProvider"
 import Breadcrumbs from "../Navegacion/Breadcrumbs"
 import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { useNavigate } from "react-router-dom"
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import config from "../../config"
 
 interface ResumenEstados {
@@ -18,8 +18,6 @@ const InicioUsuario: React.FC = () => {
     const navigate = useNavigate()
 
     const baseUrl = config.apiBaseUrl
-
-    const currentRole = location.pathname.split("/")[1]
 
     const personaId = user?.persona?.id;
 

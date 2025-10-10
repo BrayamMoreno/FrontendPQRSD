@@ -63,14 +63,11 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         updatedAt: null,
     });
 
-    const [catalogosListos, setCatalogosListos] = useState(false);
-
     useEffect(() => {
         const loadCatalogosYUser = async () => {
             setIsLoading(true);
             try {
                 await fetchAllData();
-                setCatalogosListos(true);
 
                 if (usuario) {
                     setFormData({

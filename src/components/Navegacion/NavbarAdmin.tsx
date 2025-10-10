@@ -12,7 +12,6 @@ import {
     Landmark,
     MapPin,
     MapIcon,
-    Icon,
     User2,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"

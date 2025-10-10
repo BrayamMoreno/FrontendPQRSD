@@ -10,12 +10,7 @@ import {
     LogOut,
     Users,
     Archive,
-    RollerCoaster,
     LayoutDashboard,
-    User2,
-    UserLock,
-    UserCheck,
-    Shield,
     AppWindow,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
@@ -25,7 +20,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
-import { FaUserCog, FaUserNinja } from "react-icons/fa"
+import { FaUserCog } from "react-icons/fa"
 
 const Navbar: React.FC = () => {
     const navigate = useNavigate()

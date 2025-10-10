@@ -2,7 +2,7 @@ import type React from "react";
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
 import { Button } from "../../components/ui/button";
 import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import apiServiceWrapper from "../../api/ApiService";
 import { useAuth } from "../../context/AuthProvider";
 import { Card, CardContent } from "../../components/ui/card";

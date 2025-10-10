@@ -1,4 +1,4 @@
-import { UserCog, User, CheckCircle2 } from "lucide-react"
+import { UserCog, CheckCircle2 } from "lucide-react"
 
 import { useAuth } from "../../context/AuthProvider"
 import Breadcrumbs from "../Navegacion/Breadcrumbs"

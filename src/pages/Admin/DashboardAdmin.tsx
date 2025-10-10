@@ -29,7 +29,6 @@ const DashboardAdmin: React.FC = () => {
     const [proximasAVencer, setProximasAVencer] = useState<PqItem[]>([]);
     const [tendenciasDiarias, setTendenciasDiarias] = useState<{ fecha: string; cantidad: number }[]>([]);
     const [peticionesPorTipo, setPeticionesPorTipo] = useState<{ tipo: string; cantidad: number }[]>([]);
-    const [peticionesPorDepartamento, setPeticionesPorDepartamento] = useState<{ departamento: string; cantidad: number }[]>([]);
 
     const [totalSolicitudes, setTotalSolicitudes] = useState<number>(0);
     const [totalProximasAVencer, setTotalProximasAVencer] = useState<number>(0);
@@ -155,7 +154,7 @@ const DashboardAdmin: React.FC = () => {
                         <div className="bg-white rounded-lg shadow p-4 lg:col-span-2">
                             <h2 className="text-lg font-semibold mb-4">Peticiones por Departamento</h2>
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={peticionesPorDepartamento}>
+                                <BarChart >
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="departamento" />
                                     <YAxis />

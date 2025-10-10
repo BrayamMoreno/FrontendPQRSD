@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { Badge } from "../../components/ui/badge"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
@@ -30,8 +30,6 @@ const GestionCuentas: React.FC = () => {
 
     const api = apiServiceWrapper
 
-    const [loading, setLoading] = useState(false)
-
     const { permisos: permisosAuth } = useAuth();
 
     const [data, setData] = useState<Usuario[]>([])
@@ -53,7 +51,7 @@ const GestionCuentas: React.FC = () => {
     const [totalPages, setTotalPages] = useState(0)
 
     const fetchUser = async () => {
-        setLoading(true)
+        setIsLoading(true)
         try {
             const params: Record<string, any> = {
                 page: currentPage - 1,
@@ -63,7 +61,7 @@ const GestionCuentas: React.FC = () => {
             setData(response.data || [])
             setTotalPages(Math.ceil((response.total_count ?? 0) / itemsPerPage));
         } finally {
-            setLoading(false)
+            setIsLoading(false)
         }
     }
 
