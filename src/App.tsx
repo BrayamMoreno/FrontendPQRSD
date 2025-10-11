@@ -75,6 +75,7 @@ export default function App() {
                                     <Route path="inicio" element={<InicioRadicador />} />
                                     <Route path="peticiones" element={<DashboardRadicador />} />
                                     <Route path="historial_peticiones_usuario" element={<HistorialPeticionesUsuario />} />
+                                    <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
                                     <Route path="perfil" element={<MostrarPerfil />} />
                                 </Route>
                             </Route>
@@ -103,13 +104,26 @@ export default function App() {
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
 
                                     {/* CRUDs dinámicos */}
-                                    {crudConfigs.map(({ titulo, endpoint, Columns }) => (
+                                    {crudConfigs.map(({ titulo, endpoint, Columns, tabla, accion }) => (
                                         <Route
                                             key={endpoint}
-                                            path={endpoint.replace("/", "")}
-                                            element={<GenericCrud titulo={titulo} endpoint={endpoint} Columns={Columns} />}
-                                        />
+                                            element={<PrivateRoute required={[{ tabla: tabla!, accion }]} />}
+                                        >
+                                            <Route
+                                                path={endpoint.replace("/", "")}
+                                                element={
+                                                    <GenericCrud
+                                                        titulo={titulo}
+                                                        endpoint={endpoint}
+                                                        Columns={Columns}
+                                                        tabla={tabla}
+                                                        accion={accion}
+                                                    />
+                                                }
+                                            />
+                                        </Route>
                                     ))}
+
                                 </Route>
                             </Route>
 

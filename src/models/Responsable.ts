@@ -6,4 +6,5 @@ export interface Responsable {
     personaResponsable: Persona;
     area: Area;
     fechaAsignacion: string;
+    isActive: boolean;
 }

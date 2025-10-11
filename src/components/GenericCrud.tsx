@@ -12,6 +12,7 @@ function GenericCrud<T extends { id: number | string }>({
     endpoint,
     Columns,
     titulo,
+    tabla
 }: CrudProps<T>) {
     const api = apiServiceWrapper;
     const [data, setData] = useState<T[]>([]);
@@ -26,7 +27,6 @@ function GenericCrud<T extends { id: number | string }>({
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
-    const tabla = endpoint.split('/').pop() || 'desconocida';
     const { permisos: permisosAuth } = useAuth();
     const fetchData = async () => {
         setLoading(true);

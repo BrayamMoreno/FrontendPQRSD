@@ -4,6 +4,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Tipos de Documentos",
     endpoint: "/tipos_documentos",
+    tabla: "tipos_documentos",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Nombre" },
@@ -12,6 +14,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Tipos de Personas",
     endpoint: "/tipos_personas",
+    tabla: "tipos_personas",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Tipo de Persona" },
@@ -20,6 +24,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Géneros",
     endpoint: "/generos",
+    tabla: "generos",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Género" },
@@ -28,6 +34,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Tipos de Solicitudes",
     endpoint: "/tipos_pqs",
+    tabla: "tipos_pqs",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Tipo de Solicitud" },
@@ -37,6 +45,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Areas Responsables",
     endpoint: "/areas_responsables",
+    tabla: "areas_responsables",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "codigoDep", label: "Código de Área" },
@@ -46,6 +56,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Departamentos",
     endpoint: "/departamentos",
+    tabla: "departamentos",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Nombre" },
@@ -55,6 +67,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Estados de las Peticiones",
     endpoint: "/estados_pqs",
+    tabla: "estados_pqs",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "nombre", label: "Nombre" },
@@ -65,6 +79,8 @@ export const crudConfigs: CrudProps<any>[] = [
   {
     titulo: "Historial de Estados",
     endpoint: "/historial_estados",
+    tabla: "historial_estados",
+    accion: "leer",
     Columns: [
       { key: "id", label: "ID" },
       { key: "estado.nombre", label: "Estado" },

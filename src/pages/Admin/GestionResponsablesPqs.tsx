@@ -120,6 +120,17 @@ const GestionResponsablesPqs: React.FC = () => {
         setIsModalOpen(true);
     }
 
+    const handleStatus = async (id: number, isActive: boolean) => {
+        try {
+            const action = isActive ? 'disable-responsable' : 'enable-responsable';
+            await api.patch(`/responsables_pqs/${action}/${id}`, {});
+            await fetchResponsables();
+            isActive ? showAlert(`Responsable desactivado correctamente`, 'success') : showAlert(`Responsable activado correctamente`, 'success');
+        } catch (e) {
+            console.error("Error actualizando estado de cuenta:", e);
+        }
+    };
+
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
@@ -208,9 +219,9 @@ const GestionResponsablesPqs: React.FC = () => {
                                             className="border-b hover:bg-blue-50 transition"
                                         >
                                             <td className="px-4 py-4">{r.id}</td>
-                                            <td className="px-4 py-4">{r.area.codigoDep || "Sin Codigo"}</td>
+                                            <td className="px-4 py-4">{r.area?.codigoDep || "Sin Codigo"}</td>
                                             <td className="px-4 py-4">
-                                                {r.area.nombre || "Sin Area"}
+                                                {r.area?.nombre || "Sin Area"}
                                             </td>
                                             <td className="px-4 py-4">
                                                 {r.personaResponsable
@@ -225,12 +236,28 @@ const GestionResponsablesPqs: React.FC = () => {
                                             <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     {/* Editar */}
-                                                    <Button
-                                                        className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"
-                                                        onClick={() => handleEdit(r)}
-                                                    >
-                                                        <Edit3 className="h-4 w-4 mr-1" />
-                                                    </Button>
+                                                    {permisosAuth.some(p => p.accion === "modificar" && p.tabla === 'responsables_pqs') && (
+                                                        <>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className={`h-9 min-w-[90px] flex items-center justify-center
+                                                                ${r.isActive
+                                                                        ? "border-yellow-500 text-yellow-700"
+                                                                        : "border-green-600 text-green-700"
+                                                                    }`}
+                                                                onClick={() => handleStatus(r.id, r.isActive)}
+                                                            >
+                                                                {r.isActive ? "Desactivar" : "Activar"}
+                                                            </Button>
+                                                            <Button
+                                                                className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"
+                                                                onClick={() => handleEdit(r)}
+                                                            >
+                                                                <Edit3 className="h-4 w-4 mr-1" />
+                                                            </Button>
+                                                        </>
+                                                    )}
 
                                                     {/* Ver */}
                                                     <Button
@@ -240,39 +267,41 @@ const GestionResponsablesPqs: React.FC = () => {
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
 
-                                                    <AlertDialog
-                                                        open={toDelete?.id === r.id}
-                                                        onOpenChange={(open: any) => !open && setToDelete(null)}
-                                                    >
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button
-                                                                className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
-                                                                onClick={() => setToDelete(r)}
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>¿Eliminar responsable?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction
-                                                                    className="bg-red-600 hover:bg-red-700 text-white flex items-center"
-                                                                    onClick={() => deleteResponsable(r.id)}
+                                                    {permisosAuth.some(p => p.accion === "eliminar" && p.tabla === 'responsables_pqs') && (
+                                                        <AlertDialog
+                                                            open={toDelete?.id === r.id}
+                                                            onOpenChange={(open: any) => !open && setToDelete(null)}
+                                                        >
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
+                                                                    onClick={() => setToDelete(r)}
                                                                 >
-                                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                                    Eliminar
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
+                                                                    <Trash2 size={16} />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>¿Eliminar responsable?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                        onClick={() => deleteResponsable(r.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Eliminar
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
@@ -328,19 +357,21 @@ const GestionResponsablesPqs: React.FC = () => {
                 </div>
             </div>
 
-            <CrearResponsableModal
-                isOpen={isModalOpen}
-                onClose={() => {
-                    setIsModalOpen(false);
-                    setEditing(null);
-                }}
-                Areas={areas}
-                editing={editing}
-                onSuccess={() => {
-                    fetchResponsables();
-                    setIsModalOpen(false);
-                }}
-            />
+            {isModalOpen && (
+                <CrearResponsableModal
+                    isOpen={isModalOpen}
+                    onClose={() => {
+                        setIsModalOpen(false);
+                        setEditing(null);
+                    }}
+                    Areas={areas}
+                    editing={editing}
+                    onSuccess={() => {
+                        fetchResponsables();
+                        setIsModalOpen(false);
+                    }}
+                />
+            )}
 
             <DetalleResponsablePq
                 isOpen={isDetalleModalOpen}

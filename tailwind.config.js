@@ -15,10 +15,6 @@ export default {
 			colors: {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
-				nav: {
-					primary: "#0A192F",   // azul oscuro
-					secondary: "#173A5E", // azul marino más profundo
-				},
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))',

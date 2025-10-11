@@ -13,8 +13,8 @@ import ReactQuill from "react-quill-new"
 import "react-quill-new/dist/quill.snow.css"
 import type { TipoPQ } from "../../models/TipoPQ"
 import apiServiceWrapper from "../../api/ApiService"
-import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import type { Usuario } from "../../models/Usuario"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import { useAlert } from "../../context/AlertContext"
 
 interface FormPeticion {
@@ -89,7 +89,7 @@ export default function RadicarModalAdmin({
             const params: Record<string, any> = {
                 page: 0,
                 size: 10,
-                rolId: 5, // Rol de "Usuario"
+                rolId: 5,
             };
 
             if (searchTerm.trim()) {

@@ -117,15 +117,10 @@ const Navbar: React.FC = () => {
             icon: <Archive size={14} />,
             action: () => navigate(`/${currentRole}/historial_peticiones_usuario`),
         })
-    }
-
-    if (
-        permisosRol.find((p) => p.accion === "dashboard" && p.tabla === "radicador")
-    ) {
         acciones.push({
             label: "Responsables",
             icon: <Users size={14} />,
-            action: () => navigate(`/${currentRole}/peticiones`),
+            action: () => navigate(`/${currentRole}/responsables_pqs`),
         })
     }
 

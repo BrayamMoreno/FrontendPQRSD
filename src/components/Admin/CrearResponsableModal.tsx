@@ -17,8 +17,8 @@ import apiServiceWrapper from "../../api/ApiService"
 import { useAlert } from "../../context/AlertContext"
 
 interface CrearResponsableForm {
-    usuario_id: string
-    area_id: string
+    personaResponsable: { id: string }
+    area: { id: string }
 }
 
 interface CrearResponsableModalProps {
@@ -42,8 +42,8 @@ export default function CrearResponsableModal({
     const api = apiServiceWrapper
 
     const [form, setForm] = useState<CrearResponsableForm>({
-        usuario_id: "",
-        area_id: "",
+        personaResponsable: { id: "" },
+        area: { id: "" },
     })
     const [usuarios, setUsuarios] = useState<Usuario[]>([])
     const [page, setPage] = useState(1)
@@ -54,19 +54,17 @@ export default function CrearResponsableModal({
     const [isSubmitting, setIsSubmitting] = useState(false)
     const observerRef = useRef<HTMLDivElement | null>(null)
 
-    // 🔹 Cargar datos de edición
     useEffect(() => {
         if (editing) {
             setForm({
-                usuario_id: editing.personaResponsable?.id?.toString() || "",
-                area_id: editing.area?.id?.toString() || "",
+                personaResponsable: { id: editing.personaResponsable?.id?.toString() || "" },
+                area: { id: editing.area?.id?.toString() || "" },
             })
         } else {
-            setForm({ usuario_id: "", area_id: "" })
+            setForm({ personaResponsable: { id: "" }, area: { id: "" } })
         }
     }, [editing])
 
-    // 🔹 Cargar usuarios
     const fetchUsuarios = useCallback(
         async (reset = false) => {
             if (isLoadingUsers || (!hasMore && !reset)) return
@@ -87,12 +85,21 @@ export default function CrearResponsableModal({
                 setUsuarios((prev) => (reset ? nuevosUsuarios : [...prev, ...nuevosUsuarios]))
                 setHasMore(response.has_more)
                 setPage((prev) => prev + 1)
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Error cargando usuarios:", err)
-                showAlert(
-                    `Error cargando usuarios: ${err instanceof Error ? err.message : String(err)}`,
-                    "error"
-                )
+                if (err.response && err.response.status === 401) {
+                    showAlert(
+                        `Error cargando usuarios: ${err instanceof Error ? err.message : String(err)}`,
+                        "error"
+                    )
+                }
+                if (err.response && err.response.status === 403) {
+                    showAlert(
+                        `Error cargando usuarios: No posee permisos para esta accion`,
+                        "error"
+                    )
+                }
+
             } finally {
                 setIsLoadingUsers(false)
             }
@@ -108,22 +115,41 @@ export default function CrearResponsableModal({
         fetchUsuarios(true)
     }, [searchTerm])
 
-    // 🔹 Manejo de inputs
-    const handleInputChange = (field: keyof CrearResponsableForm, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value }))
-        if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
+    const handleInputChange = (path: string, value: string) => {
+        setForm((prev) => {
+            const newForm = { ...prev };
 
-    // 🔹 Validación
+            // Soporte para propiedades anidadas, ej: "personaResponsable.id"
+            const keys = path.split(".");
+            let current: any = newForm;
+
+            keys.forEach((key, index) => {
+                if (index === keys.length - 1) {
+                    current[key] = value;
+                } else {
+                    // Asegura que los niveles intermedios existan
+                    current[key] = { ...current[key] };
+                    current = current[key];
+                }
+            });
+
+            return newForm;
+        });
+
+        // Limpia errores del campo (si existían)
+        const topField = path.split(".")[0] as keyof CrearResponsableForm;
+        if (errors[topField]) setErrors((prev) => ({ ...prev, [topField]: undefined }));
+    };
+
+
     const validateForm = (): boolean => {
         const newErrors: Partial<CrearResponsableForm> = {}
-        if (!form.usuario_id) newErrors.usuario_id = "Debe seleccionar un usuario"
-        if (!form.area_id) newErrors.area_id = "Debe seleccionar un área"
+        if (!form.personaResponsable.id) newErrors.personaResponsable = { id: "Debe seleccionar un usuario" }
+        if (!form.area.id) newErrors.area = { id: "Debe seleccionar un área" }
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
 
-    // 🔹 Guardar / Editar
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!validateForm()) return
@@ -138,16 +164,30 @@ export default function CrearResponsableModal({
             }
             onSuccess()
             handleClose()
-        } catch (err) {
-            console.error(err)
-            showAlert("Error al guardar responsable", "error")
+        } catch (err: any) {
+            console.error("Error al guardar responsable:", err);
+
+            const errorMessage =
+                err?.response?.data?.message ||
+                err?.message ||
+                "Error al guardar responsable";
+
+            if (
+                errorMessage.includes("Ya existe un registro") ||
+                errorMessage.includes("duplicate key") ||
+                errorMessage.includes("UNIQUE")
+            ) {
+                showAlert("Esta persona ya está asignada a otra área.", "warning");
+            } else {
+                showAlert("Error al guardar responsable.", "error");
+            }
         } finally {
             setIsSubmitting(false)
         }
     }
 
     const handleClose = () => {
-        setForm({ usuario_id: "", area_id: "" })
+        setForm({ personaResponsable: { id: "" }, area: { id: "" } })
         setUsuarios([])
         setPage(1)
         setSearchTerm("")
@@ -189,8 +229,8 @@ export default function CrearResponsableModal({
                                 {usuarios.map((u) => (
                                     <div
                                         key={u.id}
-                                        onClick={() => !readOnly && handleInputChange("usuario_id", String(u.id))}
-                                        className={`cursor-pointer px-3 py-2 rounded-md ${form.usuario_id === String(u.id)
+                                        onClick={() => !readOnly && handleInputChange("personaResponsable.id", String(u.id))}
+                                        className={`cursor-pointer px-3 py-2 rounded-md ${form.personaResponsable.id === String(u.id)
                                             ? "bg-blue-100"
                                             : "hover:bg-blue-50"
                                             } ${readOnly ? "pointer-events-none opacity-70" : ""}`}
@@ -205,18 +245,18 @@ export default function CrearResponsableModal({
                                 )}
                                 <div ref={observerRef} className="h-2" />
                             </div>
-                            {errors.usuario_id && <p className="text-red-500 text-sm">{errors.usuario_id}</p>}
+                            {errors.personaResponsable && <p className="text-red-500 text-sm">{errors.personaResponsable.id}</p>}
                         </div>
 
                         {/* --- Área --- */}
                         <div className="space-y-2">
                             <Label>Área asignada</Label>
                             <Select
-                                value={form.area_id}
-                                onValueChange={(v) => handleInputChange("area_id", v)}
+                                value={form.area.id}
+                                onValueChange={(v) => handleInputChange("area.id", v)}
                                 disabled={readOnly}
                             >
-                                <SelectTrigger className={errors.area_id ? "border-red-500" : ""}>
+                                <SelectTrigger className={errors.area ? "border-red-500" : ""}>
                                     <SelectValue placeholder="Seleccione un área" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -227,7 +267,7 @@ export default function CrearResponsableModal({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            {errors.area_id && <p className="text-red-500 text-sm">{errors.area_id}</p>}
+                            {errors.area && <p className="text-red-500 text-sm">{errors.area.id}</p>}
                         </div>
 
                         {/* --- Botones --- */}
