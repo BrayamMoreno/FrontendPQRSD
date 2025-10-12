@@ -3,12 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { Card } from "../ui/card";
 import { CardContent } from "../ui/card";
 import { Button } from "../ui/button";
-import { FileText, BarChart3, ClipboardList, User, Users } from "lucide-react";
+import { FileText, User, Users } from "lucide-react";
 import Breadcrumbs from "../Navegacion/Breadcrumbs";
 import apiServiceWrapper from "../../api/ApiService";
-import type { PaginatedResponse } from "../../models/PaginatedResponse";
-import type { PqItem } from "../../models/PqItem";
 import { useAuth } from "../../context/AuthProvider";
+
+interface stats {
+    asignadas: number;
+    rechazadas: number;
+    por_asignar: number;
+}
+
 const InicioRadicador: React.FC = () => {
     const { user } = useAuth()
     const navigate = useNavigate()
@@ -16,22 +21,23 @@ const InicioRadicador: React.FC = () => {
     const currentRole = location.pathname.split("/")[1]
 
     // Stats dinámicas
-    const [stats, setStats] = useState({
-        pendientes: 0,
-        aceptadas: 0,
+    const [stats, setStats] = useState<stats>({
+        asignadas: 0,
         rechazadas: 0,
+        por_asignar: 0,
     })
 
     const fetchResumen = async () => {
         try {
-            const pendientes = await api.get<PaginatedResponse<PqItem>>("/pqs/sin_responsable", { page: 0, size: 1 })
-            const aceptadas = await api.get<PaginatedResponse<PqItem>>("/pqs/aceptadas", { page: 0, size: 1 })
-            const rechazadas = await api.get<PaginatedResponse<PqItem>>("/pqs/rechazadas", { page: 0, size: 1 })
+            const response = await api.getAll("/pqs/conteo-radicador")
+
+            const conteo = response.data as stats
+
 
             setStats({
-                pendientes: pendientes.total_count ?? 0,
-                aceptadas: aceptadas.total_count ?? 0,
-                rechazadas: rechazadas.total_count ?? 0,
+                asignadas: conteo.asignadas ?? 0,
+                rechazadas: conteo.rechazadas ?? 0,
+                por_asignar: conteo.por_asignar ?? 0,
             })
         } catch (error) {
             console.error("Error cargando resumen Radicador", error)
@@ -43,8 +49,8 @@ const InicioRadicador: React.FC = () => {
     }, [])
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
-            <div className="w-full p-32">
+        <div className="min-h-screen w-full bg-gray-50">
+            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     {/* Breadcrumbs */}
                     <div className="mb-6">
@@ -79,12 +85,16 @@ const InicioRadicador: React.FC = () => {
                                 <div className="flex flex-col sm:flex-row gap-4 pt-4">
                                     <Button
                                         className="bg-blue-600 text-white hover:bg-blue-700"
-                                        onClick={() => navigate(`/${currentRole}/dashboard`)}
+                                        onClick={() => navigate(`/${currentRole}/peticiones`)}
                                     >
                                         <FileText className="w-5 h-5 mr-2" />
                                         Solicitudes Pendientes
                                     </Button>
-                                    <Button variant="outline" className="hover:bg-gray-100">
+                                    <Button
+                                        variant="outline"
+                                        className="hover:bg-gray-100"
+                                        onClick={() => navigate(`/${currentRole}/responsables_pqs`)}
+                                        >
                                         <Users className="w-5 h-5 mr-2" />
                                         Ver Responsable
                                     </Button>
@@ -97,14 +107,8 @@ const InicioRadicador: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
                         <Card className="text-center shadow hover:shadow-lg transition">
                             <CardContent className="p-6">
-                                <p className="text-3xl font-bold text-orange-500">{stats.pendientes}</p>
-                                <p className="text-gray-600">Pendientes de Radicación</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="text-center shadow hover:shadow-lg transition">
-                            <CardContent className="p-6">
-                                <p className="text-3xl font-bold text-green-600">{stats.aceptadas}</p>
-                                <p className="text-gray-600">Solicitudes Aceptadas</p>
+                                <p className="text-3xl font-bold text-green-600">{stats.asignadas}</p>
+                                <p className="text-gray-600">Solicitudes Asignadas</p>
                             </CardContent>
                         </Card>
                         <Card className="text-center shadow hover:shadow-lg transition">
@@ -113,44 +117,16 @@ const InicioRadicador: React.FC = () => {
                                 <p className="text-gray-600">Solicitudes Rechazadas</p>
                             </CardContent>
                         </Card>
-                    </div>
-
-                    {/* Accesos rápidos */}
-                    <h2 className="text-xl font-semibold text-blue-900 mt-10 mb-4">Accesos rápidos</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <Card
-                            className="cursor-pointer hover:shadow-lg transition"
-                            onClick={() => navigate(`/${currentRole}/dashboard`)}
-                        >
-                            <CardContent className="flex flex-col items-center p-6">
-                                <ClipboardList className="w-8 h-8 text-blue-600 mb-2" />
-                                <p className="font-semibold text-blue-900">Gestión de Solicitudes</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card
-                            className="cursor-pointer hover:shadow-lg transition"
-                            onClick={() => navigate(`/${currentRole}/reportes`)}
-                        >
-                            <CardContent className="flex flex-col items-center p-6">
-                                <BarChart3 className="w-8 h-8 text-blue-600 mb-2" />
-                                <p className="font-semibold text-blue-900">Reportes</p>
-                            </CardContent>
-                        </Card>
-
-                        <Card
-                            className="cursor-pointer hover:shadow-lg transition"
-                            onClick={() => navigate(`/${currentRole}/asignaciones`)}
-                        >
-                            <CardContent className="flex flex-col items-center p-6">
-                                <Users className="w-8 h-8 text-blue-600 mb-2" />
-                                <p className="font-semibold text-blue-900">Asignaciones</p>
+                        <Card className="text-center shadow hover:shadow-lg transition">
+                            <CardContent className="p-6">
+                                <p className="text-3xl font-bold text-yellow-500">{stats.por_asignar}</p>
+                                <p className="text-gray-600">Solicitudes por Asignar</p>
                             </CardContent>
                         </Card>
                     </div>
 
                     {/* Guía rápida */}
-                    <h2 className="text-xl font-semibold text-blue-900 mt-10 mb-4">Guía rápida</h2>
+                    <h2 className="text-xl font-semibold text-blue-900 mt-10">Guía rápida</h2>
                     <ul className="list-disc list-inside text-gray-600 space-y-2">
                         <li>1. Revisa las <b>solicitudes pendientes</b> en tu tablero.</li>
                         <li>2. Asigna responsables según el tipo de solicitud.</li>

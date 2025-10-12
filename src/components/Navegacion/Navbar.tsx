@@ -5,7 +5,6 @@ import {
     ChevronDown,
     FileText,
     Home,
-    Settings2,
     User,
     LogOut,
     Users,
@@ -186,13 +185,6 @@ const Navbar: React.FC = () => {
                                         </DropdownMenuItem>
                                     ))
                                 }
-
-                                <DropdownMenuItem
-                                    onClick={() => navigate("/perfil")}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded"
-                                >
-                                    <Settings2 size={14} /> Configuración
-                                </DropdownMenuItem>
 
                                 <DropdownMenuItem
                                     onClick={async () => await logout()}

@@ -9,16 +9,18 @@ import apiServiceWrapper from "../../api/ApiService"
 
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import type { PqItem } from "../../models/PqItem"
-import type { Usuario } from "../../models/Usuario"
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import { Input } from "../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import type { TipoPQ } from "../../models/TipoPQ"
 import AceptarPeticon from "../../components/Radicador/AceptarPeticon"
+import { useAlert } from "../../context/AlertContext"
+import type { Responsable } from "../../models/Responsable"
 
 const DashboardRadicador: React.FC = () => {
 
     const api = apiServiceWrapper
+    const { showAlert } = useAlert()
 
     const [solicitudes, setSolicitudes] = useState<any[]>([])
     const [modalOpen, setModalOpen] = useState(false)
@@ -28,7 +30,7 @@ const DashboardRadicador: React.FC = () => {
     const [totalPages, setTotalPages] = useState(0)
     const [isLoading, setIsLoading] = useState<boolean>(false)
 
-    const [responsables, setResponsables] = useState<Usuario[]>([]);
+    const [responsables, setResponsables] = useState<Responsable[]>([]);
 
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
     const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
@@ -44,6 +46,11 @@ const DashboardRadicador: React.FC = () => {
                 page: currentPage - 1,
                 size: itemsPerPage,
             };
+
+            if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+                showAlert("La fecha de inicio no puede ser mayor a la fecha fin.", "warning");
+                return;
+            }
 
             if (tipoPqSeleccionado !== null) params.tipoId = tipoPqSeleccionado;
             if (numeroRadicado && numeroRadicado.trim() !== "")
@@ -71,7 +78,8 @@ const DashboardRadicador: React.FC = () => {
     }, [currentPage])
 
     useEffect(() => {
-        const delayDebounce = setTimeout(fetchSolicitudes, 500);
+        setCurrentPage(1)
+        const delayDebounce = setTimeout(fetchSolicitudes, 1500);
         return () => clearTimeout(delayDebounce);
     }, [tipoPqSeleccionado, numeroRadicado, fechaInicio, fechaFin]);
 
@@ -105,7 +113,7 @@ const DashboardRadicador: React.FC = () => {
         setModalOpen(true)
         setSelectedSolicitud(solicitud)
         await Promise.all([
-            fetchData<Usuario>('usuarios/contratistas', setResponsables)
+            fetchData<Responsable>('/responsables_pqs', setResponsables)
         ])
     }
 
@@ -314,6 +322,7 @@ const DashboardRadicador: React.FC = () => {
                     </Card>
                 </div>
             </div>
+
             <AceptarPeticon
                 isOpen={modalOpen}
                 selectedSolicitud={selectedSolicitud}

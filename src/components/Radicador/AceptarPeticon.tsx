@@ -1,7 +1,6 @@
 import { FileText, UserPlus, CheckCircle, XCircle } from "lucide-react";
 import ReactQuill from "react-quill-new";
 import type { PqItem } from "../../models/PqItem";
-import type { Usuario } from "../../models/Usuario";
 import { Button } from "../ui/button";
 
 import "react-quill-new/dist/quill.snow.css";
@@ -9,6 +8,8 @@ import { useState } from "react";
 import { useAuth } from "../../context/AuthProvider";
 import config from "../../config";
 import apiServiceWrapper from "../../api/ApiService";
+import type { Responsable } from "../../models/Responsable";
+import { useAlert } from "../../context/AlertContext";
 
 interface Radicacion {
     id: number;
@@ -22,13 +23,14 @@ interface Radicacion {
 interface AceptarPeticonProps {
     isOpen: boolean;
     selectedSolicitud: PqItem | null;
-    responsables: Usuario[];
+    responsables: Responsable[];
     onClose: (shouldRefresh?: boolean) => void;
 }
 
 export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables, onClose }: AceptarPeticonProps) {
 
     const { user } = useAuth()
+    const { showAlert } = useAlert();
     const API_URL = config.apiBaseUrl;
     const api = apiServiceWrapper
 
@@ -61,10 +63,30 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
             };
 
 
-            await api.post(`pqs/aprobacion_pq`, JSON.stringify(payload));
+            const response = await api.post(`pqs/aprobacion_pq`, JSON.stringify(payload));
 
-            clearFormData();
-            onClose(true);
+            if (response.status === 200) {
+                if (!data.isAprobada) {
+                    showAlert("La solicitud ha sido rechazada.", "success");
+                } else {
+                    showAlert("La solicitud ha sido aprobada exitosamente.", "success");
+                }
+                clearFormData();
+                onClose(true);
+            }
+
+            if (response.status === 400) {
+                showAlert("Error al aprobar la solicitud. Por favor, intente nuevamente.", "error");
+            }
+
+            if (response.status === 500) {
+                showAlert("Error del servidor. Por favor, intente nuevamente más tarde.", "error");
+            }
+
+            if (response.status === 401) {
+                showAlert("No autorizado. No tiene permisos para realizar esta acción.", "error");
+            }
+
         } catch (error) {
             console.error(error);
         }
@@ -367,9 +389,9 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                                             className="w-full border border-gray-300 bg-white rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                         >
                                             <option value="">Seleccione un responsable</option>
-                                            {responsables.map((r) => (
+                                            {responsables.filter(r => r.isActive).map((r) => (
                                                 <option key={r.id} value={r.id}>
-                                                    {r.rol.nombre} #{r.persona.id} {r.persona.nombre} {r.persona.apellido}
+                                                    {r.area.nombre} #{r.area.codigoDep} - {r.personaResponsable.nombre} {r.personaResponsable.apellido}
                                                 </option>
                                             ))}
                                         </select>

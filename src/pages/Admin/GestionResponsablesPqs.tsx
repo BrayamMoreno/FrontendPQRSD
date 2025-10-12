@@ -80,8 +80,16 @@ const GestionResponsablesPqs: React.FC = () => {
             if (areaSeleccionada && areaSeleccionada !== "TODAS") params.areaId = areaSeleccionada;
 
             const response = await api.get<PaginatedResponse<Responsable>>('/responsables_pqs/search', params);
-            if (!response || !response.data) {
+
+            if (response._meta?.status !== 204 && !response.data) {
                 showAlert('Error al obtener los datos del servidor, intentelo mas tarde', 'error');
+                return;
+            }
+
+            if(response._meta?.status === 403){
+                showAlert('No tienes permiso para realizar esta acción', 'error');
+                setResponsablesPq([]);
+                setTotalPages(0);
                 return;
             }
             setResponsablesPq(response.data || []);
@@ -195,6 +203,7 @@ const GestionResponsablesPqs: React.FC = () => {
                                         <th className="px-4 py-3">Area Responsable</th>
                                         <th className="px-4 py-3">Nombre</th>
                                         <th className="px-4 py-3">Fecha Asignacion</th>
+                                        <th className="px-4 py-3">Estado</th>
                                         <th className="px-4 py-3 text-right">Acciones</th>
                                     </tr>
                                 </thead>
@@ -232,6 +241,17 @@ const GestionResponsablesPqs: React.FC = () => {
                                                 {r.fechaAsignacion
                                                     ? new Date(r.fechaAsignacion).toLocaleDateString()
                                                     : "Sin Fecha"}
+                                            </td>
+                                            <td className="px-4 py-4">
+                                                {r.isActive ? (
+                                                    <span className="px-2 py-1 text-sm bg-green-100 text-green-800 rounded-full">
+                                                        Activo
+                                                    </span>
+                                                ) : (
+                                                    <span className="px-2 py-1 text-sm bg-red-100 text-red-800 rounded-full">
+                                                        Inactivo
+                                                    </span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-2">

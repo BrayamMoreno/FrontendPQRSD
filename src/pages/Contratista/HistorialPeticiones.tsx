@@ -162,9 +162,9 @@ const HistorialPeticiones: React.FC = () => {
 
             console.log("Payload a enviar:", payload);
 
-            const response = await api.post("/pqs/dar_resolucion", payload);
+            const response = await api.patch("/pqs/dar_resolucion", payload);
 
-            if (response.status === 201) {
+            if (response.status === 200) {
                 setFormPeticion({
                     para: "",
                     asunto: "",

@@ -76,16 +76,4 @@ export const crudConfigs: CrudProps<any>[] = [
       { key: "descripcion", label: "Descripción" },
     ],
   },
-  {
-    titulo: "Historial de Estados",
-    endpoint: "/historial_estados",
-    tabla: "historial_estados",
-    accion: "leer",
-    Columns: [
-      { key: "id", label: "ID" },
-      { key: "estado.nombre", label: "Estado" },
-      { key: "fechaCambio", label: "Fecha de Asignación", type: "date" },
-      { key: "usuario.persona.nombre", label: "Usuario Modificador" },
-    ],
-  },
 ];

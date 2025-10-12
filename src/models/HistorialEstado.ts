@@ -7,4 +7,5 @@ export interface HistorialEstado {
     usuario: Usuario | null;
     observacion: string | null;
     fechaCambio: string;
+    numeroRadicado: string;
 }

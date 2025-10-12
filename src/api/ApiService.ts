@@ -1,10 +1,9 @@
 import axios, {
     AxiosError,
     type AxiosRequestConfig,
-    type AxiosResponse
+    type AxiosResponse,
 } from "axios";
 import config from "../config";
-import type { PaginatedResponse } from "../models/PaginatedResponse";
 
 const API_URL = config.apiBaseUrl;
 
@@ -12,7 +11,6 @@ const apiService = axios.create({
     baseURL: API_URL,
     headers: {
         "Content-Type": "application/json",
-
     },
 });
 
@@ -28,16 +26,42 @@ apiService.interceptors.request.use(
 );
 
 const handleRequest = async <T>(
-    request: Promise<AxiosResponse<T>>
-): Promise<T> => {
+    request: Promise<AxiosResponse<T>>,
+    injectMeta = true
+): Promise<T | AxiosResponse<T>> => {
     try {
-        const { data } = await request;
-        return data;
+        const response = await request;
+        const data = response.data;
+
+        if (!injectMeta) {
+            return response;
+        }
+
+        const meta = {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            method: response.config.method,
+            url: response.config.url,
+            params: response.config.params,
+            requestData: response.config.data,
+        };
+
+        if (
+            data &&
+            typeof data === "object" &&
+            "data" in data &&
+            "total_count" in data
+        ) {
+            return { ...(data as any), _meta: meta } as T;
+        }
+
+        return { ...(data as any), _meta: meta };
     } catch (error) {
         const axiosError = error as AxiosError<any>;
-
         const apiMessage =
-            axiosError.response?.data?.mensaje || axiosError.response?.data?.messaje;
+            axiosError.response?.data?.mensaje ||
+            axiosError.response?.data?.messaje;
 
         const friendlyMessage =
             apiMessage ||
@@ -46,38 +70,62 @@ const handleRequest = async <T>(
                 : axiosError.message);
 
         console.error("Error en la petición:", friendlyMessage);
-
         throw new Error(friendlyMessage);
-
-        throw axiosError; // Se relanza para que el componente pueda manejarlo
     }
 };
 
 const apiServiceWrapper = {
-    get: <T>(endpoint: string, params?: AxiosRequestConfig["params"]): Promise<T> =>
-        handleRequest<T>(apiService.get<T>(endpoint, { params })),
-
-    getPaginated: <T>(
+    get: <T>(
         endpoint: string,
         params?: AxiosRequestConfig["params"]
-    ): Promise<PaginatedResponse<T>> =>
-        handleRequest<PaginatedResponse<T>>(apiService.get(endpoint, { params })),
+    ): Promise<T> =>
+        handleRequest<T>(apiService.get<T>(endpoint, { params }), true) as Promise<T>,
 
-    getById: <T>(endpoint: string, id: number | string): Promise<T> =>
-        handleRequest<T>(apiService.get<T>(`${endpoint}/${id}`)),
+    getById: <T>(
+        endpoint: string,
+        id: number | string
+    ): Promise<T> =>
+        handleRequest<T>(apiService.get<T>(`${endpoint}/${id}`), true) as Promise<T>,
 
-    post: (endpoint: string, data: any) =>
-        handleRequest(apiService.post(endpoint, data)),
+    getAll: <T>(
+        endpoint: string,
+        params?: AxiosRequestConfig["params"]
+    ): Promise<AxiosResponse<T>> =>
+        handleRequest<T>(apiService.get<T>(endpoint, { params }), false) as Promise<
+            AxiosResponse<T>
+        >,
 
-    put: (endpoint: string, data: any) =>
-        handleRequest(apiService.put(endpoint, data)),
+    post: <T = any>(
+        endpoint: string,
+        data: any
+    ): Promise<AxiosResponse<T>> =>
+        handleRequest<T>(apiService.post<T>(endpoint, data), false) as Promise<
+            AxiosResponse<T>
+        >,
 
-    patch: (endpoint: string, data: any) =>
-        handleRequest(apiService.patch(endpoint, data)),
+    put: <T = any>(
+        endpoint: string,
+        data: any
+    ): Promise<AxiosResponse<T>> =>
+        handleRequest<T>(apiService.put<T>(endpoint, data), false) as Promise<
+            AxiosResponse<T>
+        >,
 
-    delete: (endpoint: string, data: any) =>
-        handleRequest(apiService.delete(endpoint, data)),
+    patch: <T = any>(
+        endpoint: string,
+        data: any
+    ): Promise<AxiosResponse<T>> =>
+        handleRequest<T>(apiService.patch<T>(endpoint, data), false) as Promise<
+            AxiosResponse<T>
+        >,
 
+    delete: <T = any>(
+        endpoint: string,
+        params?: AxiosRequestConfig["params"]
+    ): Promise<AxiosResponse<T>> =>
+        handleRequest<T>(apiService.delete<T>(endpoint, { params }), false) as Promise<
+            AxiosResponse<T>
+        >,
 };
 
 export default apiServiceWrapper;

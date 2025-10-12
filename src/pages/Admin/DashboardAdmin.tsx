@@ -108,63 +108,7 @@ const DashboardAdmin: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Gráficos */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        {/* Tendencia diaria */}
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <h2 className="text-lg font-semibold mb-4">Tendencia Diaria</h2>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <LineChart data={tendenciasDiarias}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="fecha" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="cantidad" stroke="#8884d8" />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        {/* Peticiones por tipo */}
-                        <div className="bg-white rounded-lg shadow p-4">
-                            <h2 className="text-lg font-semibold mb-4">Peticiones Mensuales por Tipo</h2>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart>
-                                    <Pie
-                                        data={peticionesPorTipo}
-                                        dataKey="cantidad"
-                                        nameKey="tipo"
-                                        cx="50%"
-                                        cy="50%"
-                                        outerRadius={100}
-                                        fill="#8884d8"
-                                        label
-                                    >
-                                        {peticionesPorTipo.map((_, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                    <Legend />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        {/* Peticiones por departamento */}
-                        <div className="bg-white rounded-lg shadow p-4 lg:col-span-2">
-                            <h2 className="text-lg font-semibold mb-4">Peticiones por Departamento</h2>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart >
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="departamento" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="cantidad" fill="#82ca9d" />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
+                 
 
                     {/* Tablas */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

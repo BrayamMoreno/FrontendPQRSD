@@ -9,6 +9,7 @@ import Unauthorized from "./pages/Unauthorized";
 import NotFound from "./pages/NotFound";
 import GestionPqs from "./pages/Admin/GestionPqs";
 import GestionResponsablesPqs from "./pages/Admin/GestionResponsablesPqs";
+import HistorialEstados from "./pages/Admin/HistorialEstados";
 
 // 📌 Lazy imports
 const LandingPage = lazy(() => import("./pages/Auth/LandingPage"));
@@ -102,6 +103,7 @@ export default function App() {
                                     <Route path="adjuntos" element={<GestionAdjuntos />} />
                                     <Route path="gestion_pqs" element={<GestionPqs />} />
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
+                                    <Route path="historial_estados" element={<HistorialEstados />} />
 
                                     {/* CRUDs dinámicos */}
                                     {crudConfigs.map(({ titulo, endpoint, Columns, tabla, accion }) => (
