@@ -11,6 +11,7 @@ import type { PqItem } from "../../models/PqItem";
 import apiServiceWrapper from "../../api/ApiService";
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
 import { Users, ClipboardCheck, MapPin, Flag } from "lucide-react";
+import { Button } from "../../components/ui/button";
 
 const COLORS = ["#2ecc71", "#3498db", "#f39c12", "#9b59b6", "#e74c3c"];
 
@@ -193,8 +194,8 @@ const DashboardAdmin: React.FC = () => {
                           return diffDias < 0
                             ? "Vencida"
                             : diffDias === 0
-                            ? "Hoy"
-                            : `${diffDias} días`;
+                              ? "Hoy"
+                              : `${diffDias} días`;
                         })()}
                       </td>
                     </tr>
@@ -231,6 +232,8 @@ const DashboardAdmin: React.FC = () => {
               </table>
             </div>
           </div>
+
+
         </div>
       </div>
     </div>

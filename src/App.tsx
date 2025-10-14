@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import GestionPqs from "./pages/Admin/GestionPqs";
 import GestionResponsablesPqs from "./pages/Admin/GestionResponsablesPqs";
 import HistorialEstados from "./pages/Admin/HistorialEstados";
+import Utilidades from "./pages/Admin/Utilidades";
 
 // 📌 Lazy imports
 const LandingPage = lazy(() => import("./pages/Auth/LandingPage"));
@@ -104,6 +105,7 @@ export default function App() {
                                     <Route path="gestion_pqs" element={<GestionPqs />} />
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
                                     <Route path="historial_estados" element={<HistorialEstados />} />
+                                    <Route path="utilidades" element={<Utilidades /> } />
 
                                     {/* CRUDs dinámicos */}
                                     {crudConfigs.map(({ titulo, endpoint, Columns, tabla, accion }) => (

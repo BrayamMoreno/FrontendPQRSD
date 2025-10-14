@@ -27,22 +27,3 @@ textarea:-webkit-autofill::first-line {
   color: #000 !important;
   font-family: inherit;
 }
-
-/* ===== Modo oscuro ===== */
-.dark input:-webkit-autofill,
-.dark textarea:-webkit-autofill,
-.dark select:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark textarea:-webkit-autofill:hover,
-.dark select:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
-.dark textarea:-webkit-autofill:focus,
-.dark select:-webkit-autofill:focus,
-.dark input:-internal-autofill-selected {
-  -webkit-text-fill-color: #fff !important;
-  color: #fff !important;
-  -webkit-box-shadow: 0 0 0px 1000px rgba(10,10,10,1) inset !important;
-  box-shadow: 0 0 0px 1000px rgba(10,10,10,1) inset !important;
-  background-clip: padding-box !important;
-  -webkit-background-clip: padding-box !important;
-}

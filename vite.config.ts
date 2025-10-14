@@ -7,5 +7,14 @@ export default defineConfig({
     port: 5137,
     host: true,
     allowedHosts: ["springfood.studio"]
+  },
+  build: {
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    }
   }
 })

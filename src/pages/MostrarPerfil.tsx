@@ -37,7 +37,6 @@ const MostrarPerfil: React.FC = () => {
 	const [tiposPersona, setTiposPersona] = useState<TipoPersona[]>([]);
 
 	const location = useLocation();
-	const from = location.state?.from || "/dashboard";
 
 	// 🔹 Cargar datos de listas (generos, tipos, etc.)
 	const fetchData = async <T,>(
@@ -237,7 +236,7 @@ const MostrarPerfil: React.FC = () => {
 										</h2>
 										<p className="text-sm text-gray-600">Perfil del usuario</p>
 									</div>
-									<Button variant="outline" onClick={() => navigate(from)}>
+									<Button variant="outline" onClick={() => navigate(-1)}>
 										<UndoIcon className="w-4 h-4 mr-1" /> Volver
 									</Button>
 								</CardContent>
