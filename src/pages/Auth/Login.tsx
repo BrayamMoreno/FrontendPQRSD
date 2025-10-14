@@ -55,7 +55,7 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="relative min-h-screen w-screen flex items-center justify-center bg-gray-100">
+		<div className="relative min-h-screen w-full flex items-center justify-center bg-gray-100">
 			{/* Fondo estilo SAC adaptado */}<div
 				className="absolute inset-0 bg-cover bg-center opacity-20"
 				style={{ backgroundImage: `url(${fondo1})` }}

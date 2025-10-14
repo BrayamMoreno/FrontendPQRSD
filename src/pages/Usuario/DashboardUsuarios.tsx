@@ -20,7 +20,7 @@ import "react-quill-new/dist/quill.snow.css"
 import { useLocation } from "react-router-dom"
 import SolicitudModal from "../../components/Usuarios/SolicitudModal"
 import RadicarSolicitudModal from "../../components/Usuarios/RadicarSolicitudModal"
-import Toast from "../../components/Toast"
+import { useAlert } from "../../context/AlertContext"
 
 const Dashboard: React.FC = () => {
 
@@ -52,8 +52,7 @@ const Dashboard: React.FC = () => {
 	const totalSolicitudesInicial = useRef<number | null>(null);
 	const location = useLocation();
 
-	const [showToast, setShowToast] = useState(false);
-	const [toastMessage, setToastMessage] = useState("");
+	const { showAlert } = useAlert();
 
 	useEffect(() => {
 		if (location.state?.modal) {
@@ -73,8 +72,9 @@ const Dashboard: React.FC = () => {
 				const fin = new Date(fechaFin);
 
 				if (inicio > fin) {
-					handleOpenToast("La fecha de inicio no puede ser mayor que la fecha de fin");
+					showAlert("La fecha de inicio no puede ser posterior a la fecha de fin.", "warning");
 					setIsLoading(false);
+					setIsLoadingFilters(false)
 					return;
 				}
 			}
@@ -96,6 +96,8 @@ const Dashboard: React.FC = () => {
 				"/pqs/mis_pqs_usuarios",
 				params
 			);
+
+			console.log("Respuesta de solicitudes:", response.data);
 
 			setSolicitudes(response.data || []);
 
@@ -171,15 +173,6 @@ const Dashboard: React.FC = () => {
 		}
 	}
 
-	const handleOpenToast = (message: string) => {
-		setToastMessage(message);
-		setShowToast(true);
-	}
-
-	const handleCloseToast = () => {
-		setShowToast(false);
-		setToastMessage("");
-	};
 
 	return (
 		<div className="min-h-screen w-full bg-gray-50">
@@ -339,16 +332,6 @@ const Dashboard: React.FC = () => {
 									</div>
 								</CardContent>
 							</Card>
-							{/* Toast de error */}
-							<div>
-								{showToast && (
-									<Toast
-										message={toastMessage}
-										onClose={handleCloseToast}
-										duration={4000}
-									/>
-								)}
-							</div>
 						</div>
 						<Card className="bg-white mx-auto max-w-7xl">
 							<CardContent >

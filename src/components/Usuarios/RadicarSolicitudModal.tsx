@@ -15,6 +15,7 @@ import type { TipoPQ } from "../../models/TipoPQ"
 import type { RequestPq } from "../../models/RequestPq"
 import apiServiceWrapper from "../../api/ApiService"
 import { useAuth } from "../../context/AuthProvider"
+import { useAlert } from "../../context/AlertContext"
 
 interface FormPeticion {
     tipo_pq_id: string
@@ -33,10 +34,10 @@ interface RadicarSolicitudModalProps {
 
 export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSuccess }: RadicarSolicitudModalProps) {
 
-    const [errorsRadicacion, setErrorsRadicacion] = useState<string | null>(null);
     const [errors, setErrors] = useState<Partial<FormPeticion>>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [alertFile, setAlertFile] = useState<string | null>(null)
+    const { showAlert } = useAlert();
 
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
         tipo_pq_id: "",
@@ -59,7 +60,6 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
         });
         setErrors({});
         setAlertFile(null);
-        setErrorsRadicacion(null);
         onClose()
     }
 
@@ -186,24 +186,44 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                 lista_documentos: documentosBase64,
             };
 
-            await api.post("/pqs/radicar_pq", payload);
+            const response = await api.post("/pqs/radicar_pq", payload);
 
-            setFormPeticion({
-                tipo_pq_id: "",
-                solicitante_id: "",
-                detalleAsunto: "",
-                detalleDescripcion: "",
-                lista_documentos: [],
-            });
+            if (response.status === 201) {
+                showAlert("PQRSD radicada exitosamente.", "success");
+                setFormPeticion({
+                    tipo_pq_id: "",
+                    solicitante_id: "",
+                    detalleAsunto: "",
+                    detalleDescripcion: "",
+                    lista_documentos: [],
+                });
 
-            setErrors({});
-            setAlertFile(null);
-            setErrorsRadicacion(null);
+                setErrors({});
+                setAlertFile(null);
+            }
 
-            onSuccess(); // Llamar a la función onSuccess si se proporciona
+            if (response.status === 401) {
+                showAlert("No tiene permisos para realizar esta acción.", "error");
+                return;
+            }
+
+            if (response.status === 400) {
+                showAlert("Error en los datos enviados. Por favor, verifique e intente de nuevo.", "error");
+                console.error("Validation errors:", response.data);
+                return;
+            }
+
+            if (response.status === 500) {
+                showAlert("Error del servidor. Por favor, inténtelo de nuevo más tarde.", "error");
+                console.error("Server error:", response.data);
+                return;
+            }
+
+            onSuccess();
             onClose();
         } catch (error) {
-            setErrorsRadicacion("Error al radicar la PQRSD. Por favor, inténtelo de nuevo.");
+            showAlert("Error al radicar la PQRSD. Por favor, inténtelo de nuevo.", "error");
+            console.error("Error submitting form:", error);
         } finally {
             setIsSubmitting(false);
         }
@@ -220,12 +240,6 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                         <h2 className="text-xl font-bold">Radicar Petición</h2>
                     </div>
                 </div>
-
-                {errorsRadicacion && (
-                    <div className="p-4 bg-red-100 border border-red-300 text-red-700 rounded">
-                        {errorsRadicacion}
-                    </div>
-                )}
 
                 {/* Contenido */}
                 <div className="p-6 space-y-4">

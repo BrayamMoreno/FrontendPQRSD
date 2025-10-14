@@ -1,6 +1,6 @@
 import type React from "react"
 import { useEffect, useState } from "react"
-import { useForm, type SubmitHandler } from "react-hook-form"
+import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../../components/ui/button"
@@ -34,7 +34,6 @@ import type { Genero } from "../../models/Genero"
 import type { TipoDoc } from "../../models/TipoDoc"
 import type { Municipios } from "../../models/Municipios"
 import type { Departamentos } from "../../models/Departamentos"
-import config from "../../config"
 
 import fondo1 from "../../assets/fondo1.svg"
 import { useAlert } from "../../context/AlertContext"
@@ -54,24 +53,23 @@ const Register: React.FC = () => {
     const [tiposPersonas, setTiposPersonas] = useState<TipoPersona[]>([])
     const [step, setStep] = useState(1)
 
-    const form = useForm<RegisterForm>({})
+    const form = useForm<RegisterForm>({
+        defaultValues: {
+            nombre: "",
+            apellido: "",
+            tipoPersona: "",
+            genero: "",
+            tipoDocumento: "",
+            departamentosId: "",
+            municipioId: "",
+            tratamientoDatos: false,
+        },
+    })
+
 
     useEffect(() => {
         fetchAllData()
     }, [])
-
-    const onSubmit: SubmitHandler<RegisterForm> = async (data) => {
-        try {
-            setIsLoading(true)
-            await sendData(data)
-            console.log("Datos del formulario:", data)
-        } catch (error) {
-            console.error("Error en el registro:", error)
-        } finally {
-            setIsLoading(false)
-            showAlert("Registro exitoso, redirigiendo a login...", "success")
-        }
-    }
 
     const validateForm = (data: RegisterForm): boolean => {
         const emailRegex = /\S+@\S+\.\S+/
@@ -200,7 +198,11 @@ const Register: React.FC = () => {
 
                 <CardContent className="p-6 md:p-10 w-full">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="w-full">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            sendData(form.getValues());
+                        }}
+                            className="w-full">
                             <AnimatePresence mode="wait">
 
                                 {/* STEP 1 */}
@@ -243,7 +245,7 @@ const Register: React.FC = () => {
                                                             onValueChange={(v) => field.onChange(Number(v))}
                                                             value={field.value?.toString() || ""}
                                                         >
-                                                            <FormControl>
+                                                            <FormControl className="w-full">
                                                                 <SelectTrigger>
                                                                     <SelectValue placeholder="Seleccione un tipo de persona" />
                                                                 </SelectTrigger>
@@ -269,7 +271,7 @@ const Register: React.FC = () => {
                                                         onValueChange={(v) => field.onChange(Number(v))}
                                                         value={field.value?.toString() || ""}
                                                     >
-                                                        <FormControl>
+                                                        <FormControl className="w-full">
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Seleccione su sexo biológico" />
                                                             </SelectTrigger>
@@ -294,7 +296,7 @@ const Register: React.FC = () => {
                                                         onValueChange={(v) => field.onChange(Number(v))}
                                                         value={field.value?.toString() || ""}
                                                     >
-                                                        <FormControl>
+                                                        <FormControl className="w-full">
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Seleccione un tipo de documento" />
                                                             </SelectTrigger>
@@ -355,7 +357,7 @@ const Register: React.FC = () => {
                                                         }}
                                                         value={field.value?.toString() || ""}
                                                     >
-                                                        <FormControl>
+                                                        <FormControl className="w-full">
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Seleccione un departamento" />
                                                             </SelectTrigger>
@@ -381,7 +383,7 @@ const Register: React.FC = () => {
                                                         onValueChange={(v) => field.onChange(Number(v))}
                                                         value={field.value?.toString() || ""}
                                                     >
-                                                        <FormControl>
+                                                        <FormControl className="w-full">
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Seleccione un municipio" />
                                                             </SelectTrigger>

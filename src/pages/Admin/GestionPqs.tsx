@@ -10,7 +10,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import type { PqItem } from "../../models/PqItem";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
 import apiServiceWrapper from "../../api/ApiService";
-import Toast from "../../components/Toast";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { FileText, PlusCircleIcon, UndoIcon } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
@@ -305,18 +304,6 @@ const GestionPqs: React.FC = () => {
                         </Card>
                     ) : (
                         <div>
-                            <div className="max-w-7xl mx-auto">
-                                {/* Toast de error */}
-                                <div>
-                                    {showToast && (
-                                        <Toast
-                                            message={toastMessage}
-                                            onClose={handleCloseToast}
-                                            duration={4000}
-                                        />
-                                    )}
-                                </div>
-                            </div>
                             <Card className="bg-white mx-auto max-w-7xl">
                                 <CardContent >
                                     <h2 className="text-lg mb-2 font-semibold text-blue-800">Todas Las Solicitudes</h2>

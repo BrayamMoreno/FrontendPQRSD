@@ -98,6 +98,9 @@ const PeticionesPendientes: React.FC = () => {
 
             const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_contratistas", params);
             setSolicitudes(response.data || []);
+
+            console.log("Respuesta de solicitudes:", response.data);
+
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
             setTotalPages(totalPages);
         } catch (error) {

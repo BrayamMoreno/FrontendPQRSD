@@ -1,4 +1,5 @@
 import type { Genero } from "./Genero";
+import type { Municipios } from "./Municipios";
 import type { TipoDoc } from "./TipoDoc";
 import type { TipoPersona } from "./TipoPersona";
 
@@ -11,6 +12,7 @@ export interface Persona {
     telefono: string;
     direccion: string;
     tratamientoDatos: boolean;
+    municipio: Municipios;
     tipoDoc: TipoDoc;
     tipoPersona: TipoPersona;
     genero: Genero;

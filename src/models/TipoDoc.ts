@@ -1,5 +1,5 @@
 export interface TipoDoc {
-    id: string;
+    id: "" | string;
     nombre: string;
 }
 
