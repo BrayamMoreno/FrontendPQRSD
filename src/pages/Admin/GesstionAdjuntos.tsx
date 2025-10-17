@@ -14,7 +14,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "../../components/ui/alert-dialog"
-import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
+import { Edit3, Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../../api/ApiService"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
@@ -61,7 +61,8 @@ const GestionAdjuntos: React.FC = () => {
         rutaArchivo: "",
         respuesta: false,
         createdAt: "",
-        lista_documentos: []
+        lista_documentos: [],
+        eliminado: false
     })
 
     const [errors, setErrors] = useState<FormErrors>({})
@@ -188,7 +189,9 @@ const GestionAdjuntos: React.FC = () => {
             rutaArchivo: "",
             respuesta: false,
             createdAt: "",
-            lista_documentos: []
+            lista_documentos: [],
+            eliminado: false
+
         });
         setErrors({});
     };
@@ -475,53 +478,66 @@ const GestionAdjuntos: React.FC = () => {
                                                 No hay adjuntos disponibles
                                             </td>
                                         </tr>
-                                    ) : adjuntos.map((u) => (
+                                    ) : adjuntos.map((a) => (
                                         <tr
-                                            key={u.id}
-                                            className="border-b hover:bg-blue-50 transition"
+                                            key={a.id}
+                                            className={`border-b transition ${(a).eliminado
+                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                : "hover:bg-blue-50"
+                                                }`}
                                         >
-                                            <td className="px-4 py-4">{u.id}</td>
-                                            <td className="px-4 py-4">{u.pqRadicado || "Sin Radicado"}</td>
+                                            <td className="px-4 py-4">{a.id}</td>
+                                            <td className="px-4 py-4">{a.pqRadicado || "Sin Radicado"}</td>
                                             <td className="px-4 py-4">
-                                                <a
-                                                    href={`${API_URL}/adjuntos_pq/${u.id}/download`}
-                                                    download
-                                                    className="hover:underline break-all text-blue-600 underline"
-                                                >
-                                                    {u.nombreArchivo}
-                                                </a>
+
+                                                {a.eliminado ? (
+                                                    <span className="text-gray-400">{a.nombreArchivo}</span>
+                                                ) : (
+                                                    <a
+                                                        href={`${API_URL}/adjuntos_pq/${a.id}/download`}
+                                                        download
+                                                        className="hover:underline break-all text-blue-600 underline"
+                                                    >
+                                                        {a.nombreArchivo}
+                                                    </a>)}
                                             </td>
                                             <td className="px-4 py-4">
-                                                {u.createdAt
-                                                    ? new Date(u.createdAt).toLocaleDateString()
+                                                {a.createdAt
+                                                    ? new Date(a.createdAt).toLocaleDateString()
                                                     : "Sin Fecha"}
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-2">
                                                     {/* Editar */}
                                                     <Button
-                                                        className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"
-                                                        onClick={() => handleEdit(u)}
+                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
+                                                                            ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
+                                                        }
+                                                        onClick={() => handleEdit(a)}
                                                     >
-                                                        <Edit3 className="h-4 w-4 mr-1" />
+                                                        <Pencil className="h-4 w-4 mr-1" />
                                                     </Button>
 
                                                     {/* Ver */}
                                                     <Button
-                                                        onClick={() => handleView(u)}
-                                                        className="bg-yellow-400 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"
+                                                        onClick={() => handleView(a)}
+                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
+                                                                        ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
+                                                        }
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
 
                                                     <AlertDialog
-                                                        open={toDelete?.id === u.id}
+                                                        open={toDelete?.id === a.id}
                                                         onOpenChange={(open: any) => !open && setToDelete(null)}
                                                     >
                                                         <AlertDialogTrigger asChild>
                                                             <Button
-                                                                className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
-                                                                onClick={() => setToDelete(u)}
+                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
+                                                                                    ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
+                                                                }
+                                                                onClick={() => setToDelete(a)}
                                                             >
                                                                 <Trash2 size={16} />
                                                             </Button>
@@ -539,7 +555,7 @@ const GestionAdjuntos: React.FC = () => {
                                                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                                                 <AlertDialogAction
                                                                     className="bg-red-600 hover:bg-red-700 text-white flex items-center"
-                                                                    onClick={() => deleteAdjunto(u.id)}
+                                                                    onClick={() => deleteAdjunto(a.id)}
                                                                 >
                                                                     <Trash2 className="h-4 w-4 mr-1" />
                                                                     Eliminar

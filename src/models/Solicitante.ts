@@ -16,4 +16,5 @@ export interface Solicitante {
   genero: Genero;
   createdAt: string; // ISO Date string
   updatedAt: string | null;
+  eliminado: boolean;
 }

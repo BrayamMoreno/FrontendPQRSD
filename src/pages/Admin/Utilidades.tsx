@@ -38,9 +38,18 @@ const Utilidades: React.FC = () => {
     const [loadingLogs, setLoadingLogs] = useState(false);
     const [page, setPage] = useState(0);
     const [hasMoreLogs, setHasMoreLogs] = useState(true);
+    const [shouldForceScroll, setShouldForceScroll] = useState(false);
 
     const logsContainerRef = useRef<HTMLDivElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
+
+    // 🆕 Nuevas referencias para manejar el scroll estable
+    const pendingScrollAdjustment = useRef<number | null>(null);
+    const lastScrollHeight = useRef<number>(0);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     // ========================= BACKUPS =========================
     const fetchBackups = async () => {
@@ -78,11 +87,10 @@ const Utilidades: React.FC = () => {
             } else if (response.status === 401 || response.status === 403) {
                 showAlert("No tiene permisos para crear backups.", "error");
             }
-
             await fetchBackups();
         } catch (error) {
             console.error("Error al crear el backup:", error);
-            showAlert("Ha ocurrido un error, intenta nuevamente mas tarde.", "error");
+            showAlert("Ha ocurrido un error, intenta nuevamente más tarde.", "error");
         } finally {
             setLoading(false);
         }
@@ -113,57 +121,119 @@ const Utilidades: React.FC = () => {
         }
     };
 
+    function toLocalISOString(dateString: string) {
+        const date = new Date(dateString);
+        return date.toISOString().split('.')[0];
+    }
+
     // ========================= LOGS =========================
-    const fetchLogs = async (newPage = 0) => {
-        if (!hasMoreLogs || loadingLogs) return;
+    const fetchLogs = async (newPage = 0, reset = false) => {
+        if ((!hasMoreLogs && !reset) || (loadingLogs && !reset)) return;
+
         try {
             setLoadingLogs(true);
-            const container = logsContainerRef.current;
-            const isAtBottom = container
-                ? container.scrollHeight - container.scrollTop === container.clientHeight
-                : false;
+            setHasMoreLogs(true);
 
-            const response = await api.get<PaginatedResponse<AuditLog>>(`/logs?page=${newPage}&size=50`);
+            if (startDate && endDate && startDate > endDate) {
+                showAlert("La fecha de inicio no puede ser mayor a la fecha final.", "error");
+                setLoadingLogs(false);
+                return;
+            }
+
+            const params = new URLSearchParams({
+                page: String(newPage),
+                size: "50",
+            });
+
+            if (searchTerm?.trim()) params.append("search", searchTerm.trim());
+            if (startDate) params.append("fechaInicio", toLocalISOString(startDate));
+            if (endDate) params.append("fechaFin", toLocalISOString(endDate));
+
+            const response = await api.get<PaginatedResponse<AuditLog>>(`/logs?${params.toString()}`);
             const fetchedLogs = response.data || [];
+
+            if (!Array.isArray(fetchedLogs)) {
+                setLogs([]);
+                setLoadingLogs(false);
+                return;
+            }
 
             if (fetchedLogs.length < 50) setHasMoreLogs(false);
 
             setLogs(prevLogs => {
-                const combinedLogs = [...prevLogs, ...fetchedLogs];
-                return combinedLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                const baseLogs = reset ? [] : prevLogs;
+                const combinedLogs = [...baseLogs, ...fetchedLogs];
+                const uniqueLogs = Array.from(new Map(combinedLogs.map(log => [log.id, log])).values());
+                return uniqueLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
             });
 
             setPage(newPage);
 
-            // Scroll solo si estaba al final, ajustando directamente scrollTop
-            if (container && isAtBottom) {
-                setTimeout(() => {
-                    container.scrollTop = container.scrollHeight;
-                }, 50);
-            }
+            if (newPage === 0 || reset) setShouldForceScroll(true);
 
         } catch (error) {
             console.error("Error al obtener logs:", error);
             showAlert("No se pudieron cargar los logs del sistema.", "error");
+            setLogs([]);
+            setHasMoreLogs(false);
         } finally {
             setLoadingLogs(false);
         }
     };
 
-    const handleScroll = () => {
+    // ✅ Scroll hacia abajo controlado
+    useEffect(() => {
+        const container = logsContainerRef.current;
+        const endRef = logsEndRef.current;
+
+        if (!container || !endRef) return;
+
+        if (shouldForceScroll) {
+            window.scrollTo(0, 0);
+            setTimeout(() => {
+                if (logsContainerRef.current) {
+                    logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+                    setShouldForceScroll(false);
+                }
+            }, 50);
+            return;
+        }
+
+        const isNearBottom =
+            container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+
+        if (isNearBottom && logs.length > 0) {
+            endRef.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    }, [logs, shouldForceScroll]);
+
+    // 🆕 Ajuste del scroll tras carga de logs antiguos
+    useEffect(() => {
         const container = logsContainerRef.current;
         if (!container) return;
 
-        // Cargar logs antiguos si scroll arriba
-        if (container.scrollTop === 0 && hasMoreLogs) {
-            fetchLogs(page + 1);
+        if (pendingScrollAdjustment.current !== null) {
+            const oldHeight = pendingScrollAdjustment.current;
+            const newHeight = container.scrollHeight;
+            container.scrollTop = newHeight - oldHeight;
+            pendingScrollAdjustment.current = null;
+        }
+    }, [logs]);
+
+    const handleScroll = async () => {
+        const container = logsContainerRef.current;
+        if (!container) return;
+
+        if (container.scrollTop === 0 && hasMoreLogs && !loadingLogs) {
+            lastScrollHeight.current = container.scrollHeight;
+            await fetchLogs(page + 1);
+            pendingScrollAdjustment.current = lastScrollHeight.current;
         }
     };
 
-    // ========================= INIT =========================
     useEffect(() => {
         fetchBackups();
-        fetchLogs(0);
+        fetchLogs(0, true);
     }, []);
 
     // ========================= RENDER =========================
@@ -253,33 +323,112 @@ const Utilidades: React.FC = () => {
 
                     </div>
 
-                    {/* Logs */}
-                    <div className="bg-white rounded-xl shadow p-6 mt-8 w-full">
-                        <div className="flex justify-between items-center mb-4 w-full">
-                            <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-blue-600" />
-                                Logs del Sistema
-                            </h2>
-                            <Button variant="outline" size="sm" onClick={() => fetchLogs(page)} disabled={loadingLogs}>
-                                Actualizar
-                            </Button>
+                    {/* Logs - Terminal */}
+                    <div className="bg-[#0d1117] rounded-xl shadow-lg mt-8 w-full border border-gray-800 overflow-hidden">
+                        <div className="flex items-center bg-[#161b22] px-4 py-2 border-b border-gray-800">
+                            <h2 className="text-sm text-gray-400 font-mono">Logs del Sistema</h2>
                         </div>
 
                         <div
                             ref={logsContainerRef}
                             onScroll={handleScroll}
-                            className="bg-gray-900 text-green-400 text-sm p-4 rounded-lg overflow-y-auto max-h-[400px] whitespace-pre-wrap font-mono"
+                            className="px-4 py-3 overflow-y-auto max-h-[450px] text-sm font-mono text-gray-300 relative"
+                            style={{ overscrollBehavior: "contain", scrollBehavior: "smooth" }}
                         >
                             {logs.length > 0 ? (
-                                logs.map(log => (
-                                    <div key={log.id}>
-                                        <strong>{log.username || "Usuario Anónimo"}</strong> - {log.action} ({log.method} {log.endpoint}) - {log.statusCode} - {new Date(log.timestamp).toLocaleString()}
+                                logs.map((log) => (
+                                    <div key={log.id} className="py-0.5">
+                                        <span className="text-gray-500">
+                                            [{new Date(log.timestamp).toLocaleString()}]
+                                        </span>{" "}
+                                        <span className="text-green-400">
+                                            {log.username || "Usuario Anónimo"}
+                                        </span>{" "}
+                                        <span className="text-blue-400">{log.method}</span>{" "}
+                                        <span className="text-yellow-400">{log.endpoint}</span>{" "}
+                                        <span
+                                            className={`${log.statusCode >= 400
+                                                ? "text-red-400"
+                                                : "text-green-500"
+                                                }`}
+                                        >
+                                            {log.statusCode}
+                                        </span>{" "}
+                                        <span className="text-gray-300">{log.action}</span>
                                     </div>
                                 ))
                             ) : (
-                                "No hay logs registrados."
+                                <p className="text-gray-500">
+                                    {loadingLogs ? "Cargando logs..." : "No hay logs registrados o que coincidan con la búsqueda."}
+                                </p>
                             )}
                             <div ref={logsEndRef} />
+                        </div>
+
+                        {/* Terminal prompt */}
+                        <div className="bg-[#161b22] border-t border-gray-800 px-4 py-3">
+                            <div className="flex items-center mb-2">
+                                <span className="text-green-500 mr-2">λ</span>
+                                <input
+                                    type="text"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onKeyDown={(e) => e.key === "Enter" && fetchLogs(0, true)}
+                                    placeholder="Filtrar por usuario, acción o endpoint... (Enter para buscar)"
+                                    className="flex-1 bg-transparent outline-none text-gray-200 placeholder-gray-500 text-sm"
+                                />
+                                <Button
+                                    size="sm"
+                                    className="ml-3 border-gray-700 text-gray-300 hover:bg-gray-800"
+                                    onClick={() => fetchLogs(0, true)}
+                                    disabled={loadingLogs}
+                                >
+                                    Buscar Campos
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="ml-2"
+                                    onClick={() => {
+                                        setSearchTerm("");
+                                        setStartDate("");
+                                        setEndDate("");
+                                        fetchLogs(0, true);
+                                    }}
+                                >
+                                    Limpiar
+                                </Button>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                                <label className="flex items-center gap-1">
+                                    <span className="text-gray-500">Fecha Inicio Logs:</span>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="bg-[#0d1117] border border-gray-700 rounded px-2 py-1 text-gray-300 text-xs"
+                                    />
+                                </label>
+                                <label className="flex items-center gap-1">
+                                    <span className="text-gray-500">Fecha Fin Logs:</span>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="bg-[#0d1117] border border-gray-700 rounded px-2 py-1 text-gray-300 text-xs"
+                                    />
+                                </label>
+
+                                <Button
+                                    size="sm"
+                                    className=" border-gray-700 text-gray-300 hover:bg-gray-800 ml-auto"
+                                    onClick={() => fetchLogs(0, true)}
+                                    disabled={loadingLogs}
+                                >
+                                    Buscar por Fecha
+                                </Button>
+                            </div>
                         </div>
                     </div>
                 </div>

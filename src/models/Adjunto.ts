@@ -5,4 +5,5 @@ export interface Adjunto {
     rutaArchivo: string;
     respuesta: boolean;
     createdAt: string;
+    eliminado: boolean;
 }

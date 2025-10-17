@@ -1,5 +1,5 @@
 import { CheckCircle, CheckCircle2, FileText } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useDebugValue, useEffect, useState } from "react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import type { TipoPQ } from "../../models/TipoPQ"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import { useLocation } from "react-router-dom"
+import { useAlert } from "../../context/AlertContext"
 
 type FormPeticion = {
     para: string;
@@ -34,6 +35,7 @@ const PeticionesPendientes: React.FC = () => {
     const API_URL = config.apiBaseUrl
 
     const { user } = useAuth()
+    const { showAlert } = useAlert()
 
     const location = useLocation();
 
@@ -69,6 +71,14 @@ const PeticionesPendientes: React.FC = () => {
             }
         }
     }, [location.state]);
+
+    useEffect(() => {
+        if (modalOpen === true) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+    }, [modalOpen]);
 
     const fetchSolicitudes = async () => {
         setIsLoading(true);
@@ -173,9 +183,10 @@ const PeticionesPendientes: React.FC = () => {
 
             console.log("Payload a enviar:", payload);
 
-            const response = await api.post("/pqs/dar_resolucion", payload);
+            const response = await api.patch("/pqs/dar_resolucion", payload);
 
-            if (response.status === 201) {
+            if (response.status === 200) {
+                showAlert("Respuesta enviada exitosamente.", "success");
                 setFormPeticion({
                     para: "",
                     asunto: "",
@@ -183,12 +194,22 @@ const PeticionesPendientes: React.FC = () => {
                     lista_documentos: []
                 });
             }
+            if(response.status === 206){
+                showAlert("Respuesta enviada, pero hubo un problema al enviar el correo.", "warning");
+            }
+
         } catch (error) {
             console.error("Error al enviar:", error);
             alert("Error al enviar la PQRSDF");
         } finally {
             fetchSolicitudes()
         }
+    }
+
+    const handleEnviarRespuesta = async () => {
+        await handleDarResolucion()
+        handleCloseModal()
+        setAlertFileRespuesta("")
     }
 
     const handleVerClick = async (solicitud: PqItem) => {
@@ -235,9 +256,10 @@ const PeticionesPendientes: React.FC = () => {
         const validFiles = validateFiles(files);
         setFormPeticion((prev) => ({
             ...prev,
-            documentosRespuesta: [...prev.lista_documentos, ...validFiles],
+            lista_documentos: [...prev.lista_documentos, ...validFiles],
         }));
     };
+
 
     const validateFiles = (files: File[]) => {
         const validTypes = [
@@ -294,7 +316,7 @@ const PeticionesPendientes: React.FC = () => {
                         <Breadcrumbs />
                         {/* Contenedor de título y botón */}
                         <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Peticiones Pendientes</h1>
+                            <h1 className="text-2xl font-bold text-blue-900">Peticiones Pendientes de Resolución</h1>
                         </div>
                     </div>
 
@@ -548,9 +570,12 @@ const PeticionesPendientes: React.FC = () => {
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-600">Descripción:</label>
-                                            <p className="text-gray-900 mt-1 text-sm leading-relaxed">
-                                                {selectedSolicitud.detalleDescripcion || "Sin descripción disponible"}
-                                            </p>
+                                            <div
+                                                className="prose prose-sm max-w-none bg-gray-50 border border-gray-200 rounded-lg p-4 mt-2 text-gray-800"
+                                                dangerouslySetInnerHTML={{
+                                                    __html: selectedSolicitud.detalleDescripcion || "<p><em>Sin descripción disponible</em></p>",
+                                                }}
+                                            />
                                         </div>
                                         <div>
                                             <label className="text-sm font-medium text-gray-600">Responsable:</label>
@@ -632,29 +657,34 @@ const PeticionesPendientes: React.FC = () => {
                                     <div className="relative flex items-start justify-between w-full">
                                         {/* Línea atravesando las bolitas */}
                                         <div className="absolute top-2.5 left-0 right-0 h-0.5 bg-gray-200 z-0"></div>
-                                        {selectedSolicitud.historialEstados.map((estado: any, index: number) => (
-                                            <div
-                                                key={index}
-                                                className="flex flex-col items-center relative w-1/4 min-w-0"
-                                            >
-                                                {/* Nodo y Tooltip */}
-                                                <div className="group relative">
-                                                    <div className="w-5 h-5 rounded-full ring-2 transition-all duration-300 bg-blue-600 ring-blue-600"></div>
-                                                    <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal w-40 text-center pointer-events-none">
-                                                        {estado.observacion ? estado.observacion : "Sin observación"}
+                                        {selectedSolicitud.historialEstados
+                                            ?.slice() // crea una copia para no modificar el original
+                                            .reverse() // invierte el orden
+                                            .map((estado: any, index: number) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex flex-col items-center relative w-1/4 min-w-0"
+                                                >
+                                                    {/* Nodo y Tooltip */}
+                                                    <div className="group relative">
+                                                        <div className="w-5 h-5 rounded-full ring-2 transition-all duration-300 bg-blue-600 ring-blue-600"></div>
+                                                        <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-normal w-40 text-center pointer-events-none">
+                                                            {estado.observacion ? estado.observacion : "Sin observación"}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Texto del estado */}
+                                                    <div className="mt-4 text-center">
+                                                        <p className="text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
+                                                            {estado.estado.nombre}
+                                                        </p>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {new Date(estado.fechaCambio).toLocaleDateString()}
+                                                        </p>
                                                     </div>
                                                 </div>
-                                                {/* Texto del estado */}
-                                                <div className="mt-4 text-center">
-                                                    <p className="text-sm font-semibold whitespace-nowrap overflow-hidden text-ellipsis">
-                                                        {estado.estado.nombre}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {new Date(estado.fechaCambio).toLocaleDateString()}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            ))}
+
                                     </div>
                                 ) : (
                                     <p className="text-sm text-gray-500">Sin historial disponible.</p>
@@ -863,7 +893,6 @@ const PeticionesPendientes: React.FC = () => {
                             </div>
                         </div>
 
-
                         {/* Footer del Modal */}
                         <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center sticky bottom-0">
                             <div className="text-sm">
@@ -886,9 +915,7 @@ const PeticionesPendientes: React.FC = () => {
                                 <Button
                                     className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                                     onClick={() => {
-                                        handleDarResolucion()
-                                        handleCloseModal()
-                                        setAlertFileRespuesta("")
+                                        handleEnviarRespuesta()
                                     }}
                                     disabled={formPeticion.asunto === "" || formPeticion.para === "" || formPeticion.respuesta === ""}
                                 >

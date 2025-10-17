@@ -1,6 +1,9 @@
+import type { Departamentos } from "./Departamentos";
+
 export type Municipios = {
     id: "" | string;
     nombre: "" | string;
-    codigo_dane: "" | string;
-    departamentoId: "" | string;
+    codigoDane: "" | string;
+    departamento: Departamentos | null;
+    eliminado: boolean;
 }

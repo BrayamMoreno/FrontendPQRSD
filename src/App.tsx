@@ -11,6 +11,7 @@ import GestionPqs from "./pages/Admin/GestionPqs";
 import GestionResponsablesPqs from "./pages/Admin/GestionResponsablesPqs";
 import HistorialEstados from "./pages/Admin/HistorialEstados";
 import Utilidades from "./pages/Admin/Utilidades";
+import Municipios from "./pages/Admin/GestionMunicipios";
 
 // 📌 Lazy imports
 const LandingPage = lazy(() => import("./pages/Auth/LandingPage"));
@@ -101,6 +102,7 @@ export default function App() {
                                     <Route path="usuarios" element={<GestionUsuarios />} />
                                     <Route path="roles" element={<GestionRoles />} />
                                     <Route path="perfil" element={<MostrarPerfil />} />
+                                    <Route path="municipios" element={<Municipios />} />
                                     <Route path="adjuntos" element={<GestionAdjuntos />} />
                                     <Route path="gestion_pqs" element={<GestionPqs />} />
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />

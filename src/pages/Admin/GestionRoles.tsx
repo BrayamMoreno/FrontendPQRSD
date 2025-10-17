@@ -167,8 +167,8 @@ function GestionRoles() {
 
                     <Breadcrumbs />
                     <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Usuarios</h1>
-                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'usuarios') && (
+                        <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Roles</h1>
+                        {permisosAuth.some(p => p.accion === 'agregar' && p.tabla === 'roles') && (
                             <div className="flex gap-2">
                                 <Button
                                     onClick={() => {
@@ -216,7 +216,10 @@ function GestionRoles() {
                                     roles.map((rol) => (
                                         <tr
                                             key={rol.id}
-                                            className="border-b hover:bg-blue-50 transition"
+                                            className={`border-b transition ${(rol).eliminado
+                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                : "hover:bg-blue-50"
+                                                }`}
                                         >
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center gap-2">
@@ -250,14 +253,18 @@ function GestionRoles() {
                                                     {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === 'roles') && (
                                                         <Button
                                                             onClick={() => handleEdit(rol)}
-                                                            className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
+                                                            className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
+                                                                ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
+                                                            }
                                                         >
                                                             <Pencil size={16} />
                                                         </Button>
                                                     )}
                                                     <Button
                                                         onClick={() => handleView(rol)}
-                                                        className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
+                                                            ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
+                                                        }
                                                     >
                                                         <Eye size={16} />
                                                     </Button>
@@ -270,8 +277,10 @@ function GestionRoles() {
                                                         >
                                                             <AlertDialogTrigger asChild>
                                                                 <Button
-                                                                    onClick={() => setToDelete(rol)} // ✅ abre el diálogo, no elimina aún
-                                                                    className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                                    onClick={() => setToDelete(rol)}
+                                                                    className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
+                                                                        ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
+                                                                    }
                                                                 >
                                                                     <Trash2 size={16} />
                                                                 </Button>
@@ -397,31 +406,48 @@ function GestionRoles() {
                                         </label>
                                         <div className="border border-gray-300 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
                                             {permisos.length > 0 ? (
-                                                <div className="grid grid-cols-4 gap-3">
-                                                    {permisos.map((permiso) => (
-                                                        <div key={permiso.id} className="flex items-start space-x-3 p-3 bg-white rounded-lg border hover:bg-blue-50 transition">
-                                                            <Checkbox
-                                                                // 🔹 modo solo lectura
-                                                                id={`permiso-${permiso.id}`}
-                                                                checked={formData.permisos.includes(
-                                                                    Number(permiso.id)
-                                                                )}
-                                                                onCheckedChange={() =>
-                                                                    handlePermisoToggle(permiso.id)
-                                                                }
-                                                                disabled={readOnly}
-                                                                className="mt-1"
-                                                            />
-                                                            <div className="flex-1">
-                                                                <label
-                                                                    htmlFor={`permiso-${permiso.id}`}
-                                                                    className="text-sm font-medium text-gray-900 cursor-pointer"
-                                                                >
-                                                                    {permiso.tabla}
-                                                                </label>
-                                                                <p className="text-xs text-gray-500 mt-1">
-                                                                    {permiso.descripcion}
-                                                                </p>
+                                                <div className="space-y-4">
+                                                    {/* Agrupar permisos alfabéticamente por la primera letra */}
+                                                    {Object.entries(
+                                                        [...permisos]
+                                                            .sort((a, b) => a.tabla.localeCompare(b.tabla))
+                                                            .reduce((acc, permiso) => {
+                                                                const letra = permiso.tabla[0].toUpperCase();
+                                                                if (!acc[letra]) acc[letra] = [];
+                                                                acc[letra].push(permiso);
+                                                                return acc;
+                                                            }, {} as Record<string, Permiso[]>)
+                                                    ).map(([letra, grupo]) => (
+                                                        <div key={letra}>
+                                                            {/* Encabezado de letra */}
+                                                            <h3 className="text-blue-800 font-bold text-lg mb-2">{letra}</h3>
+
+                                                            <div className="grid grid-cols-4 gap-3">
+                                                                {grupo.map((permiso) => (
+                                                                    <div
+                                                                        key={permiso.id}
+                                                                        className="flex items-start space-x-3 p-3 bg-white rounded-lg border hover:bg-blue-50 transition"
+                                                                    >
+                                                                        <Checkbox
+                                                                            id={`permiso-${permiso.id}`}
+                                                                            checked={formData.permisos.includes(Number(permiso.id))}
+                                                                            onCheckedChange={() => handlePermisoToggle(permiso.id)}
+                                                                            disabled={readOnly}
+                                                                            className="mt-1"
+                                                                        />
+                                                                        <div className="flex-1">
+                                                                            <label
+                                                                                htmlFor={`permiso-${permiso.id}`}
+                                                                                className="text-sm font-medium text-gray-900 cursor-pointer"
+                                                                            >
+                                                                                {permiso.tabla}
+                                                                            </label>
+                                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                                {permiso.descripcion}
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -433,15 +459,14 @@ function GestionRoles() {
                                             )}
                                         </div>
                                         {errors.permisos && (
-                                            <p className="text-red-500 text-sm mt-1">
-                                                {errors.permisos}
-                                            </p>
+                                            <p className="text-red-500 text-sm mt-1">{errors.permisos}</p>
                                         )}
                                         <p className="text-xs text-gray-500 mt-2">
-                                            Seleccionados: {formData.permisos.length} de{" "}
-                                            {permisos.length}
+                                            Seleccionados: {formData.permisos.length} de {permisos.length}
                                         </p>
                                     </div>
+
+
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-8">

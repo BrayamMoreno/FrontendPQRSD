@@ -18,4 +18,5 @@ export interface Persona {
     genero: Genero;
     createdAt: string;
     updatedAt: string;
+    eliminado: boolean;
 }

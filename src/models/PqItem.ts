@@ -12,8 +12,8 @@ export interface PqItem {
     tipoPQ: TipoPQ;
     solicitante: Persona;
     respuesta: string | null;
-    fechaRadicacion: string; // YYYY-MM-DD
-    horaRadicacion: string; // HH:mm:ss
+    fechaRadicacion: string;
+    horaRadicacion: string;
     fechaResolucionEstimada: string;
     fechaResolucion: string | null;
     radicador: Persona;
@@ -23,4 +23,5 @@ export interface PqItem {
     web: boolean;
     historialEstados: HistorialEstado[];
     adjuntos: Adjunto[];
+
 }

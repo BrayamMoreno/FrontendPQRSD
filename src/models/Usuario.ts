@@ -11,4 +11,5 @@ export interface Usuario {
     rol: Rol;
     createdAt: string;
     updatedAt: string | null;
+    eliminado: boolean;
 }

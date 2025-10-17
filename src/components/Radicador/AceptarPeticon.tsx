@@ -69,7 +69,7 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                 if (!data.isAprobada) {
                     showAlert("La solicitud ha sido rechazada.", "success");
                 } else {
-                    showAlert("La solicitud ha sido aprobada exitosamente.", "success");
+                    showAlert("La solicitud ha sido asignada exitosamente.", "success");
                 }
                 clearFormData();
                 onClose(true);

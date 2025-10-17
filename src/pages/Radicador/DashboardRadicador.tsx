@@ -134,7 +134,7 @@ const DashboardRadicador: React.FC = () => {
                         <Breadcrumbs />
                         {/* Header */}
                         <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-2xl font-bold text-blue-900">Solicitudes PQRSD Pendites de Asignacion</h1>
+                            <h1 className="text-2xl font-bold text-blue-900">Solicitudes Pendientes de Asignacion</h1>
                         </div>
                     </div>
 

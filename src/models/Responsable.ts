@@ -1,10 +1,11 @@
-import type { Area } from "./Area";
+import type { AreaResponsable } from "./AreaResponsable";
 import type { Persona } from "./Persona";
 
 export interface Responsable {
     id: number;
     personaResponsable: Persona;
-    area: Area;
+    area: AreaResponsable;
     fechaAsignacion: string;
     isActive: boolean;
+    eliminado: boolean;
 }

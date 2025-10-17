@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from "react";
-import { Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
+import { Pencil, Trash2, PlusCircle, Eye, ShipWheel } from "lucide-react";
 import { type CrudProps } from "../models/CrudProps";
 import apiServiceWrapper from "../api/ApiService";
 import { Button } from "./ui/button";
@@ -7,8 +7,9 @@ import type { PaginatedResponse } from "../models/PaginatedResponse";
 import Breadcrumbs from "./Navegacion/Breadcrumbs";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { useAuth } from "../context/AuthProvider";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
 
-function GenericCrud<T extends { id: number | string }>({
+function GenericCrud<T extends { id: number | string, eliminado: boolean }>({
     endpoint,
     Columns,
     titulo,
@@ -21,11 +22,24 @@ function GenericCrud<T extends { id: number | string }>({
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState<Partial<T>>({});
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+    const [toDelete, setToDelete] = useState<T | null>(null)
     const [readOnly, setReadOnly] = useState(false);
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
+
+    useEffect(() => {
+        if (showForm) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [showForm]);
 
     const { permisos: permisosAuth } = useAuth();
     const fetchData = async () => {
@@ -104,7 +118,6 @@ function GenericCrud<T extends { id: number | string }>({
     };
 
     const handleDelete = async (id: number | string) => {
-        if (!window.confirm("¿Seguro que quieres eliminar este registro?")) return;
         try {
             await api.delete(`${endpoint}/${id}`, {});
             fetchData();
@@ -168,8 +181,12 @@ function GenericCrud<T extends { id: number | string }>({
                                                 data.map((item) => (
                                                     <tr
                                                         key={item.id}
-                                                        className="border-b hover:bg-blue-50 transition"
+                                                        className={`border-b transition ${(item).eliminado
+                                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                                            : "hover:bg-blue-50"
+                                                            }`}
                                                     >
+
                                                         {Columns.map((col) => (
                                                             <td key={String(col.key)} className="px-6 py-3">
                                                                 {col.type === "color" ? (
@@ -207,24 +224,57 @@ function GenericCrud<T extends { id: number | string }>({
                                                                 {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === tabla) && (
                                                                     <Button
                                                                         onClick={() => handleEdit(item)}
-                                                                        className="btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400"
+                                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
+                                                                            ${item.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
+                                                                        }
                                                                     >
                                                                         <Pencil size={16} />
                                                                     </Button>
                                                                 )}
                                                                 <Button
                                                                     onClick={() => handleView(item)}
-                                                                    className="btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                                    className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
+                                                                        ${item.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
+                                                                    }
                                                                 >
                                                                     <Eye size={16} />
                                                                 </Button>
                                                                 {permisosAuth.some(p => p.accion === 'eliminar' && p.tabla === tabla) && (
-                                                                    <Button
-                                                                        onClick={() => handleDelete(item.id)}
-                                                                        className="btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500"
+                                                                    <AlertDialog
+                                                                        open={toDelete?.id === item.id}
+                                                                        onOpenChange={(open: any) => !open && setToDelete(null)}
                                                                     >
-                                                                        <Trash2 size={16} />
-                                                                    </Button>
+                                                                        <AlertDialogTrigger asChild>
+                                                                            <Button
+                                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
+                                                                                    ${item.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
+                                                                                }
+                                                                                onClick={() => setToDelete(item)}
+                                                                            >
+                                                                                <Trash2 size={16} />
+                                                                            </Button>
+                                                                        </AlertDialogTrigger>
+
+                                                                        <AlertDialogContent>
+                                                                            <AlertDialogHeader>
+                                                                                <AlertDialogTitle>¿Eliminar Registro?</AlertDialogTitle>
+                                                                                <AlertDialogDescription>
+                                                                                    Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
+                                                                                </AlertDialogDescription>
+                                                                            </AlertDialogHeader>
+
+                                                                            <AlertDialogFooter>
+                                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                                <AlertDialogAction
+                                                                                    className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                                    onClick={() => handleDelete(item.id)}
+                                                                                >
+                                                                                    <Trash2 className="h-4 w-4 mr-1" />
+                                                                                    Eliminar
+                                                                                </AlertDialogAction>
+                                                                            </AlertDialogFooter>
+                                                                        </AlertDialogContent>
+                                                                    </AlertDialog>
                                                                 )}
                                                             </div>
                                                         </td>

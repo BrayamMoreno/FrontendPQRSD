@@ -8,4 +8,5 @@ export interface HistorialEstado {
     observacion: string | null;
     fechaCambio: string;
     numeroRadicado: string;
+    eliminado: boolean;
 }

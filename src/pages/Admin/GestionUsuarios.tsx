@@ -15,7 +15,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "../../components/ui/alert-dialog"
-import { Edit3, Eye, PlusCircleIcon, Trash2 } from "lucide-react"
+import { Edit3, Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../../api/ApiService"
 import UsuarioForm from "../../components/Formularios/UsuarioForm"
@@ -132,20 +132,9 @@ const GestionCuentas: React.FC = () => {
         }
     };
 
-    const handleStatusAccount = async (id: number, isEnable: boolean) => {
-        try {
-            const action = isEnable ? 'disable-account' : 'enable-account';
-            await api.patch(`/usuarios/${action}/${id}`, {});
-
-            await fetchUser();
-        } catch (e) {
-            console.error("Error actualizando estado de cuenta:", e);
-        }
-    };
-
     const deleteUser = async (id: number) => {
         try {
-            await api.delete(`/usuarios/${id}`, {})
+            await api.patch(`/usuarios/disable-account/${id}`, {});
             await fetchUser()
         } catch (e) {
             console.error(e)
@@ -187,7 +176,7 @@ const GestionCuentas: React.FC = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="TODOS">Todos los roles</SelectItem>
-                                        {roles.map((r) => (
+                                        {roles.filter(r => !r.eliminado).map((r) => (
                                             <SelectItem key={r.id} value={r.id.toString()}>
                                                 {r.nombre}
                                             </SelectItem>
@@ -249,7 +238,10 @@ const GestionCuentas: React.FC = () => {
                                     </tr>
                                 ) : data.map((u) => (
                                     <tr key={u.id}
-                                        className="border-b hover:bg-blue-50 transition"
+                                        className={`border-b transition ${(u).eliminado
+                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            : "hover:bg-blue-50"
+                                            }`}
                                     >
                                         <td className="px-6 py-4">{u.id}</td>
                                         <td>
@@ -276,29 +268,19 @@ const GestionCuentas: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex justify-end gap-2">
                                                 {permisosAuth.some(p => p.accion === "modificar" && p.tabla === 'usuarios') && (
-                                                    <>
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className={`h-9 min-w-[90px] flex items-center justify-center
-                                                                ${u.isEnable
-                                                                    ? "border-yellow-500 text-yellow-700"
-                                                                    : "border-green-600 text-green-700"
-                                                                }`}
-                                                            onClick={() => handleStatusAccount(u.id, u.isEnable)}
-                                                        >
-                                                            {u.isEnable ? "Desactivar" : "Activar"}
-                                                        </Button>
-                                                        <Button
-                                                            className="bg-blue-400 hover:bg-blue-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1" onClick={() => {
-                                                                setEditing(u)
-                                                                setReadOnly(false)
-                                                                setFormOpen(true)
-                                                            }}
-                                                        >
-                                                            <Edit3 className="h-4 w-4 mr-1" />
-                                                        </Button>
-                                                    </>
+                                                    <Button
+                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
+                                                            ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
+                                                        }
+                                                        onClick={() => {
+                                                            setEditing(u)
+                                                            setReadOnly(false)
+                                                            setFormOpen(true)
+                                                        }}
+                                                    >
+                                                        <Pencil className="h-4 w-4 mr-1" />
+                                                    </Button>
+
                                                 )}
                                                 <Button
                                                     onClick={() => {
@@ -306,7 +288,9 @@ const GestionCuentas: React.FC = () => {
                                                         setEditing(u)
                                                         setFormOpen(true)
                                                     }}
-                                                    className="bg-yellow-400 hover:bg-yellow-600 text-white p-2 rounded-lg shadow-sm flex items-center gap-1"
+                                                    className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
+                                                        ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
+                                                    }
                                                 >
                                                     <Eye className="h-4 w-4" />
 
@@ -318,7 +302,9 @@ const GestionCuentas: React.FC = () => {
                                                     >
                                                         <AlertDialogTrigger asChild>
                                                             <Button
-                                                                className="bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm"
+                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
+                                                                    ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
+                                                                }
                                                                 onClick={() => setToDelete(u)}
                                                             >
                                                                 <Trash2 size={16} />
