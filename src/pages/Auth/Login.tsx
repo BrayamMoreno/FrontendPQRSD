@@ -119,10 +119,17 @@ const Login: React.FC = () => {
 				<CardFooter className="flex flex-col items-center gap-2">
 					<p className="text-sm text-gray-600 text-center">
 						¿No tienes una cuenta?{" "}
-						<a onClick={() => navigate("/register")} className="text-blue-700 hover:underline hover:text-blue-800">
+						<a onClick={() => navigate("/register")} className="text-blue-700 hover:underline hover:text-blue-800 cursor-pointer">
 							Regístrate
 						</a>
 					</p>
+					<p
+						onClick={() => navigate("/forgot-password")}
+						className="text-sm text-blue-700 hover:text-blue-800 hover:underline cursor-pointer"
+					>
+						<a>¿Olvidaste tu contraseña?</a>
+					</p>
+
 					<p className="text-xs text-gray-500 text-center">
 						Accede las 24 horas del día para consultas tus PQRS
 					</p>

@@ -75,13 +75,19 @@ const Navbar: React.FC = () => {
 
     if (
         permisosRol.find(
-            (p) => p.accion === "dashboard" && p.tabla === "contratista"
+            (p) => p.accion === "dashboard" && p.tabla === "funcionario"
         )
     ) {
         acciones.push({
             label: "Peticiones Pendientes",
             icon: <FileText size={14} />,
-            action: () => navigate(`/${currentRole}/peticiones_pendientes`),
+            action: () => navigate(`/funcionario/peticiones_pendientes`),
+        })
+
+        acciones.push({
+            label: "Historial Peticiones",
+            icon: <Archive size={14} />,
+            action: () => navigate(`/funcionario/historial_peticiones`),
         })
     }
 
@@ -91,35 +97,35 @@ const Navbar: React.FC = () => {
         acciones.push({
             label: "Mis Peticiones",
             icon: <FileText size={14} />,
-            action: () => navigate(`/${currentRole}/peticiones`),
+            action: () => navigate(`/usuario/peticiones`),
         })
     }
 
-    // Radicador
+    // asignador
     if (
-        permisosRol.find((p) => p.accion === "dashboard" && p.tabla === "radicador")
+        permisosRol.find((p) => p.accion === "dashboard" && p.tabla === "asignador")
     ) {
         acciones.push({
             label: "Por Asignar",
             icon: <FileText size={14} />,
-            action: () => navigate(`/${currentRole}/peticiones`),
+            action: () => navigate(`/asignador/peticiones`),
         })
     }
 
     if (
         permisosRol.find(
-            (p) => p.accion === "dashboard" && p.tabla === "radicador"
-        )
+            (p) => p.accion === "dashboard" && p.tabla === "asignador"
+        )?.accion
     ) {
         acciones.push({
             label: "Historial Peticiones",
             icon: <Archive size={14} />,
-            action: () => navigate(`/${currentRole}/historial_peticiones_usuario`),
+            action: () => navigate(`/asignador/historial_peticiones_usuario`),
         })
         acciones.push({
             label: "Responsables",
             icon: <Users size={14} />,
-            action: () => navigate(`/${currentRole}/responsables_pqs`),
+            action: () => navigate(`/asignador/responsables_pqs`),
         })
     }
 

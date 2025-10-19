@@ -1,33 +1,40 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthProvider";
+import type { ReactNode } from "react";
 import type { Permiso } from "../models/Permiso";
 
 interface PrivateRouteProps {
-    required?: { tabla: string; accion: string }[]; // permisos necesarios
+  children?: ReactNode;
+  required?: { tabla: string; accion: string }[];
 }
 
-const PrivateRoute = ({ required }: PrivateRouteProps) => {
-    const { isAuthenticated, permisos } = useAuth();
+const PrivateRoute = ({ children, required }: PrivateRouteProps) => {
+  const { isAuthenticated, permisos } = useAuth();
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
+  // 1️⃣ No autenticado → redirigir al login
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-    if (!required) {
-        return <Outlet />;
-    }
+  // 2️⃣ Si no hay permisos requeridos → acceso total
+  if (!required || required.length === 0) {
+    return children ? <>{children}</> : <Outlet />;
+  }
 
-    const hasPermission = required.some((req) =>
-        permisos.some(
-            (p: Permiso) => p.tabla === req.tabla && p.accion === req.accion
-        )
-    );
+  // 3️⃣ Verificar permisos
+  const hasPermission = required.some((req) =>
+    permisos.some(
+      (p: Permiso) => p.tabla === req.tabla && p.accion === req.accion
+    )
+  );
 
-    if (!hasPermission) {
-        return <Navigate to="/unauthorized" replace />;
-    }
+  // 4️⃣ Sin permisos → redirigir a "no autorizado"
+  if (!hasPermission) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
-    return <Outlet />;
+  // 5️⃣ Si tiene hijos → renderiza hijos, si no → usa Outlet
+  return children ? <>{children}</> : <Outlet />;
 };
 
 export default PrivateRoute;

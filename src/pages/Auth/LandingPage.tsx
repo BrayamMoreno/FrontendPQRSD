@@ -90,11 +90,10 @@ const LandingPage: React.FC = () => {
         {/* Texto */}
         <div className="md:w-1/2 text-center md:text-left space-y-6">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight">
-            Sistema PQRSDF de la Secretaría de Tránsito
+            Sistema PQRSD de la Secretaría de Tránsito
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-gray-300">
-            Radique sus Peticiones, Quejas, Reclamos, Sugerencias, Denuncias y
-            Felicitaciones de manera fácil y rápida.
+            Radique sus Peticiones, Quejas, Reclamos, Sugerencias y Denuncias de manera fácil y rápida.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
             <button

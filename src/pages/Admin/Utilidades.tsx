@@ -38,7 +38,6 @@ const Utilidades: React.FC = () => {
     const [loadingLogs, setLoadingLogs] = useState(false);
     const [page, setPage] = useState(0);
     const [hasMoreLogs, setHasMoreLogs] = useState(true);
-    const [shouldForceScroll, setShouldForceScroll] = useState(false);
 
     const logsContainerRef = useRef<HTMLDivElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
@@ -127,6 +126,7 @@ const Utilidades: React.FC = () => {
     }
 
     // ========================= LOGS =========================
+    // ========================= LOGS =========================
     const fetchLogs = async (newPage = 0, reset = false) => {
         if ((!hasMoreLogs && !reset) || (loadingLogs && !reset)) return;
 
@@ -160,16 +160,33 @@ const Utilidades: React.FC = () => {
 
             if (fetchedLogs.length < 50) setHasMoreLogs(false);
 
-            setLogs(prevLogs => {
-                const baseLogs = reset ? [] : prevLogs;
-                const combinedLogs = [...baseLogs, ...fetchedLogs];
-                const uniqueLogs = Array.from(new Map(combinedLogs.map(log => [log.id, log])).values());
-                return uniqueLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-            });
+            if (reset) {
+                // ✅ No vaciamos primero los logs, sino que los reemplazamos directamente
+                const orderedLogs = fetchedLogs.sort(
+                    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                );
+                setLogs(orderedLogs);
+                setPage(0);
 
-            setPage(newPage);
-
-            if (newPage === 0 || reset) setShouldForceScroll(true);
+                // ✅ Hacemos scroll al final una vez que los logs se rendericen
+                setTimeout(() => {
+                    if (logsContainerRef.current) {
+                        logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+                    }
+                }, 100);
+            } else {
+                // ✅ Carga incremental (scroll infinito)
+                setLogs(prevLogs => {
+                    const combinedLogs = [...prevLogs, ...fetchedLogs];
+                    const uniqueLogs = Array.from(
+                        new Map(combinedLogs.map(log => [log.id, log])).values()
+                    );
+                    return uniqueLogs.sort(
+                        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    );
+                });
+                setPage(newPage);
+            }
 
         } catch (error) {
             console.error("Error al obtener logs:", error);
@@ -181,33 +198,8 @@ const Utilidades: React.FC = () => {
         }
     };
 
-    // ✅ Scroll hacia abajo controlado
-    useEffect(() => {
-        const container = logsContainerRef.current;
-        const endRef = logsEndRef.current;
 
-        if (!container || !endRef) return;
-
-        if (shouldForceScroll) {
-            window.scrollTo(0, 0);
-            setTimeout(() => {
-                if (logsContainerRef.current) {
-                    logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
-                    setShouldForceScroll(false);
-                }
-            }, 50);
-            return;
-        }
-
-        const isNearBottom =
-            container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
-
-        if (isNearBottom && logs.length > 0) {
-            endRef.scrollIntoView({ behavior: "smooth", block: "end" });
-        }
-    }, [logs, shouldForceScroll]);
-
-    // 🆕 Ajuste del scroll tras carga de logs antiguos
+    
     useEffect(() => {
         const container = logsContainerRef.current;
         if (!container) return;
@@ -323,16 +315,16 @@ const Utilidades: React.FC = () => {
 
                     </div>
 
-                    {/* Logs - Terminal */}
-                    <div className="bg-[#0d1117] rounded-xl shadow-lg mt-8 w-full border border-gray-800 overflow-hidden">
-                        <div className="flex items-center bg-[#161b22] px-4 py-2 border-b border-gray-800">
-                            <h2 className="text-sm text-gray-400 font-mono">Logs del Sistema</h2>
+                    {/* Logs - Terminal (modo claro) */}
+                    <div className="bg-gray-100 rounded-xl shadow-lg mt-8 w-full border border-gray-300 overflow-hidden">
+                        <div className="flex items-center bg-gray-200 px-4 py-2 border-b border-gray-300">
+                            <h2 className="text-sm text-gray-700 font-mono">Logs del Sistema</h2>
                         </div>
 
                         <div
                             ref={logsContainerRef}
                             onScroll={handleScroll}
-                            className="px-4 py-3 overflow-y-auto max-h-[450px] text-sm font-mono text-gray-300 relative"
+                            className="px-4 py-3 overflow-y-auto max-h-[450px] text-sm font-mono text-gray-800 relative"
                             style={{ overscrollBehavior: "contain", scrollBehavior: "smooth" }}
                         >
                             {logs.length > 0 ? (
@@ -341,45 +333,45 @@ const Utilidades: React.FC = () => {
                                         <span className="text-gray-500">
                                             [{new Date(log.timestamp).toLocaleString()}]
                                         </span>{" "}
-                                        <span className="text-green-400">
-                                            {log.username || "Usuario Anónimo"}
+                                        <span className="text-green-600">
+                                            {log.username || " sin usuario "}
                                         </span>{" "}
-                                        <span className="text-blue-400">{log.method}</span>{" "}
-                                        <span className="text-yellow-400">{log.endpoint}</span>{" "}
+                                        <span className="text-blue-600">{log.method}</span>{" "}
+                                        <span className="text-yellow-600">{log.endpoint}</span>{" "}
                                         <span
-                                            className={`${log.statusCode >= 400
-                                                ? "text-red-400"
-                                                : "text-green-500"
+                                            className={`${log.statusCode >= 400 ? "text-red-600" : "text-green-700"
                                                 }`}
                                         >
                                             {log.statusCode}
                                         </span>{" "}
-                                        <span className="text-gray-300">{log.action}</span>
+                                        <span className="text-gray-700">{log.action}</span>
                                     </div>
                                 ))
                             ) : (
                                 <p className="text-gray-500">
-                                    {loadingLogs ? "Cargando logs..." : "No hay logs registrados o que coincidan con la búsqueda."}
+                                    {loadingLogs
+                                        ? "Cargando logs..."
+                                        : "No hay logs registrados o que coincidan con la búsqueda."}
                                 </p>
                             )}
                             <div ref={logsEndRef} />
                         </div>
 
-                        {/* Terminal prompt */}
-                        <div className="bg-[#161b22] border-t border-gray-800 px-4 py-3">
+                        {/* Terminal prompt (modo claro) */}
+                        <div className="bg-gray-200 border-t border-gray-300 px-4 py-3">
                             <div className="flex items-center mb-2">
-                                <span className="text-green-500 mr-2">λ</span>
+                                <span className="text-green-600 mr-2">λ</span>
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && fetchLogs(0, true)}
                                     placeholder="Filtrar por usuario, acción o endpoint... (Enter para buscar)"
-                                    className="flex-1 bg-transparent outline-none text-gray-200 placeholder-gray-500 text-sm"
+                                    className="flex-1 bg-white border border-gray-300 rounded px-2 py-1 outline-none text-gray-800 placeholder-gray-400 text-sm"
                                 />
                                 <Button
                                     size="sm"
-                                    className="ml-3 border-gray-700 text-gray-300 hover:bg-gray-800"
+                                    className="ml-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
                                     onClick={() => fetchLogs(0, true)}
                                     disabled={loadingLogs}
                                 >
@@ -400,29 +392,29 @@ const Utilidades: React.FC = () => {
                                 </Button>
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-700">
                                 <label className="flex items-center gap-1">
-                                    <span className="text-gray-500">Fecha Inicio Logs:</span>
+                                    <span className="text-gray-600">Fecha Inicio Logs:</span>
                                     <input
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="bg-[#0d1117] border border-gray-700 rounded px-2 py-1 text-gray-300 text-xs"
+                                        className="bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-xs"
                                     />
                                 </label>
                                 <label className="flex items-center gap-1">
-                                    <span className="text-gray-500">Fecha Fin Logs:</span>
+                                    <span className="text-gray-600">Fecha Fin Logs:</span>
                                     <input
                                         type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="bg-[#0d1117] border border-gray-700 rounded px-2 py-1 text-gray-300 text-xs"
+                                        className="bg-white border border-gray-300 rounded px-2 py-1 text-gray-800 text-xs"
                                     />
                                 </label>
 
                                 <Button
                                     size="sm"
-                                    className=" border-gray-700 text-gray-300 hover:bg-gray-800 ml-auto"
+                                    className="ml-auto border border-gray-300 text-gray-700 bg-white hover:bg-gray-100"
                                     onClick={() => fetchLogs(0, true)}
                                     disabled={loadingLogs}
                                 >
@@ -431,6 +423,7 @@ const Utilidades: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

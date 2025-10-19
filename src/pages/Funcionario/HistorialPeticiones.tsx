@@ -1,4 +1,4 @@
-import { CheckCircle, CheckCircle2, FileText } from "lucide-react"
+import { CheckCircle2, FileText, FileTextIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
@@ -17,13 +17,8 @@ import type { TipoPQ } from "../../models/TipoPQ"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import type { Estado } from "../../models/Estado"
 import type { Adjunto } from "../../models/Adjunto"
-
-type FormPeticion = {
-    para: string;
-    asunto: string;
-    respuesta: string;
-    lista_documentos: File[];
-};
+import { useAlert } from "../../context/AlertContext"
+import { generarInformePDF } from "../../utils/generarInformePDF"
 
 const HistorialPeticiones: React.FC = () => {
 
@@ -31,6 +26,7 @@ const HistorialPeticiones: React.FC = () => {
     const API_URL = config.apiBaseUrl
 
     const { user } = useAuth()
+    const { showAlert } = useAlert();
 
     const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
 
@@ -41,7 +37,8 @@ const HistorialPeticiones: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
-    const [fechaSeleccionada, setFechaSeleccionada] = useState<string>("")
+    const [fechaInicio, setFechaInicio] = useState<string | null>(null)
+    const [fechaFin, setFechaFin] = useState<string | null>(null)
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
     const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
@@ -50,14 +47,7 @@ const HistorialPeticiones: React.FC = () => {
     const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
     const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
 
-    const [isLoading, setIsLoading] = useState(false)
-
-    const [formPeticion, setFormPeticion] = useState<FormPeticion>({
-        para: "",
-        asunto: "",
-        respuesta: "",
-        lista_documentos: []
-    });
+    const [isLoading, setIsLoading] = useState(true)
 
     const fetchSolicitudes = async () => {
         setIsLoading(true);
@@ -65,11 +55,18 @@ const HistorialPeticiones: React.FC = () => {
             const rawId = user?.persona.id
             const responsableId = rawId ? Number(rawId) : null;
 
+            if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
+                showAlert("La fecha de inicio no puede ser mayor a la fecha fin.", "error");
+                setIsLoading(false);
+                return;
+            }
+
             // construir parámetros dinámicos
             const params: Record<string, any> = {
                 responsableId,
                 page: currentPage - 1,
                 size: itemsPerPage,
+                sortDir: 'desc',
             };
 
             if (tipoPqSeleccionado !== null) {
@@ -79,15 +76,18 @@ const HistorialPeticiones: React.FC = () => {
             if (numeroRadicado && numeroRadicado.trim() !== "") {
                 params.numeroRadicado = numeroRadicado;
             }
+            if (fechaInicio) {
+                params.fechaInicio = fechaInicio;
+            }
 
-            if (fechaSeleccionada !== null) {
-                params.fechaRadicacion = fechaSeleccionada;
+            if (fechaFin) {
+                params.fechaFin = fechaFin;
             }
 
             if (estadoSeleccionado !== null) {
                 params.estadoId = estadoSeleccionado;
             }
-            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_contratistas", params);
+            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_funcionario", params);
             setSolicitudes(response.data || []);
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
             setTotalPages(totalPages);
@@ -102,10 +102,10 @@ const HistorialPeticiones: React.FC = () => {
         const delayDebounce = setTimeout(() => {
             fetchSolicitudes()
             fetchAllData()
-        }, 500)
+        }, 2500)
 
         return () => clearTimeout(delayDebounce)
-    }, [currentPage, fechaSeleccionada, tipoPqSeleccionado, numeroRadicado])
+    }, [currentPage, fechaFin, fechaInicio, tipoPqSeleccionado, numeroRadicado])
 
 
     const handleCloseModal = () => {
@@ -137,68 +137,23 @@ const HistorialPeticiones: React.FC = () => {
         }
     }
 
-    const handleDarResolucion = async () => {
-        try {
-            const documentosBase64 = await Promise.all(
-                formPeticion.lista_documentos.map(async (file) => {
-                    const base64 = await fileToBase64(file);
-                    return {
-                        Nombre: file.name,
-                        Tipo: file.type,
-                        Contenido: base64,
-                        isRespuesta: true
-                    };
-                })
-            );
-
-            const payload = {
-                responsableId: Number(user?.persona.id),
-                pqId: selectedSolicitud?.id,
-                lista_documentos: documentosBase64,
-                asunto: formPeticion.asunto,
-                respuesta: formPeticion.respuesta,
-                listaCorreos: formPeticion.para ? [formPeticion.para] : []
-            };
-
-            console.log("Payload a enviar:", payload);
-
-            const response = await api.patch("/pqs/dar_resolucion", payload);
-
-            if (response.status === 200) {
-                setFormPeticion({
-                    para: "",
-                    asunto: "",
-                    respuesta: "",
-                    lista_documentos: []
-                });
-            }
-        } catch (error) {
-            console.error("Error al enviar:", error);
-            alert("Error al enviar la PQRSDF");
-        } finally {
-            fetchSolicitudes()
+    useEffect(() => {
+        if (modalOpen === true) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
         }
-    }
+    }, [modalOpen]);
+
 
     const handleVerClick = async (solicitud: PqItem) => {
         setModalOpen(true)
         setSelectedSolicitud(solicitud)
-
-        formPeticion.para = solicitud.solicitante?.correoUsuario || ""
     }
 
-    const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file); // O reader.readAsBinaryString(file)
-            reader.onload = () => {
-                const result = reader.result as string;
-                const base64 = result.split(",")[1]; // Quita el "data:..." al inicio
-                resolve(base64);
-            };
-            reader.onerror = reject;
-        });
-    };
+    const generarInforme = (solicitud: PqItem) => {
+        throw new Error("Function not implemented.")
+    }
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
@@ -209,80 +164,109 @@ const HistorialPeticiones: React.FC = () => {
                         <Breadcrumbs />
                         {/* Contenedor de título y botón */}
                         <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Historial de Penticiones</h1>
+                            <h1 className="text-2xl font-bold text-blue-900">Historial de Penticiones Resueltas</h1>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto">
                         <Card className="mb-4">
-                            <CardContent className="p-2">
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 ">
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Buscar por Numero de Radicado"
-                                        value={numeroRadicado ? String(numeroRadicado) : ""}
-                                        onChange={(e) => {
-                                            const value = e.target.value.trim();
-                                            setNumeroRadicado(value === "" ? null : value);
-                                        }}
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                                    {/* Numero Radicado */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">N° Radicado</label>
+                                        <Input
+                                            placeholder="Buscar por N° Radicado"
+                                            value={numeroRadicado ? String(numeroRadicado) : ""}
+                                            onChange={(e) => {
+                                                const value = e.target.value.trim();
+                                                setNumeroRadicado(value === "" ? null : value);
+                                            }}
+                                        />
+                                    </div>
 
-                                    />
-                                    <Select
-                                        value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
-                                        onValueChange={(value) => {
-                                            setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Tipo Solicitud" />
-                                        </SelectTrigger>
-                                        <SelectContent side="bottom" avoidCollisions={false}>
-                                            <SelectItem value="TODOS">Todos los tipos</SelectItem>
-                                            {tipoPQ.map((tipo) => (
-                                                <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                                    {tipo.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {/* Tipo PQ */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Tipo Solicitud</label>
+                                        <Select
+                                            value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Tipo Solicitud" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                                                {tipoPQ.map((tipo) => (
+                                                    <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                        {tipo.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                    <Select
-                                        value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
-                                        onValueChange={(value) => {
-                                            setEstadoSeleccionado(value === "TODOS" ? null : Number(value));
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Estado" />
-                                        </SelectTrigger>
+                                    {/* Estado */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Estado</label>
+                                        <Select
+                                            value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setEstadoSeleccionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Estado" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los estados</SelectItem>
+                                                {estadosPq.map((estado) => (
+                                                    <SelectItem key={estado.id} value={String(estado.id)}>
+                                                        {estado.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                        <SelectContent>
-                                            <SelectItem value="TODOS">Todos los estados</SelectItem>
-                                            {estadosPq.map((estado) => (
-                                                <SelectItem key={estado.id} value={String(estado.id)}>
-                                                    {estado.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    {/* Fecha Inicio */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Inicio</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaInicio ?? ""}
+                                            onChange={(e) => setFechaInicio(e.target.value || null)}
+                                        />
+                                    </div>
 
-                                    <input
-                                        type="date"
-                                        value={fechaSeleccionada}
-                                        onChange={(e) => setFechaSeleccionada(e.target.value)}
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    {/* Fecha Fin */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Fin</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaFin ?? ""}
+                                            onChange={(e) => setFechaFin(e.target.value || null)}
+                                        />
+                                    </div>
 
-                                    <Button
-                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                                        onClick={() => {
-                                            setTipoPqSeleccionado(null)
-                                            setNumeroRadicado(null)
-                                            setFechaSeleccionada("")
-                                        }}
-                                    >
-                                        Limpiar filtros
-                                    </Button>
+                                    {/* Botón limpiar */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-transparent mb-1">.</label>
+                                        <Button
+                                            className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                                            onClick={() => {
+                                                setEstadoSeleccionado(null);
+                                                setTipoPqSeleccionado(null);
+                                                setNumeroRadicado(null);
+                                                setFechaInicio(null);
+                                                setFechaFin(null);
+                                            }}
+                                        >
+                                            Limpiar filtros
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -325,18 +309,27 @@ const HistorialPeticiones: React.FC = () => {
                                             </div>
 
                                             {/* Columna 4 - Estado */}
-                                            <div className="w-1/6 badge">
+                                            <div className="min-w-0 flex-1 sm:basis-1/5">
                                                 <Badge
                                                     variant="secondary"
-                                                    className="text-white"
+                                                    className="text-white truncate"
                                                     style={{
                                                         backgroundColor:
-                                                            solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
+                                                            estadosPq.filter(estado => estado.nombre === solicitud.nombreUltimoEstado)[0]?.color || "#6B7280"
                                                     }}
                                                 >
                                                     {solicitud.nombreUltimoEstado}
                                                 </Badge>
+                                            </div>
 
+                                            <div className="w-1/6 badge">
+                                                <Button
+                                                    className="text-xs flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                                                    onClick={() => generarInformePDF(solicitud)}
+                                                >
+                                                    <FileTextIcon className="w-3 h-3 mr-1" />
+                                                    Generar Informe
+                                                </Button>
                                             </div>
 
                                             {/* Columna 5 - Botón */}
@@ -660,7 +653,6 @@ const HistorialPeticiones: React.FC = () => {
                             </div>
                         </div>
 
-
                         {/* Footer del Modal */}
                         <div className="bg-gray-50 px-6 py-4 rounded-b-xl flex justify-between items-center sticky bottom-0">
                             <div className="text-sm">
@@ -677,17 +669,6 @@ const HistorialPeticiones: React.FC = () => {
                                     }}
                                 >
                                     Cerrar
-                                </Button>
-
-                                <Button
-                                    className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
-                                    onClick={() => {
-                                        handleDarResolucion()
-                                        handleCloseModal()
-                                    }}
-                                >
-                                    <CheckCircle className="w-4 h-4" />
-                                    Dar Resolución
                                 </Button>
                             </div>
                         </div>

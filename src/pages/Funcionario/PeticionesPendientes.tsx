@@ -1,5 +1,5 @@
 import { CheckCircle, CheckCircle2, FileText } from "lucide-react"
-import { useDebugValue, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "../../components/ui/button"
 import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
@@ -20,6 +20,7 @@ import type { TipoPQ } from "../../models/TipoPQ"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import { useLocation } from "react-router-dom"
 import { useAlert } from "../../context/AlertContext"
+import type { Estado } from "../../models/Estado"
 
 type FormPeticion = {
     para: string;
@@ -48,12 +49,17 @@ const PeticionesPendientes: React.FC = () => {
 
     const [modalOpen, setModalOpen] = useState(false)
 
-    const [fechaSeleccionada, setFechaSeleccionada] = useState<string>("")
+    const [fechaInicio, setFechaInicio] = useState<string | null>(null)
+    const [fechaFin, setFechaFin] = useState<string | null>(null)
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
-    const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
+    const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
+
+    const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
+    const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
+
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
 
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
     const [alertFileRespuesta, setAlertFileRespuesta] = useState<string | null>(null)
 
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
@@ -102,14 +108,16 @@ const PeticionesPendientes: React.FC = () => {
                 params.numeroRadicado = numeroRadicado;
             }
 
-            if (fechaSeleccionada !== null) {
-                params.fechaRadicacion = fechaSeleccionada;
+            if (fechaInicio) {
+                params.fechaInicio = fechaInicio;
             }
 
-            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_contratistas", params);
-            setSolicitudes(response.data || []);
+            if (fechaFin) {
+                params.fechaFin = fechaFin;
+            }
 
-            console.log("Respuesta de solicitudes:", response.data);
+            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_funcionario", params);
+            setSolicitudes(response.data || []);
 
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
             setTotalPages(totalPages);
@@ -124,10 +132,10 @@ const PeticionesPendientes: React.FC = () => {
         const delayDebounce = setTimeout(() => {
             fetchSolicitudes()
             fetchAllData()
-        }, 500)
+        }, 2500)
 
         return () => clearTimeout(delayDebounce)
-    }, [currentPage, fechaSeleccionada, tipoPqSeleccionado, numeroRadicado])
+    }, [currentPage, fechaInicio, fechaFin, tipoPqSeleccionado, numeroRadicado])
 
 
     const handleCloseModal = () => {
@@ -152,6 +160,7 @@ const PeticionesPendientes: React.FC = () => {
         try {
             await Promise.all([
                 fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
+                fetchData<Estado>("estados_pqs", SetEstadosPq),
             ])
         } catch (error) {
             console.error("Error al cargar datos iniciales:", error)
@@ -160,6 +169,27 @@ const PeticionesPendientes: React.FC = () => {
 
     const handleDarResolucion = async () => {
         try {
+            // 🔹 Validar correos antes de armar el payload
+            let listaCorreos: string[] = [];
+
+            if (formPeticion.para) {
+                // Separar por comas y eliminar espacios
+                const correos = formPeticion.para.split(",").map(c => c.trim());
+
+                // Expresión regular básica para validar formato de correo
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                const invalidEmails = correos.filter(correo => !emailRegex.test(correo));
+                if (invalidEmails.length > 0) {
+                    showAlert(`Los siguientes correos no son válidos: ${invalidEmails.join(", ")}`, "error");
+                    handleLimpiarFormulario();
+                    return
+                }
+
+                listaCorreos = correos;
+            }
+
+            // 🔹 Convertir documentos a Base64
             const documentosBase64 = await Promise.all(
                 formPeticion.lista_documentos.map(async (file) => {
                     const base64 = await fileToBase64(file);
@@ -172,38 +202,47 @@ const PeticionesPendientes: React.FC = () => {
                 })
             );
 
+            // 🔹 Armar el payload limpio
             const payload = {
                 responsableId: Number(user?.persona.id),
                 pqId: selectedSolicitud?.id,
                 lista_documentos: documentosBase64,
                 asunto: formPeticion.asunto,
                 respuesta: formPeticion.respuesta,
-                listaCorreos: formPeticion.para ? [formPeticion.para] : []
+                listaCorreos
             };
 
-            console.log("Payload a enviar:", payload);
-
+            // 🔹 Enviar solicitud
             const response = await api.patch("/pqs/dar_resolucion", payload);
 
             if (response.status === 200) {
                 showAlert("Respuesta enviada exitosamente.", "success");
-                setFormPeticion({
-                    para: "",
-                    asunto: "",
-                    respuesta: "",
-                    lista_documentos: []
-                });
-            }
-            if(response.status === 206){
+            } else if (response.status === 206) {
                 showAlert("Respuesta enviada, pero hubo un problema al enviar el correo.", "warning");
+            } else if (response.status === 500) {
+                showAlert("Error del servidor al enviar la respuesta.", "error");
             }
+
+            handleLimpiarFormulario();
 
         } catch (error) {
             console.error("Error al enviar:", error);
-            alert("Error al enviar la PQRSDF");
+            showAlert("Error al enviar la PQRSDF", "error");
+            handleLimpiarFormulario();
         } finally {
-            fetchSolicitudes()
+            fetchSolicitudes();
         }
+    };
+
+
+    const handleLimpiarFormulario = () => {
+        setFormPeticion({
+            para: "",
+            asunto: "",
+            respuesta: "",
+            lista_documentos: []
+        });
+        setAlertFileRespuesta(null)
     }
 
     const handleEnviarRespuesta = async () => {
@@ -322,55 +361,103 @@ const PeticionesPendientes: React.FC = () => {
 
                     <div className="max-w-7xl mx-auto">
                         <Card className="mb-4">
-                            <CardContent className="p-2">
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 ">
-                                    <Input
-                                        className="w-full"
-                                        placeholder="Buscar por Numero de Radicado"
-                                        value={numeroRadicado ? String(numeroRadicado) : ""}
-                                        onChange={(e) => {
-                                            const value = e.target.value.trim();
-                                            setNumeroRadicado(value === "" ? null : value);
-                                        }}
+                            <CardContent>
+                                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                                    {/* Numero Radicado */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">N° Radicado</label>
+                                        <Input
+                                            placeholder="Buscar por N° Radicado"
+                                            value={numeroRadicado ? String(numeroRadicado) : ""}
+                                            onChange={(e) => {
+                                                const value = e.target.value.trim();
+                                                setNumeroRadicado(value === "" ? null : value);
+                                            }}
+                                        />
+                                    </div>
 
-                                    />
-                                    <Select
-                                        value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
-                                        onValueChange={(value) => {
-                                            setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Tipo Solicitud" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="TODOS">Todos los tipos</SelectItem>
-                                            {tipoPQ.map((tipo) => (
-                                                <SelectItem key={tipo.id} value={String(tipo.id)}>
-                                                    {tipo.nombre}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <input
-                                        id="fecha-radicacion"
-                                        type="date"
-                                        value={fechaSeleccionada}
-                                        onChange={(e) => setFechaSeleccionada(e.target.value)}
-                                        placeholder="Fecha de Radicación"
-                                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    />
+                                    {/* Tipo PQ */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Tipo Solicitud</label>
+                                        <Select
+                                            value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Tipo Solicitud" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los tipos</SelectItem>
+                                                {tipoPQ.map((tipo) => (
+                                                    <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                        {tipo.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                                    <Button
-                                        className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
-                                        onClick={() => {
-                                            setTipoPqSeleccdionado(null)
-                                            setNumeroRadicado(null)
-                                            setFechaSeleccionada("")
-                                        }}
-                                    >
-                                        Limpiar filtros
-                                    </Button>
+                                    {/* Estado */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Estado</label>
+                                        <Select
+                                            value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setEstadoSeleccionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Estado" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los estados</SelectItem>
+                                                {estadosPq.map((estado) => (
+                                                    <SelectItem key={estado.id} value={String(estado.id)}>
+                                                        {estado.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Fecha Inicio */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Inicio</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaInicio ?? ""}
+                                            onChange={(e) => setFechaInicio(e.target.value || null)}
+                                        />
+                                    </div>
+
+                                    {/* Fecha Fin */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Fecha Fin</label>
+                                        <Input
+                                            type="date"
+                                            value={fechaFin ?? ""}
+                                            onChange={(e) => setFechaFin(e.target.value || null)}
+                                        />
+                                    </div>
+
+                                    {/* Botón limpiar */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-transparent mb-1">.</label>
+                                        <Button
+                                            className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
+                                            onClick={() => {
+                                                setEstadoSeleccionado(null);
+                                                setTipoPqSeleccionado(null);
+                                                setNumeroRadicado(null);
+                                                setFechaInicio(null);
+                                                setFechaFin(null);
+                                            }}
+                                        >
+                                            Limpiar filtros
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -412,18 +499,17 @@ const PeticionesPendientes: React.FC = () => {
                                             </div>
 
                                             {/* Columna 4 - Estado */}
-                                            <div className="w-1/6 badge">
+                                            <div className="min-w-0 flex-1 sm:basis-1/5">
                                                 <Badge
                                                     variant="secondary"
-                                                    className="text-white"
+                                                    className="text-white truncate"
                                                     style={{
                                                         backgroundColor:
-                                                            solicitud.historialEstados?.[solicitud.historialEstados.length - 1]?.estado?.color || "#6B7280"
+                                                            estadosPq.filter(estado => estado.nombre === solicitud.nombreUltimoEstado)[0]?.color || "#6B7280"
                                                     }}
                                                 >
                                                     {solicitud.nombreUltimoEstado}
                                                 </Badge>
-
                                             </div>
 
                                             {/* Columna 5 - Botón */}

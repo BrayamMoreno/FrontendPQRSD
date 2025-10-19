@@ -13,14 +13,16 @@ import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import { Input } from "../../components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import type { TipoPQ } from "../../models/TipoPQ"
-import AceptarPeticon from "../../components/Radicador/AceptarPeticon"
+import AceptarPeticon from "../../components/Asignador/AceptarPeticon"
 import { useAlert } from "../../context/AlertContext"
 import type { Responsable } from "../../models/Responsable"
+import { useAuth } from "../../context/AuthProvider"
 
-const DashboardRadicador: React.FC = () => {
+const DashboardAsignador: React.FC = () => {
 
     const api = apiServiceWrapper
-    const { showAlert } = useAlert()
+    const { showAlert } = useAlert();
+    const { user } = useAuth();
 
     const [solicitudes, setSolicitudes] = useState<any[]>([])
     const [modalOpen, setModalOpen] = useState(false)
@@ -41,10 +43,15 @@ const DashboardRadicador: React.FC = () => {
 
     const fetchSolicitudes = async () => {
         setIsLoading(true)
+
+        const rawId = user?.persona.id;
+        const radicadorId = rawId ? Number(rawId) : null;
+
         try {
             const params: Record<string, any> = {
                 page: currentPage - 1,
                 size: itemsPerPage,
+                radicadorId: radicadorId
             };
 
             if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
@@ -118,12 +125,12 @@ const DashboardRadicador: React.FC = () => {
     }
 
     const handleCloseModal = (shouldRefresh: boolean = false) => {
-    if (shouldRefresh) {
-        fetchSolicitudes();
-    }
-    setModalOpen(false);
-    setSelectedSolicitud(null);
-};
+        if (shouldRefresh) {
+            fetchSolicitudes();
+        }
+        setModalOpen(false);
+        setSelectedSolicitud(null);
+    };
 
     return (
         <div className="min-h-screen w-full bg-gray-50 ">
@@ -333,4 +340,4 @@ const DashboardRadicador: React.FC = () => {
     )
 }
 
-export default DashboardRadicador
+export default DashboardAsignador

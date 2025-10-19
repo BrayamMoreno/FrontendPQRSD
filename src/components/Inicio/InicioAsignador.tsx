@@ -14,7 +14,7 @@ interface stats {
     por_asignar: number;
 }
 
-const InicioRadicador: React.FC = () => {
+const InicioAsignador: React.FC = () => {
     const { user } = useAuth()
     const navigate = useNavigate()
     const api = apiServiceWrapper
@@ -29,7 +29,7 @@ const InicioRadicador: React.FC = () => {
 
     const fetchResumen = async () => {
         try {
-            const response = await api.getAll("/pqs/conteo-radicador")
+            const response = await api.getAll("/pqs/conteo-asignador")
 
             const conteo = response.data as stats
 
@@ -40,7 +40,7 @@ const InicioRadicador: React.FC = () => {
                 por_asignar: conteo.por_asignar ?? 0,
             })
         } catch (error) {
-            console.error("Error cargando resumen Radicador", error)
+            console.error("Error cargando resumen Asignador", error)
         }
     }
 
@@ -56,7 +56,7 @@ const InicioRadicador: React.FC = () => {
                     <div className="mb-6">
                         <Breadcrumbs />
                         <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Inicio Radicador</h1>
+                            <h1 className="text-2xl font-bold text-blue-900">Inicio Asignador STTG</h1>
                         </div>
                     </div>
 
@@ -138,4 +138,4 @@ const InicioRadicador: React.FC = () => {
     )
 }
 
-export default InicioRadicador
+export default InicioAsignador

@@ -1,35 +1,41 @@
 import type React from "react";
-import { Button } from "../../components/ui/button";
-import apiServiceWrapper from "../../api/ApiService";
 import { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthProvider";
-import type { PaginatedResponse } from "../../models/PaginatedResponse";
-import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
-import { Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
+
+import { Button } from "../../components/ui/button";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
-import type { HistorialEstado } from "../../models/HistorialEstado";
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
 import HistorialEstadosModal from "../../components/Admin/HistorialEstadosModal";
+
+import { useAuth } from "../../context/AuthProvider";
+import apiServiceWrapper from "../../api/ApiService";
+
+import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import type { HistorialEstado } from "../../models/HistorialEstado";
+
+import { Eye, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { useAlert } from "../../context/AlertContext";
 
 const HistorialEstados: React.FC = () => {
     const api = apiServiceWrapper;
+    const { permisos: permisosAuth } = useAuth();
+    const { showAlert } = useAlert();
+
     const [data, setData] = useState<HistorialEstado[]>([]);
     const [loading, setLoading] = useState(true);
-    const [editingItem, setEditingItem] = useState<HistorialEstado | null>(null);
-    const [showForm, setShowForm] = useState(false);
-    const [formData, setFormData] = useState<Partial<HistorialEstado>>({});
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
+    const [formData, setFormData] = useState<Partial<HistorialEstado>>({});
+    const [editingItem, setEditingItem] = useState<HistorialEstado | null>(null);
     const [readOnly, setReadOnly] = useState(false);
+    const [showForm, setShowForm] = useState(false);
 
     const itemsPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
 
-    const { permisos: permisosAuth } = useAuth();
-
     const fetchHistorial = async () => {
         setLoading(true);
         try {
-            const params: Record<string, any> = {
+            const params = {
                 page: currentPage - 1,
                 size: itemsPerPage,
             };
@@ -40,10 +46,9 @@ const HistorialEstados: React.FC = () => {
             );
 
             setData(response.data || []);
-            const totalPages = Math.ceil(
-                (response.total_count ?? 0) / response.items_per_page
+            setTotalPages(
+                Math.ceil((response.total_count ?? 0) / response.items_per_page)
             );
-            setTotalPages(totalPages);
         } catch (error) {
             console.error("Error al obtener historial:", error);
         } finally {
@@ -79,16 +84,29 @@ const HistorialEstados: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        if (showForm) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [showForm]);
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8">
                 <div className="max-w-7xl mx-auto">
                     <Breadcrumbs />
+
+                    {/* Header */}
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold text-blue-900 mb-6">
-                            Gestión Historial de Estados
+                            Gestión Historial de Estados de Peticiones
                         </h1>
+
                         {permisosAuth.some(
                             (p) => p.accion === "agregar" && p.tabla === "historial_estados"
                         ) && (
@@ -114,7 +132,7 @@ const HistorialEstados: React.FC = () => {
                                 <LoadingSpinner />
                             </div>
                         ) : (
-                            <>
+                            <div>
                                 <table className="w-full text-left">
                                     <thead className="bg-blue-50 text-blue-700 uppercase text-sm">
                                         <tr>
@@ -136,12 +154,16 @@ const HistorialEstados: React.FC = () => {
                                                     <td className="px-6 py-2">{item.id}</td>
                                                     <td className="px-6 py-2">
                                                         {item.numeroRadicado || (
-                                                            <span className="text-gray-500">Sin número</span>
+                                                            <span className="text-gray-500">
+                                                                Sin número
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-2">
                                                         {item.estado?.nombre || (
-                                                            <span className="text-gray-500">Sin estado</span>
+                                                            <span className="text-gray-500">
+                                                                Sin estado
+                                                            </span>
                                                         )}
                                                     </td>
                                                     <td className="px-6 py-2">
@@ -165,12 +187,14 @@ const HistorialEstados: React.FC = () => {
                                                                         <Pencil size={16} />
                                                                     </Button>
                                                                 )}
+
                                                             <Button
                                                                 onClick={() => handleView(item)}
                                                                 className="bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
                                                             >
                                                                 <Eye size={16} />
                                                             </Button>
+
                                                             {permisosAuth.some(
                                                                 (p) =>
                                                                     p.accion === "eliminar" &&
@@ -199,11 +223,111 @@ const HistorialEstados: React.FC = () => {
                                         )}
                                     </tbody>
                                 </table>
-                            </>
+                                <div className="flex justify-center mt-4 gap-2 items-center">
+                                    <Button
+                                        variant="outline"
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage(1)}
+                                    >
+                                        ⏮ Primero
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        disabled={currentPage === 1}
+                                        onClick={() => setCurrentPage((prev) => prev - 1)}
+                                    >
+                                        ◀ Anterior
+                                    </Button>
+
+                                    <span className="text-sm px-3">
+                                        Página {currentPage} de {totalPages}
+                                    </span>
+
+                                    <Button
+                                        variant="outline"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage((prev) => prev + 1)}
+                                    >
+                                        Siguiente ▶
+                                    </Button>
+
+                                    <Button
+                                        variant="outline"
+                                        disabled={currentPage === totalPages}
+                                        onClick={() => setCurrentPage(totalPages)}
+                                    >
+                                        Último ⏭
+                                    </Button>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>
             </div>
+
+            <HistorialEstadosModal
+                isOpen={showForm}
+                onClose={() => setShowForm(false)}
+                historial={editingItem ?? undefined}
+                readOnly={readOnly}
+                onSubmit={async (formData) => {
+                    try {
+                        if (editingItem) {
+                            try {
+                                const response = await api.put(`/historial_estados/update/${editingItem.id}`, formData);
+
+                                if (response.status === 200) {
+                                    // Éxito
+                                    showAlert("Historial actualizado correctamente", "success");
+                                    console.log("Historial actualizado correctamente");
+                                    return true;
+                                } else if (response.status === 404) {
+                                    // No se encontró PQ
+                                    showAlert("No se encontró el PQ con ID: " + formData.numeroRadicado, "error");
+                                    return false;
+                                } else {
+                                    // Otro error
+                                    showAlert("Error al crear historial: " + (response.data?.error || "Error desconocido"), "error");
+                                    return false;
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                showAlert("Error al crear historial: " + (err as any).message, "error");
+                                return false;
+                            }
+                        } else {
+                            try {
+                                const response = await api.post(`/historial_estados/create`, formData);
+
+                                if (response.status === 200) {
+                                    // Éxito
+                                    showAlert("Historial creado correctamente", "success");
+                                    console.log("Historial creado correctamente");
+                                    return true;
+                                } else if (response.status === 404) {
+                                    // No se encontró PQ
+                                    showAlert("No se encontró el PQ con ID: " + formData.numeroRadicado, "error");
+                                    return false;
+                                } else {
+                                    // Otro error
+                                    showAlert("Error al crear historial: " + (response.data?.error || "Error desconocido"), "error");
+                                    return false;
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                showAlert("Error al crear historial: " + (err as any).message, "error");
+                                return false;
+                            }
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        showAlert("Error al crear historial: " + (err as any).message, "error");
+                        return false; // No cerrar el modal
+                    }
+                }}
+            />
+
 
         </div>
     );

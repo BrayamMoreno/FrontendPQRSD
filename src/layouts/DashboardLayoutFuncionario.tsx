@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navegacion/Navbar";
 import Footer from "../components/Navegacion/Footer";
 
-const DashboardLayoutContratistas: React.FC = () => {
+const DashboardLayoutFuncionario: React.FC = () => {
   return (
     <div>
       <Navbar />
@@ -16,4 +16,4 @@ const DashboardLayoutContratistas: React.FC = () => {
   );
 };
 
-export default DashboardLayoutContratistas;
+export default DashboardLayoutFuncionario;

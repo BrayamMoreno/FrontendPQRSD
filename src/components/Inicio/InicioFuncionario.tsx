@@ -13,7 +13,7 @@ import apiServiceWrapper from "../../api/ApiService"
 import { LoadingSpinner } from "../LoadingSpinner"
 import clsx from "clsx"
 
-const InicioContratista: React.FC = () => {
+const InicioFuncionario: React.FC = () => {
 
     const { user } = useAuth()
     const navigate = useNavigate()
@@ -180,7 +180,7 @@ const InicioContratista: React.FC = () => {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Numero Radicado</TableHead>
-                                                <TableHead>Nombre Persona</TableHead>
+                                                <TableHead>Nombre Solicitante</TableHead>
                                                 <TableHead>Tipo</TableHead>
                                                 <TableHead>Fecha Vencimiento</TableHead>
                                                 <TableHead>Tiempo Vencido</TableHead>
@@ -252,7 +252,7 @@ const InicioContratista: React.FC = () => {
                                         <TableHeader>
                                             <TableRow>
                                                 <TableHead>Numero Radicado</TableHead>
-                                                <TableHead>Nombre Persona</TableHead>
+                                                <TableHead>Nombre Solicitante</TableHead>
                                                 <TableHead>Tipo</TableHead>
                                                 <TableHead>Fecha Vencimiento</TableHead>
                                                 <TableHead>Tiempo Restante</TableHead>
@@ -312,4 +312,4 @@ const InicioContratista: React.FC = () => {
     )
 }
 
-export default InicioContratista
+export default InicioFuncionario

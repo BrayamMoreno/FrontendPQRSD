@@ -20,24 +20,25 @@ const Register = lazy(() => import("./pages/Auth/Register"));
 
 const DashboardLayoutUsuarios = lazy(() => import("./layouts/DashboardLayoutUsuarios"));
 const DashboardLayoutAdmin = lazy(() => import("./layouts/DashboardLayoutAdmin"));
-const DashboardLayoutRadicador = lazy(() => import("./layouts/DashboardLayoutRadicador"));
-const DashboardLayoutContratistas = lazy(() => import("./layouts/DashboardLayoutContratistas"));
+const DashboardLayoutAsignador = lazy(() => import("./layouts/DashboardLayoutAsignador"));
+const DashboardLayoutFuncionario = lazy(() => import("./layouts/DashboardLayoutFuncionario"));
 
 const DashboardUsuarios = lazy(() => import("./pages/Usuario/DashboardUsuarios"));
-const DashboardRadicador = lazy(() => import("./pages/Radicador/DashboardRadicador"));
+const DashboardAsignador = lazy(() => import("./pages/Asignador/DashboardAsignador"));
 const DashboardAdmin = lazy(() => import("./pages/Admin/DashboardAdmin"));
 
-const PeticionesPendientes = lazy(() => import("./pages/Contratista/PeticionesPendientes"));
-const HistorialPeticiones = lazy(() => import("./pages/Contratista/HistorialPeticiones"));
-const HistorialPeticionesUsuario = lazy(() => import("./pages/Radicador/HistorialPeticionesUsuario"));
+const PeticionesPendientes = lazy(() => import("./pages/Funcionario/PeticionesPendientes"));
+const HistorialPeticiones = lazy(() => import("./pages/Funcionario/HistorialPeticiones"));
+import HistorialPeticionesUsuario from "./pages/Asignador/HistorialPeticionesUsuario";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
 
 const GestionUsuarios = lazy(() => import("./pages/Admin/GestionUsuarios"));
 const GestionRoles = lazy(() => import("./pages/Admin/GestionRoles"));
 const GestionAdjuntos = lazy(() => import("./pages/Admin/GesstionAdjuntos"));
 
 const InicioUsuario = lazy(() => import("./components/Inicio/InicioUsuario"));
-const InicioContratista = lazy(() => import("./components/Inicio/InicioContratista"));
-const InicioRadicador = lazy(() => import("./components/Inicio/InicioRadicador"));
+const InicioFuncionario = lazy(() => import("./components/Inicio/InicioFuncionario"));
+const InicioAsignador = lazy(() => import("./components/Inicio/InicioAsignador"));
 
 const MostrarPerfil = lazy(() => import("./pages/MostrarPerfil"));
 
@@ -51,6 +52,7 @@ export default function App() {
                         <Route path="/" element={<LandingPage />} />
                         <Route path="login" element={<Login />} />
                         <Route path="register" element={<Register />} />
+                        <Route path="forgot-password" element={<ForgotPassword />} />
 
                         {/* Unauthorized */}
                         <Route path="/unauthorized" element={<Unauthorized />} />
@@ -71,12 +73,12 @@ export default function App() {
                                 </Route>
                             </Route>
 
-                            {/* Radicador */}
-                            <Route element={<PrivateRoute required={[{ tabla: "radicador", accion: "dashboard" }]} />}>
-                                <Route path="/radicador" element={<DashboardLayoutRadicador />}>
+                            {/* Asignador */}
+                            <Route element={<PrivateRoute required={[{ tabla: "asignador", accion: "dashboard" }]} />}>
+                                <Route path="/asignador" element={<DashboardLayoutAsignador />}>
                                     <Route index element={<Navigate to="inicio" />} />
-                                    <Route path="inicio" element={<InicioRadicador />} />
-                                    <Route path="peticiones" element={<DashboardRadicador />} />
+                                    <Route path="inicio" element={<InicioAsignador />} />
+                                    <Route path="peticiones" element={<DashboardAsignador />} />
                                     <Route path="historial_peticiones_usuario" element={<HistorialPeticionesUsuario />} />
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
                                     <Route path="perfil" element={<MostrarPerfil />} />
@@ -84,10 +86,10 @@ export default function App() {
                             </Route>
 
                             {/* Contratista */}
-                            <Route element={<PrivateRoute required={[{ tabla: "contratista", accion: "dashboard" }]} />}>
-                                <Route path="/contratista" element={<DashboardLayoutContratistas />}>
+                            <Route element={<PrivateRoute required={[{ tabla: "funcionario", accion: "dashboard" }]} />}>
+                                <Route path="/funcionario" element={<DashboardLayoutFuncionario />}>
                                     <Route index element={<Navigate to="inicio" />} />
-                                    <Route path="inicio" element={<InicioContratista />} />
+                                    <Route path="inicio" element={<InicioFuncionario />} />
                                     <Route path="peticiones_pendientes" element={<PeticionesPendientes />} />
                                     <Route path="historial_peticiones" element={<HistorialPeticiones />} />
                                     <Route path="perfil" element={<MostrarPerfil />} />
@@ -99,21 +101,45 @@ export default function App() {
                                 <Route path="/admin" element={<DashboardLayoutAdmin />}>
                                     <Route index element={<Navigate to="inicio" />} />
                                     <Route path="inicio" element={<DashboardAdmin />} />
-                                    <Route path="usuarios" element={<GestionUsuarios />} />
-                                    <Route path="roles" element={<GestionRoles />} />
+                                    <Route
+                                        path="usuarios"
+                                        element={
+                                            <PrivateRoute required={[{ tabla: "usuarios", accion: "leer" }]}>
+                                                <GestionUsuarios />
+                                            </PrivateRoute>
+                                        }
+                                    />
+                                    <Route path="roles" element={
+                                        <PrivateRoute required={[{ tabla: "roles", accion: "leer" }]}>
+                                            <GestionRoles />
+                                        </PrivateRoute>
+                                    } />
                                     <Route path="perfil" element={<MostrarPerfil />} />
-                                    <Route path="municipios" element={<Municipios />} />
-                                    <Route path="adjuntos" element={<GestionAdjuntos />} />
-                                    <Route path="gestion_pqs" element={<GestionPqs />} />
-                                    <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
-                                    <Route path="historial_estados" element={<HistorialEstados />} />
-                                    <Route path="utilidades" element={<Utilidades /> } />
+                                    <Route path="municipios" element={<PrivateRoute required={[{ tabla: "municipios", accion: "leer" }]}>
+                                        <Municipios />
+                                    </PrivateRoute>} />
+                                    <Route path="adjuntos" element={<PrivateRoute required={[{ tabla: "adjuntos_pq", accion: "leer" }]}>
+                                        <GestionAdjuntos />
+                                    </PrivateRoute>} />
+                                    <Route path="gestion_pqs" element={<PrivateRoute required={[{ tabla: "pqs", accion: "leer" }]}>
+                                        <GestionPqs />
+                                    </PrivateRoute>} />
+                                    <Route path="responsables_pqs" element={<PrivateRoute required={[{ tabla: "responsables_pqs", accion: "leer" }]}>
+                                        <GestionResponsablesPqs />
+                                    </PrivateRoute>} />
+                                    <Route path="historial_estados" element={<PrivateRoute required={[{ tabla: "historial_estados", accion: "leer" }]}>
+                                        <HistorialEstados />
+                                    </PrivateRoute>} />
+                                    <Route path="utilidades" element={<PrivateRoute required={[{ tabla: "utilidades", accion: "acceder" }]}>
+                                        <Utilidades />
+                                    </PrivateRoute>} />
 
-                                    {/* CRUDs dinámicos */}
                                     {crudConfigs.map(({ titulo, endpoint, Columns, tabla, accion }) => (
                                         <Route
                                             key={endpoint}
-                                            element={<PrivateRoute required={[{ tabla: tabla!, accion }]} />}
+                                            element={
+                                                <PrivateRoute required={[{ tabla: tabla!, accion: accion }]} />
+                                            }
                                         >
                                             <Route
                                                 path={endpoint.replace("/", "")}
@@ -129,6 +155,7 @@ export default function App() {
                                             />
                                         </Route>
                                     ))}
+
 
                                 </Route>
                             </Route>
