@@ -31,6 +31,7 @@ const PeticionesPendientes = lazy(() => import("./pages/Funcionario/PeticionesPe
 const HistorialPeticiones = lazy(() => import("./pages/Funcionario/HistorialPeticiones"));
 import HistorialPeticionesUsuario from "./pages/Asignador/HistorialPeticionesUsuario";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 const GestionUsuarios = lazy(() => import("./pages/Admin/GestionUsuarios"));
 const GestionRoles = lazy(() => import("./pages/Admin/GestionRoles"));
@@ -53,6 +54,7 @@ export default function App() {
                         <Route path="login" element={<Login />} />
                         <Route path="register" element={<Register />} />
                         <Route path="forgot-password" element={<ForgotPassword />} />
+                        <Route path="reset-password" element={<ResetPassword />} />
 
                         {/* Unauthorized */}
                         <Route path="/unauthorized" element={<Unauthorized />} />
