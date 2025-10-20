@@ -19,7 +19,6 @@ const ForgotPassword: React.FC = () => {
         e.preventDefault();
         try {
             const response = await api.post(`/auth/forgot-password/${email}`, {});
-            console.log(response);
             if (response.status === 200) {
                 showAlert("Si el correo existe en nuestro sistema, se ha enviado un enlace de recuperación.", "success");
                 navigate("/login");
