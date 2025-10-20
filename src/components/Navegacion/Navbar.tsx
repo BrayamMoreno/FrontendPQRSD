@@ -11,6 +11,8 @@ import {
     Archive,
     LayoutDashboard,
     AppWindow,
+    Menu,
+    X,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
 import {
@@ -20,6 +22,7 @@ import {
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu"
 import { FaUserCog } from "react-icons/fa"
+import { Button } from "../ui/button"
 
 const Navbar: React.FC = () => {
     const navigate = useNavigate()
@@ -128,20 +131,25 @@ const Navbar: React.FC = () => {
             action: () => navigate(`/asignador/responsables_pqs`),
         })
     }
+    const [menuOpen, setMenuOpen] = useState(false)
 
     return (
-        <header className="fixed z-50 w-screen shadow-md">
-            {/* Primera fila */}
+        <header className="fixed z-50 w-full shadow-md">
+            {/* Primera fila (principal) */}
             <div className="w-full bg-[#0A192F]">
-                <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4">
+                    {/* Logo y título */}
                     <div className="flex items-center gap-2 font-bold text-white">
                         <img src={logo} alt="Logo" className="w-8 h-8" />
-                        <span className="text-xl">Plataforma de Gestión PQRSDF</span>
+                        <span className="text-lg sm:text-xl">Plataforma de Gestión PQRSDF</span>
                     </div>
+
+                    {/* Menú usuario (solo en escritorio) */}
                     <div className="hidden sm:flex items-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-[#173A5E] flex items-center justify-center text-white font-semibold">
                             {userInfo.iniciales}
                         </div>
+
                         <DropdownMenu modal={false}>
                             <DropdownMenuTrigger className="px-3 py-2 text-sm text-white bg-[#0A192F] hover:bg-blue-700 rounded-md flex items-center gap-1 focus:outline-none">
                                 {userInfo.nombre}
@@ -156,12 +164,10 @@ const Navbar: React.FC = () => {
                                     <User size={14} /> Mi Perfil
                                 </DropdownMenuItem>
 
-
                                 <DropdownMenuItem
                                     className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 cursor-default"
                                 >
-                                    <FaUserCog size={14} /> Rol:{" "}
-                                    {user?.rol.nombre || "N/A"}
+                                    <FaUserCog size={14} /> Rol: {user?.rol?.nombre || "N/A"}
                                 </DropdownMenuItem>
 
                                 {dashboards.length > 1 && (
@@ -186,11 +192,10 @@ const Navbar: React.FC = () => {
                                             }}
                                             className="pl-8 pr-3 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer rounded"
                                         >
-                                            <AppWindow size={14} />
+                                            <AppWindow size={14} />{" "}
                                             {d.tabla.charAt(0).toUpperCase() + d.tabla.slice(1)}
                                         </DropdownMenuItem>
-                                    ))
-                                }
+                                    ))}
 
                                 <DropdownMenuItem
                                     onClick={async () => await logout()}
@@ -201,33 +206,71 @@ const Navbar: React.FC = () => {
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
+
+                    {/* Botón menú móvil */}
+                    <button
+                        className="sm:hidden text-white hover:text-blue-300"
+                        onClick={() => setMenuOpen(!menuOpen)}
+                    >
+                        {menuOpen ? <X size={26} /> : <Menu size={26} />}
+                    </button>
                 </div>
             </div>
 
-            {/* Segunda fila */}
+            {/* Segunda fila (menú horizontal) escritorio */}
             <div className="w-full bg-[#173A5E] hidden sm:flex">
-                <div className="max-w-7xl mx-auto flex justify-between items-center h-12 w-full">
-                    {/* Menú horizontal (izquierda) */}
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-12 w-full px-4">
                     <div className="flex items-center gap-3">
                         {acciones.map(({ label, icon, action }) => (
-                            <DropdownMenu modal={false} key={label}>
-                                <DropdownMenuTrigger
-                                    className="px-3 py-2 text-sm bg-[#173A5E] text-white hover:bg-blue-700 rounded-md flex items-center gap-1"
-                                    onClick={(e) => {
-                                        action()
-                                        e.currentTarget.blur()
-                                    }}
-                                >
-                                    <span className="flex items-center gap-2">
-                                        {React.cloneElement(icon, { size: 18 })}
-                                        {label}
-                                    </span>
-                                </DropdownMenuTrigger>
-                            </DropdownMenu>
+                            <Button
+                                key={label}
+                                onClick={action}
+                                className="px-3 py-2 text-sm bg-[#173A5E] text-white hover:bg-blue-700 rounded-md flex items-center gap-2"
+                            >
+                                {React.cloneElement(icon, { size: 18 })}
+                                {label}
+                            </Button>
                         ))}
                     </div>
                 </div>
             </div>
+
+            {/* Menú móvil desplegable */}
+            {menuOpen && (
+                <div className="sm:hidden bg-[#173A5E] text-white shadow-md">
+                    <div className="flex flex-col items-start gap-2 p-4">
+                        {acciones.map(({ label, icon, action }) => (
+                            <button
+                                key={label}
+                                onClick={() => {
+                                    action()
+                                    setMenuOpen(false)
+                                }}
+                                className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-700"
+                            >
+                                {React.cloneElement(icon, { size: 18 })}
+                                {label}
+                            </button>
+                        ))}
+
+                        <hr className="border-blue-800 w-full my-2" />
+
+                        <button
+                            onClick={() => navigate(`/${currentRole}/perfil`)}
+                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-700 rounded-md"
+                        >
+                            <User size={16} /> Mi Perfil
+                        </button>
+
+                        <button
+                            onClick={async () => await logout()}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-700 rounded-md"
+                        >
+                            <LogOut size={16} /> Cerrar sesión
+                        </button>
+                    </div>
+                </div>
+            )}
         </header>
     )
 }
