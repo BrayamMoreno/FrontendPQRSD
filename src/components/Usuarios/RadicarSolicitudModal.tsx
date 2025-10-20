@@ -232,25 +232,29 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
     if (!isOpen) return null
 
     return (
-        <div className="fixed w-screen inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl md:max-w-4xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto transition-all duration-300">
+
                 {/* Header */}
-                <div className="bg-blue-900 text-white p-6">
+                <div className="bg-blue-900 text-white p-5 md:p-6 sticky top-0 z-10 rounded-t-2xl">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold">Radicar Petición</h2>
+                        <h2 className="text-lg md:text-xl font-bold text-center w-full">Radicar Petición</h2>
                     </div>
                 </div>
 
                 {/* Contenido */}
-                <div className="p-6 space-y-4">
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="p-4 sm:p-6 space-y-6">
+                    <form onSubmit={handleSubmit} className="space-y-8">
+
                         {/* Tipo de PQRSD */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="tipo" className="text-sm font-medium">
                                     Tipo de PQRSD <span className="text-red-500">*</span>
                                 </Label>
-                                {errors.tipo_pq_id && <p className="text-sm text-red-500">{errors.tipo_pq_id}</p>}
+                                {errors.tipo_pq_id && (
+                                    <p className="text-sm text-red-500">{errors.tipo_pq_id}</p>
+                                )}
                                 <Select
                                     value={formPeticion.tipo_pq_id}
                                     onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
@@ -274,14 +278,16 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                             <Label htmlFor="asunto" className="text-sm font-medium">
                                 Asunto <span className="text-red-500">*</span>
                             </Label>
-                            {errors.detalleAsunto && <p className="text-sm text-red-500">{errors.detalleAsunto}</p>}
+                            {errors.detalleAsunto && (
+                                <p className="text-sm text-red-500">{errors.detalleAsunto}</p>
+                            )}
                             <Input
                                 id="asunto"
                                 type="text"
                                 placeholder="Ingrese el asunto de su PQRSD"
                                 value={formPeticion.detalleAsunto}
                                 onChange={(e) => handleInputChange("detalleAsunto", e.target.value)}
-                                className={errors.detalleAsunto ? "border-red-500" : ""}
+                                className={`w-full ${errors.detalleAsunto ? "border-red-500" : ""}`}
                             />
                         </div>
 
@@ -290,12 +296,14 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                             <Label htmlFor="descripcion" className="text-sm font-medium">
                                 Descripción detallada <span className="text-red-500">*</span>
                             </Label>
-                            {errors.detalleDescripcion && <p className="text-sm text-red-500">{errors.detalleDescripcion}</p>}
+                            {errors.detalleDescripcion && (
+                                <p className="text-sm text-red-500">{errors.detalleDescripcion}</p>
+                            )}
                             <ReactQuill
                                 theme="snow"
                                 value={formPeticion.detalleDescripcion}
                                 onChange={(value) => handleInputChange("detalleDescripcion", value)}
-                                className="bg-white rounded-lg mb-3 h-36"
+                                className="bg-white rounded-lg h-36 sm:h-44 md:h-48"
                                 placeholder="Escribe la descripción aquí..."
                                 modules={{
                                     toolbar: [
@@ -309,20 +317,20 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                             />
                         </div>
 
-                        <div className="pt-10">
-                            <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                                Archivo adjunto (Solo se puede adjuntar un archivo)
+                        {/* Archivos */}
+                        <div className="pt-6">
+                            <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-3">
+                                Archivo adjunto (solo se puede adjuntar un archivo)
                             </h3>
-                            <div className="space-y-4">
 
-                                {alertFile && (
-                                    <p className="text-sm text-red-500">{alertFile}</p>
-                                )}
+                            <div className="space-y-4">
+                                {alertFile && <p className="text-sm text-red-500">{alertFile}</p>}
+
                                 {/* Dropzone */}
                                 <div
-                                    className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
-                                        ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
-                                        : "border-gray-300 hover:border-blue-400"
+                                    className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
+                                            ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
+                                            : "border-gray-300 hover:border-blue-400"
                                         }`}
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
@@ -333,9 +341,9 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                     }
                                 >
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-100 flex items-center justify-center">
                                             <svg
-                                                className="w-6 h-6 text-blue-500"
+                                                className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -349,22 +357,21 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                             </svg>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-medium text-gray-700">
+                                            <p className="text-base sm:text-lg font-medium text-gray-700">
                                                 {formPeticion.lista_documentos.length >= 1
                                                     ? "Ya has cargado un archivo"
                                                     : "Arrastra y suelta tu archivo aquí"}
                                             </p>
-                                            <p className="text-sm text-gray-500 mt-1">
+                                            <p className="text-xs sm:text-sm text-gray-500 mt-1">
                                                 {formPeticion.lista_documentos.length >= 1
-                                                    ? "Elimina el archivo si quieres cambiarlo"
-                                                    : "o haz clic para seleccionar el archivo"}
+                                                    ? "Elimina el archivo si deseas cambiarlo"
+                                                    : "O haz clic para seleccionar el archivo"}
                                             </p>
                                         </div>
                                         <p className="text-xs text-gray-400">
                                             Formatos permitidos: PDF (máximo 2 MB)
                                         </p>
                                     </div>
-
                                     <input
                                         id="file-input"
                                         type="file"
@@ -381,7 +388,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                         {formPeticion.lista_documentos.map((file, index) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 bg-gray-50 rounded-lg"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded bg-blue-100 flex items-center justify-center">
@@ -434,20 +441,20 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                             </div>
                         </div>
 
-
                         {/* Botones */}
-                        <div className="flex justify-end gap-4 pt-6 border-t">
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t">
                             <Button
                                 type="button"
                                 variant="outline"
                                 onClick={closeModal}
                                 disabled={isSubmitting}
+                                className="w-full sm:w-auto"
                             >
                                 Cancelar
                             </Button>
                             <Button
                                 type="submit"
-                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                className="bg-blue-600 text-white hover:bg-blue-700 w-full sm:w-auto"
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? "Enviando..." : "Radicar PQRSD"}
