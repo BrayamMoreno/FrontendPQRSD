@@ -232,13 +232,15 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl md:max-w-4xl max-h-[95vh] md:max-h-[90vh] overflow-y-auto transition-all duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto transition-all duration-300">
 
                 {/* Header */}
-                <div className="bg-blue-900 text-white p-5 md:p-6 sticky top-0 z-10 rounded-t-2xl">
+                <div className="bg-blue-900 text-white p-4 sm:p-5 md:p-6 sticky top-0 z-10 rounded-t-2xl">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-lg md:text-xl font-bold text-center w-full">Radicar Petición</h2>
+                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-center w-full">
+                            Radicar Petición
+                        </h2>
                     </div>
                 </div>
 
@@ -247,7 +249,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                     <form onSubmit={handleSubmit} className="space-y-8">
 
                         {/* Tipo de PQRSD */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="tipo" className="text-sm font-medium">
                                     Tipo de PQRSD <span className="text-red-500">*</span>
@@ -303,7 +305,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                 theme="snow"
                                 value={formPeticion.detalleDescripcion}
                                 onChange={(value) => handleInputChange("detalleDescripcion", value)}
-                                className="bg-white rounded-lg h-36 sm:h-44 md:h-48"
+                                className="bg-white rounded-lg h-32 sm:h-40 md:h-48"
                                 placeholder="Escribe la descripción aquí..."
                                 modules={{
                                     toolbar: [
@@ -318,8 +320,8 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                         </div>
 
                         {/* Archivos */}
-                        <div className="pt-6">
-                            <h3 className="text-base md:text-lg font-semibold text-blue-900 mb-3">
+                        <div className="pt-4 sm:pt-6">
+                            <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-3 text-center sm:text-left">
                                 Archivo adjunto (solo se puede adjuntar un archivo)
                             </h3>
 
@@ -328,9 +330,9 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
 
                                 {/* Dropzone */}
                                 <div
-                                    className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
-                                            ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
-                                            : "border-gray-300 hover:border-blue-400"
+                                    className={`border-2 border-dashed rounded-lg p-4 sm:p-6 md:p-8 text-center transition-colors cursor-pointer ${formPeticion.lista_documentos.length >= 1
+                                        ? "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
+                                        : "border-gray-300 hover:border-blue-400"
                                         }`}
                                     onDrop={handleDrop}
                                     onDragOver={handleDragOver}
@@ -357,7 +359,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                             </svg>
                                         </div>
                                         <div>
-                                            <p className="text-base sm:text-lg font-medium text-gray-700">
+                                            <p className="text-sm sm:text-base font-medium text-gray-700">
                                                 {formPeticion.lista_documentos.length >= 1
                                                     ? "Ya has cargado un archivo"
                                                     : "Arrastra y suelta tu archivo aquí"}
@@ -382,9 +384,12 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                     />
                                 </div>
 
+                                {/* Lista de archivos */}
                                 {formPeticion.lista_documentos.length > 0 && (
                                     <div className="space-y-2">
-                                        <h4 className="font-medium text-gray-700">Archivo seleccionado:</h4>
+                                        <h4 className="font-medium text-gray-700 text-center sm:text-left">
+                                            Archivo seleccionado:
+                                        </h4>
                                         {formPeticion.lista_documentos.map((file, index) => (
                                             <div
                                                 key={index}
@@ -406,11 +411,9 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                                             />
                                                         </svg>
                                                     </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-700">{file.name}</p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {formatFileSize(file.size)}
-                                                        </p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-medium text-gray-700 truncate">{file.name}</p>
+                                                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                                                     </div>
                                                 </div>
                                                 <Button
@@ -418,10 +421,10 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => removeFile(index)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto"
                                                 >
                                                     <svg
-                                                        className="w-4 h-4"
+                                                        className="w-4 h-4 mx-auto sm:mx-0"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
@@ -464,5 +467,6 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                 </div>
             </div>
         </div>
-    )
+    );
+
 }
