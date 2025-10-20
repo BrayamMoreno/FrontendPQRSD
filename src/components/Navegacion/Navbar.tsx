@@ -209,7 +209,7 @@ const Navbar: React.FC = () => {
 
                     {/* Botón menú móvil */}
                     <button
-                        className="sm:hidden text-white hover:text-blue-300"
+                        className="sm:hidden text-white hover:text-blue-300 bg-[#0A192F]"
                         onClick={() => setMenuOpen(!menuOpen)}
                     >
                         {menuOpen ? <X size={26} /> : <Menu size={26} />}
@@ -246,7 +246,7 @@ const Navbar: React.FC = () => {
                                     action()
                                     setMenuOpen(false)
                                 }}
-                                className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-700"
+                                className="w-full text-left bg-[#173A5E] flex items-center gap-2 px-3 py-2 rounded-md hover:bg-blue-700"
                             >
                                 {React.cloneElement(icon, { size: 18 })}
                                 {label}
@@ -257,14 +257,14 @@ const Navbar: React.FC = () => {
 
                         <button
                             onClick={() => navigate(`/${currentRole}/perfil`)}
-                            className="w-full flex items-center gap-2 px-3 py-2 hover:bg-blue-700 rounded-md"
+                            className="w-full flex items-center bg-[#173A5E] gap-2 px-3 py-2 hover:bg-blue-700 rounded-md"
                         >
                             <User size={16} /> Mi Perfil
                         </button>
 
                         <button
                             onClick={async () => await logout()}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-red-700 rounded-md"
+                            className="w-full flex items-center bg-[#173A5E] gap-2 px-3 py-2 text-red-400 hover:bg-red-700 rounded-md"
                         >
                             <LogOut size={16} /> Cerrar sesión
                         </button>
