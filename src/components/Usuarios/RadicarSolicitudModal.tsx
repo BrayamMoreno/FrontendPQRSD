@@ -325,7 +325,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                 Archivo adjunto (solo se puede adjuntar un archivo)
                             </h3>
 
-                            <div className="space-y-4">
+                            <div className="space-y-12">
                                 {alertFile && <p className="text-sm text-red-500">{alertFile}</p>}
 
                                 {/* Dropzone */}
@@ -421,7 +421,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => removeFile(index)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto"
+                                                    className="bg-white text-red-500 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto"
                                                 >
                                                     <svg
                                                         className="w-4 h-4 mx-auto sm:mx-0"
