@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
     PieChart,
     Pie,
     Tooltip,
@@ -10,43 +15,119 @@ import type { PaginatedResponse } from "../../models/PaginatedResponse";
 import type { PqItem } from "../../models/PqItem";
 import apiServiceWrapper from "../../api/ApiService";
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
-import { Users, ClipboardCheck, MapPin, Flag } from "lucide-react";
-import { Button } from "../../components/ui/button";
+import { Users, ClipboardCheck, Calendar1Icon, Calendar } from "lucide-react";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 const COLORS = ["#2ecc71", "#3498db", "#f39c12", "#9b59b6", "#e74c3c"];
+
+export interface TendenciaDiaria {
+    fecha: string;      // Día de la semana en español, ej: "Lunes"
+    cantidad: number;   // Cantidad de peticiones para ese día
+}
 
 const DashboardAdmin: React.FC = () => {
     const api = apiServiceWrapper;
 
     const [ultimasSolicitudes, setUltimasSolicitudes] = useState<PqItem[]>([]);
-    const [proximasAVencer, setProximasAVencer] = useState<PqItem[]>([]);
-    const [totalSolicitudes, setTotalSolicitudes] = useState<number>(0);
-    const [totalProximasAVencer, setTotalProximasAVencer] = useState<number>(0);
+    const [vencidas, setVencidas] = useState<PqItem[]>([]);
 
-    const fetchData = async <T,>(
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+
+    const [countTotalUsers, setCountTotalUsers] = useState<number>(0);
+    const [countTotalPqs, setCountTotalPqs] = useState<number>(0);
+    const [countTotalPqsHoy, setCountTotalPqsHoy] = useState<number>(0);
+    const [countTotalPqsMes, setCountTotalPqsMes] = useState<number>(0);
+
+    useEffect(() => {
+        fetchAllStats();
+    }, []);
+
+    const fetchAllStats = async () => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+
+        const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+        const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+
+        await Promise.all([
+            fetchStats("/usuarios", setCountTotalUsers),
+            fetchStats("/pqs", setCountTotalPqs),
+
+
+            fetchStats("/pqs/all_pqs", setCountTotalPqsHoy,
+                new Date().toISOString().split('T')[0],
+                new Date().toISOString().split('T')[0]
+            ),
+
+            fetchStats("/pqs/all_pqs", setCountTotalPqsMes,
+                firstDay,
+                lastDay
+            ),
+        ]);
+    };
+
+
+    const fetchStats = async <T,>(
         endpoint: string,
-        setter: React.Dispatch<React.SetStateAction<T[]>>,
-        setterNumberData: React.Dispatch<React.SetStateAction<number>>
+        setterNumberData: React.Dispatch<React.SetStateAction<number>>,
+        fechaInicio?: string,
+        fechaFin?: string
     ) => {
         try {
-            const response = await api.get<PaginatedResponse<T>>(endpoint);
-            setter(response.data || []);
+            const params: Record<string, any> = {
+                size: 1,
+                page: 0
+            };
+
+            if (fechaInicio) params.fechaInicio = fechaInicio;
+            if (fechaFin) params.fechaFin = fechaFin;
+            const response = await api.get<PaginatedResponse<T>>(endpoint, params)
             setterNumberData(response.total_count || 0);
         } catch (error) {
             console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
     };
 
+
+    const fetchData = async <T,>(
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>,
+        setterNumberData?: React.Dispatch<React.SetStateAction<number>>
+    ) => {
+        try {
+            const response = await api.get<PaginatedResponse<T>>(endpoint)
+            setter(response.data || []);
+            setterNumberData?.(response.total_count || 0);
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
+        }
+    };
+
     const fetchAllData = async () => {
+        setIsLoading(true);
         await Promise.all([
-            fetchData("/pqs", setUltimasSolicitudes, setTotalSolicitudes),
-            fetchData("/pqs/proximas_a_vencer", setProximasAVencer, setTotalProximasAVencer),
+            fetchData("/pqs/all_pqs", setUltimasSolicitudes),
+            fetchData("/pqs/vencidas_admin", setVencidas)
         ]);
+        setIsLoading(false);
     };
 
     useEffect(() => {
         fetchAllData();
+        fetchTendenciaDiaria();
     }, []);
+
+    const [tendenciaDiaria, setTendenciaDiaria] = useState<TendenciaDiaria[]>([]);
+
+    const fetchTendenciaDiaria = async () => {
+        try {
+            const response = await api.getAll<TendenciaDiaria[]>("/pqs/ultimos_7_dias");
+            setTendenciaDiaria(response.data || []);
+        } catch (error) {
+            console.error("Error al obtener la tendencia diaria:", error);
+        }
+    };
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
@@ -74,7 +155,7 @@ const DashboardAdmin: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-gray-600 text-sm">Total Usuarios Registrados</p>
-                                <p className="text-2xl font-bold text-blue-700">20</p>
+                                <p className="text-2xl font-bold text-blue-700">{countTotalUsers}</p>
                             </div>
                         </div>
 
@@ -84,27 +165,27 @@ const DashboardAdmin: React.FC = () => {
                             </div>
                             <div>
                                 <p className="text-gray-600 text-sm">Total de Solicitudes</p>
-                                <p className="text-2xl font-bold text-blue-700">{totalSolicitudes}</p>
+                                <p className="text-2xl font-bold text-blue-700">{countTotalPqs}</p>
                             </div>
                         </div>
 
                         <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
                             <div className="bg-blue-100 p-3 rounded-full">
-                                <MapPin className="text-blue-600 w-6 h-6" />
+                                <Calendar1Icon className="text-blue-600 w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-gray-600 text-sm">Peticiones Diarias</p>
-                                <p className="text-2xl font-bold text-blue-700">2</p>
+                                <p className="text-gray-600 text-sm">Peticiones del Dia</p>
+                                <p className="text-2xl font-bold text-blue-700">{countTotalPqsHoy}</p>
                             </div>
                         </div>
 
                         <div className="bg-white rounded-xl shadow p-5 flex items-center gap-4">
                             <div className="bg-blue-100 p-3 rounded-full">
-                                <Flag className="text-blue-600 w-6 h-6" />
+                                <Calendar className="text-blue-600 w-6 h-6" />
                             </div>
                             <div>
                                 <p className="text-gray-600 text-sm">Peticiones Mensuales</p>
-                                <p className="text-2xl font-bold text-blue-700">312</p>
+                                <p className="text-2xl font-bold text-blue-700">{countTotalPqsMes}</p>
                             </div>
                         </div>
                     </div>
@@ -113,30 +194,19 @@ const DashboardAdmin: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                         <div className="bg-white rounded-xl shadow p-6">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
-                                Lugar de Hospedaje del Turista
+                                Tendencia de Peticiones (últimos 7 días)
                             </h2>
                             <ResponsiveContainer width="100%" height={250}>
-                                <PieChart>
-                                    <Pie
-                                        data={[
-                                            { name: "Hotel", value: 45 },
-                                            { name: "Apartamento", value: 25 },
-                                            { name: "Finca", value: 20 },
-                                            { name: "Otro", value: 10 },
-                                        ]}
-                                        dataKey="value"
-                                        outerRadius={90}
-                                        fill="#8884d8"
-                                        label
-                                    >
-                                        {COLORS.map((color, index) => (
-                                            <Cell key={`cell-${index}`} fill={color} />
-                                        ))}
-                                    </Pie>
+                                <LineChart data={tendenciaDiaria}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="fecha" />
+                                    <YAxis />
                                     <Tooltip />
-                                </PieChart>
+                                    <Line type="monotone" dataKey="cantidad" stroke="#3498db" strokeWidth={2} />
+                                </LineChart>
                             </ResponsiveContainer>
                         </div>
+
 
                         <div className="bg-white rounded-xl shadow p-6">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
@@ -170,40 +240,70 @@ const DashboardAdmin: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white rounded-xl shadow p-6">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
-                                Peticiones Próximas a Vencer
+                                Peticiones Vencidas
                             </h2>
                             <table className="w-full text-sm">
                                 <thead className="bg-blue-100 text-blue-800">
                                     <tr>
-                                        <th className="p-2 text-left">Código</th>
+                                        <th className="p-2 text-left"># Radicado</th>
+                                        <th className="p-2 text-left">Responsable</th>
                                         <th className="p-2 text-left">Fecha Estimada</th>
                                         <th className="p-2 text-left">Días Restantes</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {proximasAVencer.map((solicitud: PqItem) => (
-                                        <tr key={solicitud.id} className="border-b hover:bg-blue-50">
-                                            <td className="p-2">{solicitud.id}</td>
-                                            <td className="p-2">{solicitud.fechaResolucionEstimada}</td>
-                                            <td className="p-2">
-                                                {(() => {
-                                                    const hoy = new Date();
-                                                    const fechaEstimada = new Date(solicitud.fechaResolucionEstimada);
-                                                    const diffMs = fechaEstimada.getTime() - hoy.getTime();
-                                                    const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-                                                    return diffDias < 0
-                                                        ? "Vencida"
-                                                        : diffDias === 0
-                                                            ? "Hoy"
-                                                            : `${diffDias} días`;
-                                                })()}
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-10">
+                                                <div className="flex justify-center items-center">
+                                                    <LoadingSpinner />
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : vencidas.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-10">
+                                                <div className="flex justify-center items-center">
+                                                    No hay peticiones vencidas
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        <>
+                                            {vencidas.map((solicitud: PqItem) => (
+
+                                                <tr key={solicitud.id} className="border-b hover:bg-blue-50">
+                                                    <td className="p-2">{solicitud.numeroRadicado || solicitud.id}</td>
+                                                    <td className="p-2">
+                                                        {solicitud.responsable?.personaResponsable?.nombre}{" "}
+                                                        {solicitud.responsable?.personaResponsable?.apellido}
+                                                    </td>
+                                                    <td className="p-2">
+                                                        {solicitud.fechaResolucionEstimada
+                                                            ? new Date(solicitud.fechaResolucionEstimada).toLocaleDateString()
+                                                            : "Sin fecha"}
+                                                    </td>
+                                                    <td className="p-2">
+                                                        {(() => {
+                                                            const hoy = new Date();
+                                                            const fechaEstimada = new Date(solicitud.fechaResolucionEstimada);
+                                                            const diffMs = hoy.getTime() - fechaEstimada.getTime();
+                                                            const diffDias = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+                                                            if (diffDias <= 0) {
+                                                                return "Hoy vencía";
+                                                            }
+                                                            return `${diffDias} días vencidos`;
+                                                        })()}
+                                                    </td>
+                                                </tr>
+                                            ))
+                                            }
+                                        </>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
-
                         <div className="bg-white rounded-xl shadow p-6">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
                                 Últimas Peticiones
@@ -211,29 +311,47 @@ const DashboardAdmin: React.FC = () => {
                             <table className="w-full text-sm">
                                 <thead className="bg-blue-100 text-blue-800">
                                     <tr>
-                                        <th className="p-2 text-left">Código</th>
+                                        <th className="p-2 text-left"># Radicado</th>
                                         <th className="p-2 text-left">Tipo</th>
                                         <th className="p-2 text-left">Estado</th>
                                         <th className="p-2 text-left">Fecha</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {ultimasSolicitudes.map((solicitud: PqItem) => (
-                                        <tr key={solicitud.id} className="border-b hover:bg-blue-50">
-                                            <td className="p-2">{solicitud.id}</td>
-                                            <td className="p-2">{solicitud.tipoPQ?.nombre}</td>
-                                            <td className="p-2">{solicitud.nombreUltimoEstado}</td>
-                                            <td className="p-2">
-                                                {new Date(solicitud.fechaRadicacion).toLocaleDateString()}
+                                    {isLoading ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-10">
+                                                <div className="flex justify-center items-center">
+                                                    <LoadingSpinner />
+                                                </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : vencidas.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-10">
+                                                <div className="flex justify-center items-center">
+                                                    No hay peticiones
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        <>
+                                            {ultimasSolicitudes.map((solicitud: PqItem) => (
+                                                <tr key={solicitud.id} className="border-b hover:bg-blue-50">
+                                                    <td className="p-2">{solicitud.numeroRadicado || solicitud.id}</td>
+                                                    <td className="p-2">{solicitud.tipoPQ?.nombre}</td>
+                                                    <td className="p-2">{solicitud.nombreUltimoEstado}</td>
+                                                    <td className="p-2">
+                                                        {new Date(solicitud.fechaRadicacion).toLocaleDateString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
-
                 </div>
             </div>
         </div>

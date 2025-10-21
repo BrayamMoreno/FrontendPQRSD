@@ -320,12 +320,12 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                         </div>
 
                         {/* Archivos */}
-                        <div className="pt-4 sm:pt-6">
+                        <div className="pt-10 sm:pt-6">
                             <h3 className="text-base sm:text-lg font-semibold text-blue-900 mb-3 text-center sm:text-left">
                                 Archivo adjunto (solo se puede adjuntar un archivo)
                             </h3>
 
-                            <div className="space-y-12">
+                            <div className="space-y-4">
                                 {alertFile && <p className="text-sm text-red-500">{alertFile}</p>}
 
                                 {/* Dropzone */}

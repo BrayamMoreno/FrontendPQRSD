@@ -14,7 +14,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "../../components/ui/alert-dialog"
-import { Edit3, Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
+import { Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../../api/ApiService"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"

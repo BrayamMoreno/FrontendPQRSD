@@ -131,6 +131,12 @@ const Navbar: React.FC = () => {
             action: () => navigate(`/asignador/responsables_pqs`),
         })
     }
+
+    const handleClose = () => {
+        navigate(`/${currentRole}/perfil`)
+        setMenuOpen(false)
+    }
+
     const [menuOpen, setMenuOpen] = useState(false)
 
     return (
@@ -256,7 +262,7 @@ const Navbar: React.FC = () => {
                         <hr className="border-blue-800 w-full my-2" />
 
                         <button
-                            onClick={() => navigate(`/${currentRole}/perfil`)}
+                            onClick={handleClose}
                             className="w-full flex items-center bg-[#173A5E] gap-2 px-3 py-2 hover:bg-blue-700 rounded-md"
                         >
                             <User size={16} /> Mi Perfil

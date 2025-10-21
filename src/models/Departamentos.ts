@@ -1,5 +1,5 @@
 export type Departamentos = {
-    id: "" | string;
+    id: number | string;
     nombre: "" | string;
     codigoDane: "" | string;
     eliminado: boolean;

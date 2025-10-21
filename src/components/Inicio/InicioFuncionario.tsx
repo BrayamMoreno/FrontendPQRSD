@@ -103,7 +103,7 @@ const InicioFuncionario: React.FC = () => {
                                     </div>
                                 ) : (
                                     <>
-                                        <p className="text-3xl font-bold text-green-600">{pendientesCount}</p>
+                                        <p className="text-3xl font-bold text-green-600">{pendientesCount || 0}</p>
                                         <p className="text-gray-600">Solicitudes Pendientes</p>
                                     </>
                                 )}
@@ -113,12 +113,12 @@ const InicioFuncionario: React.FC = () => {
                         <Card
                             className={clsx(
                                 "w-full text-center shadow transition rounded-2xl",
-                                vencidasCount > 1
+                                vencidasCount > 0
                                     ? "border-2 border-red-300 animate-pulse bg-red-100"
                                     : "hover:shadow-lg"
                             )}
                             style={
-                                vencidasCount > 1
+                                vencidasCount > 0
                                     ? {
                                         animation: "flashBg 1s infinite",
                                     }
@@ -149,7 +149,7 @@ const InicioFuncionario: React.FC = () => {
                                                     : "text-orange-500"
                                             )}
                                         >
-                                            {vencidasCount}
+                                            {vencidasCount || 0}
                                         </p>
                                         <p className="text-gray-600">Solicitudes Vencidas</p>
                                     </>
@@ -170,7 +170,7 @@ const InicioFuncionario: React.FC = () => {
                                 <div className="flex items-center justify-center py-4">
                                     <LoadingSpinner />
                                 </div>
-                            ) : solicitudesPendientes.length === 0 ? (
+                            ) : solicitudesVencidas.length === 0 ? (
                                 <div className="text-center text-gray-500">
                                     No hay peticiones próximas a vencer.
                                 </div>
