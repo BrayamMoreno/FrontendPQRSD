@@ -97,8 +97,6 @@ const Dashboard: React.FC = () => {
 				params
 			);
 
-			console.log("Respuesta de solicitudes:", response.data);
-
 			setSolicitudes(response.data || []);
 
 			if (totalSolicitudesInicial.current === null) {

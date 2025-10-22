@@ -66,7 +66,7 @@ const DashboardAsignador: React.FC = () => {
             if (fechaFin) params.fechaFin = fechaFin;
 
             const response = await api.get<PaginatedResponse<PqItem>>(
-                "/pqs/sin_responsable",
+                "/pqs/por_asignar",
                 params
             );
 

@@ -5,7 +5,7 @@ import { Card, CardContent } from "../ui/card"
 import { Button } from "../ui/button"
 import { useNavigate } from "react-router-dom"
 import { useEffect, useState } from "react"
-import config from "../../config"
+import apiServiceWrapper from "../../api/ApiService"
 
 interface ResumenEstados {
     resueltas: number;
@@ -14,25 +14,30 @@ interface ResumenEstados {
 }
 
 const InicioUsuario: React.FC = () => {
-    const { user } = useAuth()
-    const navigate = useNavigate()
 
-    const baseUrl = config.apiBaseUrl
+    const { user } = useAuth()
+    const api = apiServiceWrapper
+    const navigate = useNavigate()
 
     const personaId = user?.persona?.id;
 
     const [resumen, setResumen] = useState<ResumenEstados | null>(null);
 
+
+    const fetchResumen = async () => {
+        try {
+            const response = await api.getAll<ResumenEstados>(`/pqs/conteo-usuarios?solicitanteId=${personaId}`);
+            setResumen({
+                resueltas: response.data?.resueltas ?? 0,
+                rechazadas: response.data?.rechazadas ?? 0,
+                pendientes: response.data?.pendientes ?? 0,
+            });
+        } catch (error) {
+            console.error("Error al obtener el resumen:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchResumen = async () => {
-            try {
-                const response = await fetch(`${baseUrl}/pqs/conteo?solicitanteId=${personaId}`);
-                const data = await response.json();
-                setResumen(data);
-            } catch (error) {
-                console.error("Error al obtener el resumen:", error);
-            }
-        };
         fetchResumen();
     }, []);
 

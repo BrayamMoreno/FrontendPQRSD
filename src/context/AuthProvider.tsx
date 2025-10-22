@@ -72,9 +72,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
     }, [isAuthenticated]);
 
-
     useEffect(() => {
-        if (isAuthenticated && location.pathname === "/") {
+        if (
+            isAuthenticated &&
+            (location.pathname === "/" || location.pathname === "/login")
+        ) {
             const dashboards = permisos.filter((p) => p.accion === "dashboard");
             if (dashboards.length > 0) {
                 navigate(`/${dashboards[0].tabla}/inicio`, { replace: true });

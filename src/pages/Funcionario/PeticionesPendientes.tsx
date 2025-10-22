@@ -60,6 +60,7 @@ const PeticionesPendientes: React.FC = () => {
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
 
     const [isLoading, setIsLoading] = useState(true)
+    const [isSending, setIsSending] = useState(false)
     const [alertFileRespuesta, setAlertFileRespuesta] = useState<string | null>(null)
 
     const [formPeticion, setFormPeticion] = useState<FormPeticion>({
@@ -169,6 +170,7 @@ const PeticionesPendientes: React.FC = () => {
 
     const handleDarResolucion = async () => {
         try {
+            setIsSending(true);
             // 🔹 Validar correos antes de armar el payload
             let listaCorreos: string[] = [];
 
@@ -230,6 +232,7 @@ const PeticionesPendientes: React.FC = () => {
             showAlert("Error al enviar la PQRSDF", "error");
             handleLimpiarFormulario();
         } finally {
+            setIsSending(false);
             fetchSolicitudes();
         }
     };

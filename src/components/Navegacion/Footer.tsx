@@ -1,82 +1,47 @@
-import { Facebook, Twitter, Instagram, Mail, Phone } from "lucide-react"
+import { Mail, Phone } from "lucide-react";
 
 const Footer: React.FC = () => {
-  return (
-    <footer className="bg-[#173A5E] text-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+    return (
+        <footer className="bg-[#173A5E] text-gray-200">
+            <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
 
-        {/* Columna 1 - Logo / Descripción */}
-        <div>
-          <h2 className="text-xl font-bold text-white mb-3">Mi Aplicación</h2>
-          <p className="text-sm text-gray-300">
-            Plataforma para la gestión de solicitudes PQRSD de manera
-            rápida, organizada y segura.
-          </p>
-        </div>
+                {/* Columna 1 - Logo / Descripción */}
+                <div>
+                    <h2 className="text-xl font-bold text-white mb-3">Plataforma PQRSD</h2>
+                    <p className="text-sm text-gray-300">
+                        Plataforma para la radicación y seguimiento de Peticiones, Quejas, Reclamos, Sugerencias, Denuncias y Otros (PQRSD) del
+                        Municipio de Girardot - Cundinamarca.
+                    </p>
+                </div>
 
-        {/* Columna 2 - Links rápidos */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-3">Enlaces útiles</h3>
-          <ul className="space-y-2 text-sm">
-            <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Inicio
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Mis Peticiones
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Radicar Solicitud
-              </a>
-            </li>
-            <li>
-              <a href="#" className="hover:text-white transition-colors">
-                Ayuda
-              </a>
-            </li>
-          </ul>
-        </div>
+                {/* Columna 2 - Datos de contacto */}
+                <div>
+                    <h3 className="text-lg font-semibold text-white mb-3">Datos de contacto</h3>
+                    <ul className="space-y-2 text-sm text-gray-300">
+                        <li><b>Dirección: </b> Carrera 11 No. 17 - Esquina, Palacio Municipal. Girardot - Cundinamarca</li>
+                        <li><b>Oficiona:</b> Cuarto Piso, Secretaria de Transito y Transporte</li>
+                        <li className="flex items-center gap-2">
+                            <Mail className="w-4 h-4" />
+                            transitoytransporte@girardot-cundinamarca.gov.co
+                        </li>
+                        <li className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            (601) 8393510 ext. 1070
+                        </li>
+                        <li><b>Horario atención al público:</b> Lunes a Viernes de 08:00 a.m. a 12:00 m. y 02:00 p.m. a 06:00 p.m.</li>
+                    </ul>
+                </div>
 
-        {/* Columna 3 - Contacto / Redes */}
-        <div>
-          <h3 className="text-lg font-semibold text-white mb-3">Contáctanos</h3>
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              soporte@miapp.com
-            </li>
-            <li className="flex items-center gap-2">
-              <Phone className="w-4 h-4" />
-              +57 300 123 4567
-            </li>
-          </ul>
+            </div>
 
-          <div className="flex gap-4 mt-4">
-            <a href="#" className="hover:text-white">
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a href="#" className="hover:text-white">
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a href="#" className="hover:text-white">
-              <Instagram className="w-5 h-5" />
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Línea inferior */}
-      <div className="border-t border-blue-700 mt-6">
-        <p className="text-center text-sm text-gray-400 py-4">
-          © {new Date().getFullYear()} Mi Aplicación — Todos los derechos reservados
-        </p>
-      </div>
-    </footer>
-  )
+            {/* Línea inferior */}
+            <div className="border-t border-blue-700">
+                <p className="text-center text-sm text-gray-400 py-4">
+                    © {new Date().getFullYear()} Mi Aplicación — Todos los derechos reservados
+                </p>
+            </div>
+        </footer>
+    )
 }
 
-export default Footer
+export default Footer;

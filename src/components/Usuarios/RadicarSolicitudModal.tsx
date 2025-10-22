@@ -236,7 +236,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto transition-all duration-300">
 
                 {/* Header */}
-                <div className="bg-blue-900 text-white p-4 sm:p-5 md:p-6 sticky top-0 z-10 rounded-t-2xl">
+                <div className="bg-blue-900 text-white p-4 sm:p-5 md:p-6 sticky top-0 z-10">
                     <div className="flex justify-between items-center">
                         <h2 className="text-base sm:text-lg md:text-xl font-bold text-center w-full">
                             Radicar Petición
@@ -249,7 +249,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                     <form onSubmit={handleSubmit} className="space-y-8">
 
                         {/* Tipo de PQRSD */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-1 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="tipo" className="text-sm font-medium">
                                     Tipo de PQRSD <span className="text-red-500">*</span>
@@ -261,10 +261,10 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                                     value={formPeticion.tipo_pq_id}
                                     onValueChange={(value) => handleInputChange("tipo_pq_id", value)}
                                 >
-                                    <SelectTrigger className={errors.tipo_pq_id ? "border-red-500" : ""}>
+                                    <SelectTrigger className={`w-full ${errors.tipo_pq_id ? "border-red-500" : ""}`}>
                                         <SelectValue placeholder="Seleccione el tipo" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="w-full">
                                         {tipoPq.map((tipo) => (
                                             <SelectItem key={tipo.id} value={String(tipo.id)}>
                                                 {tipo.nombre}
@@ -468,5 +468,4 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
             </div>
         </div>
     );
-
 }

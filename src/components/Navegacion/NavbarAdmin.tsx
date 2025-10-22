@@ -4,7 +4,6 @@ import { useAuth } from "../../context/AuthProvider"
 import {
     ChevronDown,
     LayoutDashboard,
-    Settings2,
     User,
     LogOut,
     VenusAndMarsIcon,

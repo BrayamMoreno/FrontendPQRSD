@@ -10,6 +10,8 @@ import {
     Tooltip,
     ResponsiveContainer,
     Cell,
+    BarChart,
+    Bar,
 } from "recharts";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
 import type { PqItem } from "../../models/PqItem";
@@ -20,9 +22,14 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 const COLORS = ["#2ecc71", "#3498db", "#f39c12", "#9b59b6", "#e74c3c"];
 
-export interface TendenciaDiaria {
+interface TendenciaDiaria {
     fecha: string;      // Día de la semana en español, ej: "Lunes"
     cantidad: number;   // Cantidad de peticiones para ese día
+}
+
+interface TipoCantidad {
+    tipo: string;
+    cantidad: number;
 }
 
 const DashboardAdmin: React.FC = () => {
@@ -32,11 +39,15 @@ const DashboardAdmin: React.FC = () => {
     const [vencidas, setVencidas] = useState<PqItem[]>([]);
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoadingChart, setIsLoadingChart] = useState<boolean>(true);
 
     const [countTotalUsers, setCountTotalUsers] = useState<number>(0);
     const [countTotalPqs, setCountTotalPqs] = useState<number>(0);
     const [countTotalPqsHoy, setCountTotalPqsHoy] = useState<number>(0);
     const [countTotalPqsMes, setCountTotalPqsMes] = useState<number>(0);
+
+    const [tendenciaDiaria, setTendenciaDiaria] = useState<TendenciaDiaria[]>([]);
+    const [coteoTipoMes, setConteoTipoMes] = useState<TipoCantidad[]>([]);
 
     useEffect(() => {
         fetchAllStats();
@@ -54,7 +65,6 @@ const DashboardAdmin: React.FC = () => {
             fetchStats("/usuarios", setCountTotalUsers),
             fetchStats("/pqs", setCountTotalPqs),
 
-
             fetchStats("/pqs/all_pqs", setCountTotalPqsHoy,
                 new Date().toISOString().split('T')[0],
                 new Date().toISOString().split('T')[0]
@@ -66,7 +76,6 @@ const DashboardAdmin: React.FC = () => {
             ),
         ]);
     };
-
 
     const fetchStats = async <T,>(
         endpoint: string,
@@ -88,7 +97,6 @@ const DashboardAdmin: React.FC = () => {
             console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
     };
-
 
     const fetchData = async <T,>(
         endpoint: string,
@@ -116,9 +124,8 @@ const DashboardAdmin: React.FC = () => {
     useEffect(() => {
         fetchAllData();
         fetchTendenciaDiaria();
+        fetchTendenciaPorTipo();
     }, []);
-
-    const [tendenciaDiaria, setTendenciaDiaria] = useState<TendenciaDiaria[]>([]);
 
     const fetchTendenciaDiaria = async () => {
         try {
@@ -126,6 +133,19 @@ const DashboardAdmin: React.FC = () => {
             setTendenciaDiaria(response.data || []);
         } catch (error) {
             console.error("Error al obtener la tendencia diaria:", error);
+        } finally {
+            setIsLoadingChart(false);
+        }
+    };
+
+    const fetchTendenciaPorTipo = async () => {
+        try {
+            const response = await api.getAll<TipoCantidad[]>("/pqs/contar_por_tipo_mes");
+            setConteoTipoMes(response.data || []);
+        } catch (error) {
+            console.error("Error al obtener la tendencia diaria:", error);
+        } finally {
+            setIsLoadingChart(false);
         }
     };
 
@@ -191,50 +211,61 @@ const DashboardAdmin: React.FC = () => {
                     </div>
 
                     {/* Estadísticas */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
-                        <div className="bg-white rounded-xl shadow p-6">
+                    <div className="grid grid-cols-1 gap-8 mb-10">
+                        {/* Tendencia de Peticiones (últimos 7 días) */}
+                        <div className="bg-white rounded-xl shadow p-6 w-full">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
                                 Tendencia de Peticiones (últimos 7 días)
                             </h2>
-                            <ResponsiveContainer width="100%" height={250}>
-                                <LineChart data={tendenciaDiaria}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="fecha" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Line type="monotone" dataKey="cantidad" stroke="#3498db" strokeWidth={2} />
-                                </LineChart>
-                            </ResponsiveContainer>
+                            {isLoadingChart ? (
+                                <div className="flex justify-center items-center h-[45vh]">
+                                    <LoadingSpinner />
+                                </div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={window.innerHeight * 0.45}>
+                                    <LineChart data={tendenciaDiaria}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="fecha" />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Line type="monotone" dataKey="cantidad" stroke="#3498db" strokeWidth={2} />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            )}
                         </div>
 
-
-                        <div className="bg-white rounded-xl shadow p-6">
+                        {/* Cantidad de PQ por Tipo */}
+                        <div className="bg-white rounded-xl shadow p-6 w-full">
                             <h2 className="text-lg font-semibold text-gray-700 mb-4">
-                                Tipo de Alojamiento Utilizado
+                                Cantidad de PQ por Tipo
                             </h2>
-                            <ResponsiveContainer width="100%" height={250}>
-                                <PieChart>
-                                    <Pie
-                                        data={[
-                                            { name: "Hotel", value: 30 },
-                                            { name: "Camping", value: 15 },
-                                            { name: "Casa Familiar", value: 40 },
-                                            { name: "Otro", value: 15 },
-                                        ]}
-                                        dataKey="value"
-                                        outerRadius={90}
-                                        fill="#82ca9d"
-                                        label
-                                    >
-                                        {COLORS.map((color, index) => (
-                                            <Cell key={`cell-${index}`} fill={color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            {isLoading ? (
+                                <div className="flex justify-center items-center h-[45vh]">
+                                    <LoadingSpinner />
+                                </div>
+                            ) : (
+                                <ResponsiveContainer width="100%" height={window.innerHeight * 0.45}>
+                                    <BarChart data={coteoTipoMes} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis
+                                            dataKey="tipo"
+                                            tickLine={false}
+                                            axisLine={false}
+                                            style={{ fontSize: 12, fill: '#4B5563' }}
+                                        />
+                                        <YAxis />
+                                        <Tooltip />
+                                        <Bar dataKey="cantidad" fill="#3B82F6">
+                                            {coteoTipoMes.map((_, index) => (
+                                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
                         </div>
                     </div>
+
 
                     {/* Tablas */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

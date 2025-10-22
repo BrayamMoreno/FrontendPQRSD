@@ -42,7 +42,6 @@ const Utilidades: React.FC = () => {
     const logsContainerRef = useRef<HTMLDivElement>(null);
     const logsEndRef = useRef<HTMLDivElement>(null);
 
-    // 🆕 Nuevas referencias para manejar el scroll estable
     const pendingScrollAdjustment = useRef<number | null>(null);
     const lastScrollHeight = useRef<number>(0);
 
@@ -125,8 +124,6 @@ const Utilidades: React.FC = () => {
         return date.toISOString().split('.')[0];
     }
 
-    // ========================= LOGS =========================
-    // ========================= LOGS =========================
     const fetchLogs = async (newPage = 0, reset = false) => {
         if ((!hasMoreLogs && !reset) || (loadingLogs && !reset)) return;
 
@@ -161,21 +158,18 @@ const Utilidades: React.FC = () => {
             if (fetchedLogs.length < 50) setHasMoreLogs(false);
 
             if (reset) {
-                // ✅ No vaciamos primero los logs, sino que los reemplazamos directamente
                 const orderedLogs = fetchedLogs.sort(
                     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
                 );
                 setLogs(orderedLogs);
                 setPage(0);
 
-                // ✅ Hacemos scroll al final una vez que los logs se rendericen
                 setTimeout(() => {
                     if (logsContainerRef.current) {
                         logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
                     }
                 }, 100);
             } else {
-                // ✅ Carga incremental (scroll infinito)
                 setLogs(prevLogs => {
                     const combinedLogs = [...prevLogs, ...fetchedLogs];
                     const uniqueLogs = Array.from(
@@ -198,8 +192,6 @@ const Utilidades: React.FC = () => {
         }
     };
 
-
-    
     useEffect(() => {
         const container = logsContainerRef.current;
         if (!container) return;
@@ -228,7 +220,6 @@ const Utilidades: React.FC = () => {
         fetchLogs(0, true);
     }, []);
 
-    // ========================= RENDER =========================
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8">
@@ -249,59 +240,65 @@ const Utilidades: React.FC = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                         {/* Backups */}
-                        <div className="bg-white rounded-xl shadow p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-semibold text-gray-700">Gestión de Backups</h2>
-                                {permisos.some(p => p.tabla === "backups" && p.accion === "agregar") && (
-                                    <Button
-                                        disabled={loading}
-                                        onClick={handleCreateBackup}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-                                    >
-                                        <PlusCircle className="w-4 h-4" />
-                                        Crear Backup
-                                    </Button>
+                        {permisos.some(p => p.tabla === "backups" && p.accion === "leer") && (
+                            <div className="bg-white rounded-xl shadow p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-700">Gestión de Backups</h2>
+                                    {permisos.some(p => p.tabla === "backups" && p.accion === "agregar") && (
+                                        <Button
+                                            disabled={loading}
+                                            onClick={handleCreateBackup}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+                                        >
+                                            <PlusCircle className="w-4 h-4" />
+                                            Crear Backup
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {loading ? (
+                                    <div className="text-center py-6 text-gray-500">
+                                        <LoadingSpinner />
+                                    </div>
+                                ) : backups.length === 0 ? (
+                                    <p className="text-gray-500">No hay backups registrados.</p>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-blue-100 text-blue-800">
+                                            <tr>
+                                                <th className="p-2 text-left">Nombre</th>
+                                                <th className="p-2 text-left">Tamaño</th>
+                                                <th className="p-2 text-left">Fecha</th>
+                                                <th className="p-2 text-left">Hora</th>
+                                                <th className="p-2 text-center">Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {backups.map((backup) => (
+                                                <tr key={backup.nombre} className="border-b hover:bg-blue-50 transition">
+                                                    <td className="p-2">{backup.nombre}</td>
+                                                    <td className="p-2">{backup.tamaño}</td>
+                                                    <td className="p-2">{backup.fecha}</td>
+                                                    <td className="p-2">{backup.hora}</td>
+                                                    <td className="p-2 text-center space-x-6">
+                                                        {permisos.some(p => p.tabla === "backups" && p.accion === "descargar") && (
+                                                            <Button variant="outline" size="sm" onClick={() => handleDownload(backup.nombre || "")}>
+                                                                <Download className="w-4 h-4" />
+                                                            </Button>
+                                                        )}
+                                                        {permisos.some(p => p.tabla === "backups" && p.accion === "eliminar") && (
+                                                            <Button variant="destructive" size="sm" onClick={() => handleDelete(backup.nombre)}>
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 )}
                             </div>
-
-                            {loading ? (
-                                <div className="text-center py-6 text-gray-500">
-                                    <LoadingSpinner />
-                                </div>
-                            ) : backups.length === 0 ? (
-                                <p className="text-gray-500">No hay backups registrados.</p>
-                            ) : (
-                                <table className="w-full text-sm">
-                                    <thead className="bg-blue-100 text-blue-800">
-                                        <tr>
-                                            <th className="p-2 text-left">Nombre</th>
-                                            <th className="p-2 text-left">Tamaño</th>
-                                            <th className="p-2 text-left">Fecha</th>
-                                            <th className="p-2 text-left">Hora</th>
-                                            <th className="p-2 text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {backups.map((backup) => (
-                                            <tr key={backup.nombre} className="border-b hover:bg-blue-50 transition">
-                                                <td className="p-2">{backup.nombre}</td>
-                                                <td className="p-2">{backup.tamaño}</td>
-                                                <td className="p-2">{backup.fecha}</td>
-                                                <td className="p-2">{backup.hora}</td>
-                                                <td className="p-2 text-center space-x-6">
-                                                    <Button variant="outline" size="sm" onClick={() => handleDownload(backup.nombre || "")}>
-                                                        <Download className="w-4 h-4" />
-                                                    </Button>
-                                                    <Button variant="destructive" size="sm" onClick={() => handleDelete(backup.nombre)}>
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            )}
-                        </div>
+                        )}
 
                         {/* Reportes */}
                         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center">

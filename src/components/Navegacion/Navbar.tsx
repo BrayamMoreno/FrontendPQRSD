@@ -48,7 +48,7 @@ const Navbar: React.FC = () => {
         }
     }, [])
 
-     const userInfo = {
+    const userInfo = {
         nombre:
             user?.persona.nombre + " " + user?.persona.apellido || "Usuario",
         iniciales:
@@ -140,10 +140,10 @@ const Navbar: React.FC = () => {
     const [menuOpen, setMenuOpen] = useState(false)
 
     return (
-        <header className="fixed z-50 w-full shadow-md">
-            {/* Primera fila (principal) */}
+        <header className="fixed z-50 w-screen shadow-md">
+            {/* Primera fila */}
             <div className="w-full bg-[#0A192F]">
-                <div className="max-w-7xl mx-auto flex justify-between items-center h-16 px-4">
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
                     {/* Logo y título */}
                     <div className="flex items-center gap-2 font-bold text-white">
                         <img src={logo} alt="Logo" className="w-8 h-8" />
@@ -225,13 +225,13 @@ const Navbar: React.FC = () => {
 
             {/* Segunda fila (menú horizontal) escritorio */}
             <div className="w-full bg-[#173A5E] hidden sm:flex">
-                <div className="max-w-7xl mx-auto flex justify-between items-center h-12 w-full px-4">
+                <div className="max-w-7xl mx-auto flex justify-between items-center h-12 w-full ">
                     <div className="flex items-center gap-3">
                         {acciones.map(({ label, icon, action }) => (
                             <Button
                                 key={label}
                                 onClick={action}
-                                className="px-3 py-2 text-sm bg-[#173A5E] text-white hover:bg-blue-700 rounded-md flex items-center gap-2"
+                                className=" text-sm bg-[#173A5E] text-white hover:bg-blue-700 rounded-md flex items-center gap-2"
                             >
                                 {React.cloneElement(icon, { size: 18 })}
                                 {label}

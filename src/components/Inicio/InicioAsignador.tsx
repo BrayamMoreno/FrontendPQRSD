@@ -20,7 +20,8 @@ const InicioAsignador: React.FC = () => {
     const api = apiServiceWrapper
     const currentRole = location.pathname.split("/")[1]
 
-    // Stats dinámicas
+    const personaId = user?.persona?.id || 0
+
     const [stats, setStats] = useState<stats>({
         asignadas: 0,
         rechazadas: 0,
@@ -29,10 +30,9 @@ const InicioAsignador: React.FC = () => {
 
     const fetchResumen = async () => {
         try {
-            const response = await api.getAll("/pqs/conteo-asignador")
+            const response = await api.getAll(`/pqs/conteo-asignador/${personaId}`);
 
             const conteo = response.data as stats
-
 
             setStats({
                 asignadas: conteo.asignadas ?? 0,

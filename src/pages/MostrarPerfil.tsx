@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { UndoIcon, PencilIcon, DiscIcon, KeyIcon, XIcon } from "lucide-react";
+import { UndoIcon, PencilIcon, DiscIcon, XIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -12,10 +12,13 @@ import type { TipoPersona } from "../models/TipoPersona";
 import type { TipoDoc } from "../models/TipoDoc";
 import type { Departamentos } from "../models/Departamentos";
 import type { Municipios } from "../models/Municipios";
+import { useAlert } from "../context/AlertContext";
+import { LoadingSpinner } from "../components/LoadingSpinner";
 
 const MostrarPerfil: React.FC = () => {
 	const navigate = useNavigate();
 	const { user } = useAuth();
+	const { showAlert } = useAlert();
 	const api = apiServiceWrapper;
 
 	const [iniciales, setIniciales] = useState("");
@@ -23,6 +26,7 @@ const MostrarPerfil: React.FC = () => {
 	const [perfilBackup, setPerfilBackup] = useState<any>({});
 	const [isEditing, setIsEditing] = useState(false);
 	const [isSaving, setIsSaving] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
 
 	const [generos, setGeneros] = useState<Genero[]>([]);
 	const [tiposDocumento, setTiposDocumento] = useState<TipoDoc[]>([]);
@@ -47,6 +51,7 @@ const MostrarPerfil: React.FC = () => {
 			fetchData<TipoPersona>("tipos_personas", setTiposPersona),
 			fetchData<Departamentos>("departamentos", setDepartamentos)
 		]);
+		setIsLoading(false);
 	};
 
 	const fetchMunicipios = async (departamentoId: number) => {
@@ -69,16 +74,7 @@ const MostrarPerfil: React.FC = () => {
 	useEffect(() => {
 		if (!user || departamentos.length === 0) return;
 		const persona = user.persona;
-
-		let departamentoId = "";
-
-		console.log("Persona data:", persona);
-
-		if (persona.municipio?.departamento?.id) {
-			departamentoId = persona.municipio.departamento.id.toString();
-		} else if (persona.municipio?.departamento?.id) {
-			departamentoId = persona.municipio.departamento.id.toString();
-		}
+		const departamentoId = persona.municipio?.departamento?.id ?? null;
 
 		if (departamentoId) fetchMunicipios(Number(departamentoId));
 
@@ -86,14 +82,14 @@ const MostrarPerfil: React.FC = () => {
 			id: persona.id,
 			nombre: persona.nombre,
 			apellido: persona.apellido,
-			tipoPersona: persona.tipoPersona?.id,
-			tipoDocumento: persona.tipoDoc?.id,
+			tipoPersona: persona.tipoPersona?.id ?? null,
+			tipoDocumento: persona.tipoDoc?.id ?? null,
 			cedula: persona.dni,
 			telefono: persona.telefono,
 			direccion: persona.direccion,
-			genero: persona.genero?.id,
+			genero: persona.genero?.id ?? null,
 			departamento: departamentoId,
-			municipio: persona.municipio?.id,
+			municipio: persona.municipio?.id ?? null,
 			email: persona.correoUsuario,
 			fechaCreacion: persona.createdAt
 				? new Date(persona.createdAt).toLocaleDateString()
@@ -142,8 +138,10 @@ const MostrarPerfil: React.FC = () => {
 			await api.put(`/personas/${perfil.id}`, payload);
 			setPerfilBackup(perfil);
 			setIsEditing(false);
+			showAlert("Perfil actualizado correctamente", "success");
 		} catch (error) {
 			console.error("Error al guardar perfil:", error);
+			showAlert("Error al actualizar el perfil", "error");
 		} finally {
 			setIsSaving(false);
 		}
@@ -151,12 +149,18 @@ const MostrarPerfil: React.FC = () => {
 
 	const getDisplayValue = (field: string, value: any): string => {
 		switch (field) {
-			case "tipoPersona": return tiposPersona.find((tp) => tp.id === value)?.nombre || "";
-			case "tipoDocumento": return tiposDocumento.find((td) => td.id === value)?.nombre || "";
-			case "genero": return generos.find((g) => g.id === value)?.nombre || "";
-			case "departamento": return departamentos.find((d) => d.id === value)?.nombre || "";
-			case "municipio": return municipios.find((m) => m.id === value)?.nombre || "";
-			default: return value || "";
+			case "departamento":
+				return departamentos.find(d => d.id.toString() === (value?.toString() ?? ""))?.nombre || "";
+			case "municipio":
+				return municipios.find(m => m.id.toString() === (value?.toString() ?? ""))?.nombre || "";
+			case "tipoPersona":
+				return tiposPersona.find(tp => tp.id.toString() === (value?.toString() ?? ""))?.nombre || "";
+			case "tipoDocumento":
+				return tiposDocumento.find(td => td.id.toString() === (value?.toString() ?? ""))?.nombre || "";
+			case "genero":
+				return generos.find(g => g.id.toString() === (value?.toString() ?? ""))?.nombre || "";
+			default:
+				return value || "";
 		}
 	};
 
@@ -175,12 +179,19 @@ const MostrarPerfil: React.FC = () => {
 		{ label: "Fecha de creación", field: "fechaCreacion" }
 	];
 
+	if (isLoading) {
+		return (
+			<div className="min-h-screen flex items-center justify-center bg-gray-50">
+				<LoadingSpinner />
+			</div>
+		);
+	}
+
 	return (
-		<div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 pt-28 pb-8">
+		<div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 pt-24 pb-8">
 			<div className="max-w-7xl mx-auto space-y-8">
 				<Breadcrumbs />
-
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 					{/* Lado izquierdo */}
 					<div className="space-y-6">
 						<Card className="rounded-2xl shadow-md">
@@ -201,7 +212,6 @@ const MostrarPerfil: React.FC = () => {
 						<Card className="rounded-2xl shadow-md">
 							<CardContent className="flex flex-col space-y-3 p-4">
 								<h3 className="text-lg font-semibold text-blue-900">Opciones de Perfil</h3>
-
 								<Button
 									variant="outline"
 									onClick={() => setIsEditing(true)}
@@ -221,16 +231,15 @@ const MostrarPerfil: React.FC = () => {
 									Información del Perfil
 								</h3>
 
-								<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+								<div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
 									{fields.map((item) => (
 										<div key={item.field} className="flex flex-col">
 											<label className="text-sm text-gray-500 mb-1">{item.label}</label>
 
-											{/* Selects dinámicos */}
 											{isEditing &&
 												["tipoPersona", "tipoDocumento", "genero", "departamento", "municipio"].includes(item.field) ? (
 												<select
-													value={perfil[item.field] || ""}
+													value={perfil[item.field] ?? ""}
 													onChange={(e) => handleChange(item.field, e.target.value)}
 													className="w-full border rounded-md px-3 py-2 text-sm border-blue-600 focus:ring focus:ring-blue-200 bg-white"
 												>
@@ -261,7 +270,7 @@ const MostrarPerfil: React.FC = () => {
 													type="text"
 													value={
 														isEditing
-															? perfil[item.field] || ""
+															? perfil[item.field] ?? ""
 															: getDisplayValue(item.field, perfil[item.field])
 													}
 													readOnly={
@@ -270,9 +279,9 @@ const MostrarPerfil: React.FC = () => {
 													}
 													onChange={(e) => handleChange(item.field, e.target.value)}
 													className={`w-full border rounded-md px-3 py-2 text-sm transition ${isEditing &&
-														!["cedula", "tipoDocumento", "email", "fechaCreacion"].includes(item.field)
-														? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
-														: "border-gray-300 bg-gray-50"
+															!["cedula", "tipoDocumento", "email", "fechaCreacion"].includes(item.field)
+															? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
+															: "border-gray-300 bg-gray-50"
 														}`}
 												/>
 											)}
@@ -281,17 +290,16 @@ const MostrarPerfil: React.FC = () => {
 								</div>
 
 								{isEditing && (
-									<div className="flex flex-col sm:flex-row justify-end gap-3">
+									<div className="flex flex-col sm:flex-row justify-end gap-3 mt-4">
 										<Button variant="outline" onClick={handleCancel} disabled={isSaving}>
 											<XIcon className="w-4 h-4 mr-1" /> Cancelar
 										</Button>
 										<Button
 											onClick={handleSave}
 											disabled={isSaving}
-											className="bg-green-600 hover:bg-green-700 text-white"
+											className="bg-green-600 hover:bg-green-700 text-white flex items-center justify-center"
 										>
-											<DiscIcon className="w-4 h-4 mr-1" />
-											{isSaving ? "Guardando..." : "Guardar"}
+											{isSaving ? <LoadingSpinner /> : <><DiscIcon className="w-4 h-4 mr-1" /> Guardar</>}
 										</Button>
 									</div>
 								)}

@@ -44,8 +44,7 @@ const HistorialPeticiones: React.FC = () => {
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
 
 
-    const [estadosPq, SetEstadosPq] = useState<Estado[]>([]);
-    const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null);
+    const [estadosPq, setEstadosPq] = useState<Estado[]>([]);
 
     const [isLoading, setIsLoading] = useState(true)
 
@@ -61,7 +60,6 @@ const HistorialPeticiones: React.FC = () => {
                 return;
             }
 
-            // construir parámetros dinámicos
             const params: Record<string, any> = {
                 responsableId,
                 page: currentPage - 1,
@@ -84,9 +82,6 @@ const HistorialPeticiones: React.FC = () => {
                 params.fechaFin = fechaFin;
             }
 
-            if (estadoSeleccionado !== null) {
-                params.estadoId = estadoSeleccionado;
-            }
             const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_funcionario", params);
             setSolicitudes(response.data || []);
             const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
@@ -130,7 +125,7 @@ const HistorialPeticiones: React.FC = () => {
         try {
             await Promise.all([
                 fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
-                fetchData<Estado>("estados_pqs", SetEstadosPq)
+                fetchData<Estado>("estados_pqs", setEstadosPq)
             ])
         } catch (error) {
             console.error("Error al cargar datos iniciales:", error)
@@ -151,10 +146,6 @@ const HistorialPeticiones: React.FC = () => {
         setSelectedSolicitud(solicitud)
     }
 
-    const generarInforme = (solicitud: PqItem) => {
-        throw new Error("Function not implemented.")
-    }
-
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
@@ -171,7 +162,7 @@ const HistorialPeticiones: React.FC = () => {
                     <div className="max-w-7xl mx-auto">
                         <Card className="mb-4">
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                                <div className="grid grid-cols-1 md:grid-cols-51 gap-4 items-end">
                                     {/* Numero Radicado */}
                                     <div className="flex flex-col">
                                         <label className="text-sm text-gray-600 mb-1">N° Radicado</label>
@@ -208,28 +199,6 @@ const HistorialPeticiones: React.FC = () => {
                                         </Select>
                                     </div>
 
-                                    {/* Estado */}
-                                    <div className="flex flex-col">
-                                        <label className="text-sm text-gray-600 mb-1">Estado</label>
-                                        <Select
-                                            value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
-                                            onValueChange={(value) =>
-                                                setEstadoSeleccionado(value === "TODOS" ? null : Number(value))
-                                            }
-                                        >
-                                            <SelectTrigger className="w-full">
-                                                <SelectValue placeholder="Estado" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="TODOS">Todos los estados</SelectItem>
-                                                {estadosPq.map((estado) => (
-                                                    <SelectItem key={estado.id} value={String(estado.id)}>
-                                                        {estado.nombre}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
 
                                     {/* Fecha Inicio */}
                                     <div className="flex flex-col">
@@ -257,7 +226,6 @@ const HistorialPeticiones: React.FC = () => {
                                         <Button
                                             className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                                             onClick={() => {
-                                                setEstadoSeleccionado(null);
                                                 setTipoPqSeleccionado(null);
                                                 setNumeroRadicado(null);
                                                 setFechaInicio(null);
