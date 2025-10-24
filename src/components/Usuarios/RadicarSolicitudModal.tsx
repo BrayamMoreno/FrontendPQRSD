@@ -147,14 +147,36 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
         return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
     }
 
+    // helper para obtener texto "real" desde el HTML de Quill
+    const getPlainTextFromHtml = (html?: string): string => {
+        const tmp = document.createElement("div");
+        tmp.innerHTML = html || "";
+        // textContent ya descarta tags, &nbsp; queda como espacio en algunos navegadores
+        let text = tmp.textContent || tmp.innerText || "";
+        // eliminar NBSP y caracteres cero-ancho u otros invisibles
+        text = text.replace(/\u00A0/g, "");     // &nbsp;
+        text = text.replace(/[\u200B-\u200D\uFEFF]/g, ""); // zero-width chars
+        return text.trim();
+    }
+
     const validateForm = (): boolean => {
         const newErrors: Partial<FormPeticion> = {}
+
         if (!formPeticion?.tipo_pq_id) newErrors.tipo_pq_id = "El tipo es requerido"
+
         if (!formPeticion?.detalleAsunto?.trim()) newErrors.detalleAsunto = "El asunto es requerido"
-        if (!formPeticion?.detalleDescripcion?.trim()) newErrors.detalleDescripcion = "La descripción es requerida"
+
+        const descripcionPlain = getPlainTextFromHtml(formPeticion.detalleDescripcion)
+
+        if (!descripcionPlain) {
+            newErrors.detalleDescripcion = "La descripción es requerida"
+        }
+
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
+
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -2,8 +2,8 @@ import { FileText } from "lucide-react";
 import type { PqItem } from "../../models/PqItem";
 import { Button } from "../ui/button";
 import type { Adjunto } from "../../models/Adjunto";
-import config from "../../config";
 import { motion } from "framer-motion";
+import { useDownloadFile } from "../../utils/useDownloadFile";
 
 
 interface SolicitudModalProps {
@@ -15,8 +15,7 @@ interface SolicitudModalProps {
 export default function SolicitudModal({ isOpen, solicitud, onClose }: SolicitudModalProps) {
     if (!isOpen || !solicitud) return null;
 
-    console.log("Solicitud en modal:", solicitud);
-    const API_URL = config.apiBaseUrl
+    const { downloadFile } = useDownloadFile();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
@@ -28,7 +27,7 @@ export default function SolicitudModal({ isOpen, solicitud, onClose }: Solicitud
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto"
             >
                 {/* HEADER */}
-                <div className="bg-blue-900 text-white p-6 rounded-t-2xl sticky top-0 z-20 shadow">
+                <div className="bg-blue-900 text-white p-6  sticky top-0 z-20 shadow">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold mb-1">
@@ -147,26 +146,37 @@ export default function SolicitudModal({ isOpen, solicitud, onClose }: Solicitud
                             Documentos Radicados
                         </h3>
                         <div className="bg-gray-50 p-4 rounded-lg space-y-3 overflow-x-auto">
-                            {solicitud.adjuntos && solicitud.adjuntos.length > 0 ? (
+                            {solicitud.adjuntos &&
+                                solicitud.adjuntos.filter((a) => !a.respuesta).length > 0 ? (
                                 <ul className="text-sm text-blue-600 space-y-2">
-                                    {solicitud.adjuntos.map(
-                                        (archivo: Adjunto, i: number) =>
-                                            !archivo.respuesta && (
-                                                <li key={i} className="flex flex-wrap items-center gap-2">
-                                                    <FileText className="w-5 h-5 text-blue-600 shrink-0" />
-                                                    <a
-                                                        href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
-                                                        download
-                                                        className="hover:underline break-all"
-                                                    >
-                                                        {archivo.nombreArchivo}
-                                                    </a>
-                                                    <span className="text-[10px] text-gray-500 ml-auto">
-                                                        {new Date(archivo.createdAt).toLocaleDateString()}
-                                                    </span>
-                                                </li>
-                                            )
-                                    )}
+                                    {solicitud.adjuntos.filter((archivo) => archivo.respuesta)
+                                        .map(
+                                            (archivo: Adjunto, i: number) =>
+                                                !archivo.respuesta && (
+                                                    <li key={i} className="flex items-center gap-2">
+                                                        {/* Ícono */}
+                                                        <FileText className="w-5 h-5 text-blue-600" />
+
+                                                        {/* Enlace controlado por onClick */}
+                                                        <a
+                                                            href="#"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                downloadFile(archivo.id, archivo.nombreArchivo);
+                                                            }}
+                                                            className="text-blue-600 hover:underline cursor-pointer"
+                                                        >
+                                                            {archivo.nombreArchivo}
+                                                        </a>
+
+                                                        {/* Fecha */}
+                                                        <span className="text-[10px] text-gray-500 ml-auto">
+                                                            {new Date(archivo.createdAt).toLocaleDateString()}
+                                                        </span>
+                                                    </li>
+
+                                                )
+                                        )}
                                 </ul>
                             ) : (
                                 <p className="text-sm text-gray-500">No hay documentos cargados.</p>
@@ -186,12 +196,15 @@ export default function SolicitudModal({ isOpen, solicitud, onClose }: Solicitud
                                     {solicitud.adjuntos
                                         .filter((archivo) => archivo.respuesta)
                                         .map((archivo: Adjunto, i: number) => (
-                                            <li key={i} className="flex flex-wrap items-center gap-2">
-                                                <FileText className="w-5 h-5 text-blue-600 shrink-0" />
+                                            <li key={i} className="flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-blue-600" />
                                                 <a
-                                                    href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
-                                                    download
-                                                    className="hover:underline break-all"
+                                                    href="#"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        downloadFile(archivo.id, archivo.nombreArchivo);
+                                                    }}
+                                                    className="text-blue-600 hover:underline cursor-pointer"
                                                 >
                                                     {archivo.nombreArchivo}
                                                 </a>
@@ -208,7 +221,6 @@ export default function SolicitudModal({ isOpen, solicitud, onClose }: Solicitud
                     </section>
                 </div>
 
-                {/* FOOTER */}
                 <div className="bg-gray-100 px-6 py-4 rounded-b-2xl flex flex-col sm:flex-row justify-between items-center gap-3 sticky bottom-0">
                     <div className="text-xs sm:text-sm text-gray-500 text-center sm:text-left">
                         ID: {solicitud.id} | Creado el{" "}

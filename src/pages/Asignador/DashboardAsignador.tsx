@@ -90,6 +90,17 @@ const DashboardAsignador: React.FC = () => {
         return () => clearTimeout(delayDebounce);
     }, [tipoPqSeleccionado, numeroRadicado, fechaInicio, fechaFin]);
 
+    useEffect(() => {
+		if (modalOpen) {
+			document.body.style.overflow = "hidden";
+		} else {
+			document.body.style.overflow = "auto";
+		}
+		return () => {
+			document.body.style.overflow = "auto";
+		};
+    }, [modalOpen]);
+
     const fetchAllData = async () => {
         try {
             await Promise.all([

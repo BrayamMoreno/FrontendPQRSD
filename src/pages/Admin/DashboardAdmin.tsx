@@ -5,8 +5,6 @@ import {
     XAxis,
     YAxis,
     CartesianGrid,
-    PieChart,
-    Pie,
     Tooltip,
     ResponsiveContainer,
     Cell,

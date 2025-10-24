@@ -5,7 +5,6 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
 import apiServiceWrapper from "../../api/ApiService"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
-import config from "../../config"
 import type { PqItem } from "../../models/PqItem"
 
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
@@ -19,14 +18,16 @@ import type { Estado } from "../../models/Estado"
 import type { Adjunto } from "../../models/Adjunto"
 import { useAlert } from "../../context/AlertContext"
 import { generarInformePDF } from "../../utils/generarInformePDF"
+import { useDownloadFile } from "../../utils/useDownloadFile"
+
 
 const HistorialPeticiones: React.FC = () => {
 
     const api = apiServiceWrapper
-    const API_URL = config.apiBaseUrl
 
     const { user } = useAuth()
     const { showAlert } = useAlert();
+    const { downloadFile } = useDownloadFile();
 
     const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
 
@@ -42,7 +43,6 @@ const HistorialPeticiones: React.FC = () => {
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
     const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
     const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
-
 
     const [estadosPq, setEstadosPq] = useState<Estado[]>([]);
 
@@ -570,13 +570,18 @@ const HistorialPeticiones: React.FC = () => {
                                                 .map((archivo: Adjunto, i: number) => (
                                                     <li key={i} className="flex items-center gap-2">
                                                         <FileText className="w-5 h-5 text-blue-600" />
+
                                                         <a
-                                                            href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
-                                                            download
-                                                            className="hover:underline break-all"
+                                                            href="#"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                downloadFile(archivo.id, archivo.nombreArchivo);
+                                                            }}
+                                                            className="text-blue-600 hover:underline cursor-pointer"
                                                         >
                                                             {archivo.nombreArchivo}
                                                         </a>
+
                                                         <span className="text-[10px] text-gray-500 ml-auto">
                                                             {new Date(archivo.createdAt).toLocaleDateString()}
                                                         </span>
@@ -602,9 +607,12 @@ const HistorialPeticiones: React.FC = () => {
                                                     <li key={i} className="flex items-center gap-2">
                                                         <FileText className="w-5 h-5 text-blue-600" />
                                                         <a
-                                                            href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
-                                                            download
-                                                            className="hover:underline break-all"
+                                                            href="#"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                downloadFile(archivo.id, archivo.nombreArchivo);
+                                                            }}
+                                                            className="text-blue-600 hover:underline cursor-pointer"
                                                         >
                                                             {archivo.nombreArchivo}
                                                         </a>

@@ -55,15 +55,22 @@ const InicioAsignador: React.FC = () => {
                     {/* Breadcrumbs */}
                     <div className="mb-6">
                         <Breadcrumbs />
-                        <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Inicio Asignador STTG</h1>
+                        <div className="bg-blue-100 rounded-2xl shadow mt-2 p-6 mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold text-blue-800">
+                                    Inicio Asignador STTG
+                                </h1>
+                                <p className="text-blue-700 text-sm">
+                                    Modulo diseñada para la gestión eficiente de solicitudes PQRSD.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
                     {/* Bienvenida */}
                     <Card className="bg-white rounded-2xl hover:shadow-lg  transition">
                         <CardContent>
-                            <div className="flex flex-col items-center text-center space-y-6 py-6">
+                            <div className="flex flex-col items-center text-center space-y-6">
                                 {/* Avatar */}
                                 <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center shadow-md">
                                     <User className="w-10 h-10 text-blue-700" />
@@ -94,7 +101,7 @@ const InicioAsignador: React.FC = () => {
                                         variant="outline"
                                         className="hover:bg-gray-100"
                                         onClick={() => navigate(`/${currentRole}/responsables_pqs`)}
-                                        >
+                                    >
                                         <Users className="w-5 h-5 mr-2" />
                                         Ver Responsable
                                     </Button>

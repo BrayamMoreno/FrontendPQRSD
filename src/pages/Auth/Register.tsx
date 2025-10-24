@@ -34,11 +34,11 @@ import type { Genero } from "../../models/Genero"
 import type { TipoDoc } from "../../models/TipoDoc"
 import type { Municipios } from "../../models/Municipios"
 import type { Departamentos } from "../../models/Departamentos"
-import type { PaginatedResponse } from "../../models/PaginatedResponse"
 
 import fondo1 from "../../assets/fondo1.svg"
 import { useAlert } from "../../context/AlertContext"
 import apiServiceWrapper from "../../api/ApiService"
+import type { PaginatedResponse } from "../../models/PaginatedResponse"
 
 const Register: React.FC = () => {
     const navigate = useNavigate()
@@ -95,40 +95,49 @@ const Register: React.FC = () => {
     const sendData = async (data: RegisterForm) => {
         try {
             const isValid = validateForm(data)
+
             if (!isValid) {
                 showAlert("Por favor, completa todos los campos correctamente.", "warning")
                 return
             }
 
+            console.log("Enviando datos al servidor:", data)
             const response = await api.post(`/auth/register`, data)
+
             if (!response.status || response.status < 200 || response.status >= 300) {
                 showAlert("Error en el registro. Por favor, intenta nuevamente.", "error")
                 throw new Error(`Error en el registro: ${response.statusText || response.status}`)
             }
 
             if (response.status === 201) {
-                showAlert("Registro exitoso, redirigiendo a login...", "success")
-                setTimeout(() => navigate("/login"), 2000)
+                showAlert("Registro exitoso, redirigiendo a login...", "success");
+                setTimeout(() => navigate("/login"), 2000);
             }
         } catch (error: any) {
-            console.error("Error en el registro:", error)
+            if(error.status === 409) {
+                showAlert("El correo electrónico ya está registrado.", "error");
+            } else {
+                showAlert("Error en el registro. Por favor, intenta nuevamente.", "error");
+            }
+            console.error("Error en el registro:", error);
+
         } finally {
-            setIsLoading(false)
+            setIsLoading(false);
         }
-    }
+    };
 
     const fetchData = async <T,>(
         endpoint: string,
         setter: React.Dispatch<React.SetStateAction<T[]>>
     ): Promise<void> => {
         try {
-            const response = await api.get<PaginatedResponse<T>>(endpoint)
-            const result = response.data ?? []
-            setter(result)
+            const response = await api.get<PaginatedResponse<T>>(endpoint);
+            const result = response.data ?? [];
+            setter(result);
         } catch (error) {
-            console.error(`Error al obtener los datos de ${endpoint}:`, error)
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
-    }
+    };
 
     const fetchAllData = async () => {
         try {
@@ -160,49 +169,49 @@ const Register: React.FC = () => {
         fetchMunicipios(value)
     }
 
-    const [showPassword, setShowPassword] = useState(false)
-    const [passwordStrength, setPasswordStrength] = useState<"Débil" | "Media" | "Fuerte" | "">("")
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordStrength, setPasswordStrength] = useState<"Débil" | "Media" | "Fuerte" | "">("");
 
     const checkPasswordStrength = (password: string) => {
-        let strength: "Débil" | "Media" | "Fuerte" | "" = ""
-        const hasLower = /[a-z]/.test(password)
-        const hasUpper = /[A-Z]/.test(password)
-        const hasNumber = /[0-9]/.test(password)
-        const hasSymbol = /[^A-Za-z0-9]/.test(password)
+        let strength: "Débil" | "Media" | "Fuerte" | "" = "";
 
-        if (password.length < 6) strength = "Débil"
-        else if (hasLower && hasUpper && hasNumber && hasSymbol && password.length >= 8) strength = "Fuerte"
-        else strength = "Media"
+        const hasLower = /[a-z]/.test(password);
+        const hasUpper = /[A-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSymbol = /[^A-Za-z0-9]/.test(password);
 
-        setPasswordStrength(strength)
-    }
+        if (password.length < 6) strength = "Débil";
+        else if (hasLower && hasUpper && hasNumber && hasSymbol && password.length >= 8) strength = "Fuerte";
+        else strength = "Media";
+
+        setPasswordStrength(strength);
+    };
+
 
     const nextStep = () => setStep((prev) => Math.min(prev + 1, 3))
     const prevStep = () => setStep((prev) => Math.max(prev - 1, 1))
 
     return (
-        <div className="relative min-h-screen overflow-x-hidden bg-gray-50 flex flex-col items-center justify-center px-4 py-6 sm:px-8">
+        <div className="min-h-screen flex items-center justify-center px-4">
             <div
-                className="absolute inset-0 bg-cover bg-center opacity-20 pointer-events-none"
+                className="absolute inset-0 bg-cover bg-center opacity-20"
                 style={{ backgroundImage: `url(${fondo1})` }}
             />
 
-            <Card className="relative w-full max-w-3xl rounded-2xl shadow-lg bg-white overflow-y-auto max-h-[95vh] md:max-h-[90vh]">
+            <Card className="relative w-full max-w-4xl rounded-2xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
                 <Button
                     variant="outline"
                     onClick={() => navigate(-1)}
-                    className="absolute left-4 top-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+                    className="absolute left-6 top-6 border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
                     Cancelar y volver
                 </Button>
 
-                <CardHeader className="text-center sticky top-0 bg-white z-10 border-b space-y-2 py-4">
-                    <CardTitle className="text-2xl sm:text-3xl font-bold text-[#0A192F]">
+                <CardHeader className="text-center space-y-2 mt-8">
+                    <CardTitle className="text-3xl font-bold text-[#0A192F]">
                         Registro al Sistema de PQRSD
                     </CardTitle>
-                    <CardDescription className="text-gray-600 text-sm sm:text-base">
-                        Paso {step} de 3
-                    </CardDescription>
+                    <CardDescription className="text-gray-600">Paso {step} de 3</CardDescription>
                     <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                         <div
                             className="h-2 rounded-full bg-[#173A5E] transition-all"
@@ -211,17 +220,16 @@ const Register: React.FC = () => {
                     </div>
                 </CardHeader>
 
-                <CardContent className="p-6 sm:p-10 w-full">
+                <CardContent className="p-6 md:p-10 w-full">
                     <Form {...form}>
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault()
-                                sendData(form.getValues())
-                            }}
-                            className="w-full"
-                        >
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            sendData(form.getValues());
+                        }}
+                            className="w-full">
                             <AnimatePresence mode="wait">
-                                {/** ================= STEP 1 ================= **/}
+
+                                {/* STEP 1 */}
                                 {step === 1 && (
                                     <motion.div
                                         key="step1"
@@ -233,45 +241,55 @@ const Register: React.FC = () => {
                                     >
                                         <h2 className="text-xl font-semibold text-[#173A5E]">Datos Personales</h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                            {/* Nombre */}
                                             <FormField name="nombre" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Nombres</FormLabel>
                                                     <FormControl><Input placeholder="Ingrese sus nombres" {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Apellido */}
                                             <FormField name="apellido" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Apellidos</FormLabel>
                                                     <FormControl><Input placeholder="Ingrese sus apellidos" {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
-                                            <FormField name="tipoPersona" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
-                                                    <FormLabel>Tipo de Persona</FormLabel>
-                                                    <Select
-                                                        onValueChange={(v) => field.onChange(Number(v))}
-                                                        value={field.value?.toString() || ""}
-                                                    >
-                                                        <FormControl className="w-full">
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Seleccione un tipo de persona" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {tiposPersonas.map((tp) => (
-                                                                <SelectItem key={tp.id} value={tp.id.toString()}>
-                                                                    {tp.nombre}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )} />
+
+                                            {/* Tipo Persona */}
+                                            <FormField
+                                                name="tipoPersona"
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full">
+                                                        <FormLabel>Tipo de Persona</FormLabel>
+                                                        <Select
+                                                            onValueChange={(v) => field.onChange(Number(v))}
+                                                            value={field.value?.toString() || ""}
+                                                        >
+                                                            <FormControl className="w-full">
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Seleccione un tipo de persona" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {tiposPersonas.map((tp) => (
+                                                                    <SelectItem key={tp.id} value={tp.id.toString()}>
+                                                                        {tp.nombre}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Genero */}
                                             <FormField name="genero" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Sexo Biológico</FormLabel>
                                                     <Select
                                                         onValueChange={(v) => field.onChange(Number(v))}
@@ -293,8 +311,10 @@ const Register: React.FC = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Tipo Documento */}
                                             <FormField name="tipoDocumento" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem>
                                                     <FormLabel>Tipo de Documento</FormLabel>
                                                     <Select
                                                         onValueChange={(v) => field.onChange(Number(v))}
@@ -316,18 +336,35 @@ const Register: React.FC = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Documento */}
                                             <FormField name="dni" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Documento</FormLabel>
                                                     <FormControl><Input placeholder="Ingrese su documento" {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            <FormField
+                                                control={form.control}
+                                                name="fechaNacimiento"
+                                                rules={{ required: "La fecha de nacimiento es obligatoria" }}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full">
+                                                        <FormLabel>Fecha de Nacimiento</FormLabel>
+                                                        <FormControl>
+                                                            <Input type="date" {...field} />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
                                         </div>
                                     </motion.div>
                                 )}
 
-                                {/** ================= STEP 2 ================= **/}
+                                {/* STEP 2 */}
                                 {step === 2 && (
                                     <motion.div
                                         key="step2"
@@ -339,15 +376,18 @@ const Register: React.FC = () => {
                                     >
                                         <h2 className="text-xl font-semibold text-[#173A5E]">Datos de Contacto</h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                                            {/* Teléfono */}
                                             <FormField name="telefono" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Teléfono</FormLabel>
                                                     <FormControl><Input placeholder="Ingrese su teléfono" {...field} /></FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Departamento */}
                                             <FormField name="departamentosId" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Departamento</FormLabel>
                                                     <Select
                                                         onValueChange={(v) => {
@@ -372,8 +412,10 @@ const Register: React.FC = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Municipio */}
                                             <FormField name="municipioId" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Municipio</FormLabel>
                                                     <Select
                                                         disabled={municipios.length === 0}
@@ -396,8 +438,10 @@ const Register: React.FC = () => {
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
+
+                                            {/* Dirección */}
                                             <FormField name="direccion" render={({ field }) => (
-                                                <FormItem className="w-full mb-2">
+                                                <FormItem className="w-full">
                                                     <FormLabel>Dirección</FormLabel>
                                                     <FormControl><Input placeholder="Ingrese su dirección" {...field} /></FormControl>
                                                     <FormMessage />
@@ -407,100 +451,191 @@ const Register: React.FC = () => {
                                     </motion.div>
                                 )}
 
-                                {/** ================= STEP 3 ================= **/}
                                 {step === 3 && (
                                     <motion.div
                                         key="step3"
-                                        initial={{ opacity: 0, y: 30 }}
+                                        initial={{ opacity: 0, y: 30 }} // Ligeramente más dramático
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -30 }}
-                                        transition={{ duration: 0.5, ease: "easeOut" }}
-                                        className="space-y-8 w-full max-w-2xl mx-auto"
+                                        transition={{ duration: 0.5, ease: "easeOut" }} // Transición más suave
+                                        className="space-y-8 w-full max-w-2xl mx-auto" // Máximo de ancho para mejor legibilidad en escritorio
                                     >
-                                        <div className="grid grid-cols-1 gap-6 w-full">
+                                        {/* Campos de Correo y Contraseña */}
+                                        <div className="grid grid-cols-1 md:grid-cols-1 gap-x-2 gap-y-6 w-full">
+                                            {/* Correo */}
                                             <FormField name="correo" render={({ field }) => (
                                                 <FormItem className="w-full">
-                                                    <FormLabel>Correo Electrónico</FormLabel>
+                                                    <FormLabel className="font-semibold text-gray-700">Correo Electrónico</FormLabel>
                                                     <FormControl>
-                                                        <Input type="email" placeholder="tucorreo@ejemplo.com" {...field} />
+                                                        <Input
+                                                            type="email"
+                                                            placeholder="tucorreo@ejemplo.com"
+                                                            className="h-11 border-gray-300 focus:border-[#173A5E] focus:ring-1 focus:ring-[#173A5E]"
+                                                            {...field}
+                                                        />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )} />
 
+                                            {/* Contraseña (Campo y Lógica de Fortaleza) */}
                                             <FormField
                                                 name="contraseña"
                                                 render={({ field }) => (
                                                     <FormItem className="w-full">
-                                                        <FormLabel>Contraseña</FormLabel>
+                                                        <FormLabel className="font-semibold text-gray-700 flex justify-between items-center">
+                                                            Contraseña
+                                                            {/* Opcional: Icono de información con tooltip para reglas de contraseña */}
+                                                            {/* <InfoIcon className="h-4 w-4 text-gray-400" /> */}
+                                                        </FormLabel>
                                                         <div className="relative">
                                                             <FormControl>
                                                                 <Input
                                                                     type={showPassword ? "text" : "password"}
                                                                     placeholder="Mínimo 8 caracteres"
+                                                                    className="h-11 pr-12 border-gray-300 focus:border-[#173A5E] focus:ring-1 focus:ring-[#173A5E]"
                                                                     {...field}
                                                                     onChange={(e) => {
-                                                                        field.onChange(e)
-                                                                        checkPasswordStrength(e.target.value)
+                                                                        field.onChange(e);
+                                                                        // Asegúrate de que `checkPasswordStrength` esté disponible en el scope
+                                                                        checkPasswordStrength(e.target.value);
                                                                     }}
                                                                 />
                                                             </FormControl>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setShowPassword((prev) => !prev)}
-                                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-[#173A5E]"
+                                                                className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full text-gray-500 hover:text-[#173A5E] transition-colors"
+                                                                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                                             >
-                                                                {showPassword ? "🙈" : "👁️"}
+                                                                {/* Reemplazando emojis con íconos para un look más profesional */}
+                                                                {showPassword ? (
+                                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.027 10.027 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.975 9.975 0 011.56-3.267m.659-.659C4.654 6.848 6.75 5 12 5c4.478 0 8.268 2.943 9.543 7-1.326 4.194-5.06 7-9.543 7z" /></svg>
+                                                                ) : (
+                                                                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.326 4.194-5.06 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                                )}
                                                             </button>
                                                         </div>
 
-                                                        <div className="mt-2">
-                                                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={`h-2 transition-all duration-500 ${
-                                                                        passwordStrength === "Débil"
-                                                                            ? "bg-red-500 w-1/3"
-                                                                            : passwordStrength === "Media"
-                                                                                ? "bg-yellow-500 w-2/3"
-                                                                                : passwordStrength === "Fuerte"
-                                                                                    ? "bg-green-500 w-full"
-                                                                                    : "w-0"
-                                                                    }`}
-                                                                />
-                                                            </div>
-                                                            <p className={`text-xs mt-1 font-medium ${
-                                                                passwordStrength === "Débil"
-                                                                    ? "text-red-500"
-                                                                    : passwordStrength === "Media"
-                                                                        ? "text-yellow-500"
-                                                                        : passwordStrength === "Fuerte"
-                                                                            ? "text-green-500"
-                                                                            : "text-gray-500"
-                                                            }`}>
-                                                                Fortaleza: {passwordStrength || "Escribe una contraseña"}
-                                                            </p>
-                                                        </div>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+
+                                            {/* Confirmar Contraseña (Colocarlo debajo para alineación si es layout de 3 columnas o como tercer elemento) */}
+                                            <FormField
+                                                name="confirmarContraseña"
+                                                rules={{ /* ... rules ... */ }}
+                                                render={({ field }) => (
+                                                    <FormItem className="w-full">
+                                                        <FormLabel className="font-semibold text-gray-700">Confirmar Contraseña</FormLabel>
+                                                        <FormControl>
+                                                            <Input
+                                                                type={showPassword ? "text" : "password"}
+                                                                placeholder="Repite la contraseña"
+                                                                className="h-11 border-gray-300 focus:border-[#173A5E] focus:ring-1 focus:ring-[#173A5E]"
+                                                                {...field}
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
                                         </div>
+
+                                        {/* Indicador de Fortaleza de Contraseña */}
+                                        <div className="mt-2">
+                                            <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                                                <div
+                                                    className={`h-2 rounded-full transition-all duration-500 ease-out ${
+                                                        // Ajuste de colores para mejor contraste y vibración
+                                                        passwordStrength === "Débil"
+                                                            ? "bg-red-500 w-1/3"
+                                                            : passwordStrength === "Media"
+                                                                ? "bg-yellow-500 w-2/3"
+                                                                : passwordStrength === "Fuerte"
+                                                                    ? "bg-green-500 w-full"
+                                                                    : "w-0"
+                                                        }`}
+                                                ></div>
+                                            </div>
+                                            <p className={`text-xs mt-1 font-medium ${passwordStrength === "Débil" ? "text-red-500" :
+                                                passwordStrength === "Media" ? "text-yellow-500" :
+                                                    passwordStrength === "Fuerte" ? "text-green-500" :
+                                                        "text-gray-500"
+                                                }`}>
+                                                Fortaleza: {passwordStrength || "Escribe tu contraseña"}
+                                            </p>
+                                        </div>
+
+                                        {/* Tratamiento de datos */}
+                                        <FormField
+                                            name="tratamientoDatos"
+                                            rules={{ /* ... rules ... */ }}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <div className="flex items-start space-x-3 p-4 bg-gray-50 rounded-lg border border-gray-200 transition-shadow hover:shadow-sm">
+                                                        <FormControl>
+                                                            <input
+                                                                type="checkbox"
+                                                                // Estilos para el checkbox para que se vea mejor
+                                                                className="h-4 w-4 text-[#173A5E] border-gray-300 rounded focus:ring-[#173A5E]"
+                                                                checked={field.value}
+                                                                onChange={field.onChange}
+                                                            />
+                                                        </FormControl>
+                                                        <div className="text-sm leading-relaxed">
+                                                            <FormLabel className="font-normal text-gray-700 cursor-pointer">
+                                                                Acepto el
+                                                                <a
+                                                                    href="/politica"
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="font-medium underline text-[#173A5E] hover:text-[#0A192F] transition-colors"
+                                                                >
+                                                                    tratamiento de datos personales
+                                                                </a>
+                                                            </FormLabel>
+                                                            <FormMessage className="mt-1" />
+                                                        </div>
+                                                    </div>
+                                                </FormItem>
+                                            )}
+
+                                        />
+
                                     </motion.div>
                                 )}
+
                             </AnimatePresence>
 
-                            <div className="flex justify-between items-center mt-8 w-full">
+                            {/* Botones */}
+                            <div className="flex justify-between mt-8 w-full">
                                 {step > 1 && (
-                                    <Button variant="outline" type="button" onClick={prevStep}>
+                                    <Button
+                                        type="button"
+                                        onClick={prevStep}
+                                        className="bg-gray-300 text-black hover:bg-gray-400"
+                                    >
                                         Atrás
                                     </Button>
                                 )}
-                                {step < 3 ? (
-                                    <Button type="button" onClick={nextStep} className="ml-auto bg-[#173A5E] text-white">
+                                {step < 3 && (
+                                    <Button
+                                        type="button"
+                                        onClick={nextStep}
+                                        className="ml-auto bg-[#1E4C7C] hover:bg-[#173A5E] text-white"
+                                    >
                                         Siguiente
                                     </Button>
-                                ) : (
-                                    <Button type="submit" disabled={isLoading} className="ml-auto bg-[#173A5E] text-white">
-                                        {isLoading ? "Registrando..." : "Registrar"}
+                                )}
+                                {step === 3 && (
+                                    <Button
+                                        type="submit"
+                                        className="ml-auto bg-[#1E4C7C] hover:bg-[#173A5E] text-white"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? "Cargando..." : "Registrarse"}
                                     </Button>
                                 )}
                             </div>

@@ -69,8 +69,15 @@ const InicioFuncionario: React.FC = () => {
                         {/* Breadcrumbs arriba */}
                         <Breadcrumbs />
                         {/* Contenedor de título y botón */}
-                        <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Inicio</h1>
+                        <div className="bg-blue-100 rounded-2xl shadow mt-2 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold text-blue-800">
+                                    Inicio Funcionario STTG
+                                </h1>
+                                <p className="text-blue-700 text-sm">
+                                    Modulo usado para la resolución y gestión de solicitudes PQRSD
+                                </p>
+                            </div>
                         </div>
                     </div>
 

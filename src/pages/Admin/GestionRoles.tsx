@@ -31,6 +31,7 @@ function GestionRoles() {
     const [toDelete, setToDelete] = useState<Rol | null>(null)
 
     const [readOnly, setReadOnly] = useState(false);
+    const [loadingSave, setLoadingSave] = useState(false);
 
     const [formData, setFormData] = useState<RolFormData>({
         id: 0,
@@ -122,6 +123,7 @@ function GestionRoles() {
         if (!validateForm()) return;
 
         try {
+            setLoadingSave(true);
             const payload = mapFormDataToPayload();
 
             if (editingRol) {
@@ -136,6 +138,8 @@ function GestionRoles() {
             loadData();
         } catch (error) {
             console.error("Error al guardar:", error);
+        } finally {
+            setLoadingSave(false);
         }
     };
 
@@ -501,8 +505,10 @@ function GestionRoles() {
                                             <Button
                                                 type="submit"
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md"
-                                            >
-                                                {editingRol ? "Actualizar Rol" : "Crear Rol"}
+                                                disabled={loadingSave}
+                                            >{loadingSave
+                                                ? (editingRol ? "Actualizando..." : "Creando...")
+                                                : (editingRol ? "Actualizar Rol" : "Crear Rol")}
                                             </Button>
                                         </>
                                     )}

@@ -5,7 +5,6 @@ import { Card, CardContent } from "../../components/ui/card"
 import { Badge } from "../../components/ui/badge"
 import apiServiceWrapper from "../../api/ApiService"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
-import config from "../../config"
 import type { PqItem } from "../../models/PqItem"
 
 import ReactQuill from "react-quill-new";
@@ -21,6 +20,7 @@ import { LoadingSpinner } from "../../components/LoadingSpinner"
 import { useLocation } from "react-router-dom"
 import { useAlert } from "../../context/AlertContext"
 import type { Estado } from "../../models/Estado"
+import { useDownloadFile } from "../../utils/useDownloadFile"
 
 type FormPeticion = {
     para: string;
@@ -29,11 +29,10 @@ type FormPeticion = {
     lista_documentos: File[];
 };
 
-
 const PeticionesPendientes: React.FC = () => {
 
     const api = apiServiceWrapper
-    const API_URL = config.apiBaseUrl
+    const { downloadFile } = useDownloadFile();
 
     const { user } = useAuth()
     const { showAlert } = useAlert()
@@ -71,6 +70,16 @@ const PeticionesPendientes: React.FC = () => {
     });
 
     useEffect(() => {
+        if (alertFileRespuesta) {
+            const timer = setTimeout(() => {
+                setAlertFileRespuesta(null);
+            }, 2500);
+
+            return () => clearTimeout(timer);
+        }
+    }, [alertFileRespuesta]);
+
+    useEffect(() => {
         if (location.state?.modalOpen) {
             setModalOpen(true);
             if (location.state?.selectPq) {
@@ -93,12 +102,11 @@ const PeticionesPendientes: React.FC = () => {
             const rawId = user?.persona.id
             const responsableId = rawId ? Number(rawId) : null;
 
-            // construir parámetros dinámicos
             const params: Record<string, any> = {
                 responsableId,
                 page: currentPage - 1,
                 size: itemsPerPage,
-                estadoId: 2 // Pendiente por responder
+                estadoId: 2
             };
 
             if (tipoPqSeleccionado !== null) {
@@ -138,7 +146,6 @@ const PeticionesPendientes: React.FC = () => {
         return () => clearTimeout(delayDebounce)
     }, [currentPage, fechaInicio, fechaFin, tipoPqSeleccionado, numeroRadicado])
 
-
     const handleCloseModal = () => {
         setSelectedSolicitud(null)
         setModalOpen(false)
@@ -171,19 +178,16 @@ const PeticionesPendientes: React.FC = () => {
     const handleDarResolucion = async () => {
         try {
             setIsSending(true);
-            // 🔹 Validar correos antes de armar el payload
             let listaCorreos: string[] = [];
 
             if (formPeticion.para) {
-                // Separar por comas y eliminar espacios
-                const correos = formPeticion.para.split(",").map(c => c.trim());
+                const correos = formPeticion.para.split(";").map(c => c.trim());
 
-                // Expresión regular básica para validar formato de correo
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
                 const invalidEmails = correos.filter(correo => !emailRegex.test(correo));
                 if (invalidEmails.length > 0) {
-                    showAlert(`Los siguientes correos no son válidos: ${invalidEmails.join(", ")}`, "error");
+                    showAlert(`Los siguientes correos no son válidos: ${invalidEmails.join("; ")}`, "error");
                     handleLimpiarFormulario();
                     return
                 }
@@ -191,7 +195,6 @@ const PeticionesPendientes: React.FC = () => {
                 listaCorreos = correos;
             }
 
-            // 🔹 Convertir documentos a Base64
             const documentosBase64 = await Promise.all(
                 formPeticion.lista_documentos.map(async (file) => {
                     const base64 = await fileToBase64(file);
@@ -204,7 +207,6 @@ const PeticionesPendientes: React.FC = () => {
                 })
             );
 
-            // 🔹 Armar el payload limpio
             const payload = {
                 responsableId: Number(user?.persona.id),
                 pqId: selectedSolicitud?.id,
@@ -214,7 +216,6 @@ const PeticionesPendientes: React.FC = () => {
                 listaCorreos
             };
 
-            // 🔹 Enviar solicitud
             const response = await api.patch("/pqs/dar_resolucion", payload);
 
             if (response.status === 200) {
@@ -236,7 +237,6 @@ const PeticionesPendientes: React.FC = () => {
             fetchSolicitudes();
         }
     };
-
 
     const handleLimpiarFormulario = () => {
         setFormPeticion({
@@ -302,7 +302,6 @@ const PeticionesPendientes: React.FC = () => {
         }));
     };
 
-
     const validateFiles = (files: File[]) => {
         const validTypes = [
             "application/pdf",
@@ -348,6 +347,7 @@ const PeticionesPendientes: React.FC = () => {
         const files = Array.from(e.dataTransfer.files);
         addFiles(files);
     };
+
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
@@ -790,17 +790,19 @@ const PeticionesPendientes: React.FC = () => {
                                             {selectedSolicitud.adjuntos.map((archivo: any, i: number) => (
                                                 (!archivo.respuesta && (
                                                     <li key={i} className="flex items-center gap-2">
-                                                        {/* Ícono del archivo */}
                                                         <FileText className="w-5 h-5 text-blue-600" />
-                                                        {/* Enlace para ver/descargar el archivo */}
+
                                                         <a
-                                                            href={`${API_URL}/adjuntosPq/${archivo.id}/download`}
-                                                            download
-                                                            className="hover:underline break-all"
+                                                            href="#"
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                downloadFile(archivo.id, archivo.nombreArchivo);
+                                                            }}
+                                                            className="text-blue-600 hover:underline cursor-pointer"
                                                         >
                                                             {archivo.nombreArchivo}
                                                         </a>
-                                                        {/* Fecha opcional */}
+
                                                         <span className="text-[10px] text-gray-500 ml-auto">
                                                             {new Date(archivo.createdAt).toLocaleDateString()}
                                                         </span>
@@ -828,7 +830,7 @@ const PeticionesPendientes: React.FC = () => {
                                 {/* Campo PARA */}
                                 <div className="mb-3">
                                     <label className="block text-sm font-medium text-gray-700">
-                                        Para: (Si el destinatario es múltiple, sepáralo por comas)
+                                        Para: (Si el destinatario es múltiple, sepáralo por punto y coma)
                                     </label>
                                     <input
                                         type="text"
@@ -889,7 +891,9 @@ const PeticionesPendientes: React.FC = () => {
                                     <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">Adjuntar archivos</h3>
 
                                     {alertFileRespuesta && (
-                                        <p className="text-sm text-red-500">{alertFileRespuesta}</p>
+                                        <div className="mb-2">
+                                            <p className="text-sm text-red-500">{alertFileRespuesta}</p>
+                                        </div>
                                     )}
 
                                     <div
@@ -915,7 +919,7 @@ const PeticionesPendientes: React.FC = () => {
                                                 <p className="text-sm text-gray-500 mt-1">o haz clic para seleccionar el archivo</p>
                                             </div>
                                             <p className="text-xs text-gray-400">
-                                                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (máximo MB)
+                                                Formatos permitidos: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG (máximo 5 MB)
                                             </p>
                                         </div>
 
@@ -1006,10 +1010,10 @@ const PeticionesPendientes: React.FC = () => {
                                     onClick={() => {
                                         handleEnviarRespuesta()
                                     }}
-                                    disabled={formPeticion.asunto === "" || formPeticion.para === "" || formPeticion.respuesta === ""}
+                                    disabled={formPeticion.asunto === "" || formPeticion.para === "" || formPeticion.respuesta === "" || isSending}
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    Dar Resolución
+                                    {isSending ? "Enviando..." : "Dar Resolución"}
                                 </Button>
                             </div>
                         </div>

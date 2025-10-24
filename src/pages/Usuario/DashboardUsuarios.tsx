@@ -465,9 +465,8 @@ const Dashboard: React.FC = () => {
 				tipoPq={tipoPQ}
 				onClose={() => setModalRadicarSolicitud(false)}
 				onSuccess={() => {
-					// Refrescar la lista después de radicar una nueva solicitud
-					setCurrentPage(1); // Volver a la primera página
-					totalSolicitudesInicial.current = null; // Resetear el total inicial para que se recalcule
+					setCurrentPage(1);
+					totalSolicitudesInicial.current = null;
 					fetchSolicitudes();
 				}}
 			/>

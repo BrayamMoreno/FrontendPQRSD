@@ -10,6 +10,7 @@ export interface RegisterForm {
     departamentosId: "",
     municipioId: "",
     correo: "",
-    contraseña: ""
+    contraseña: "",
+    fechaNacimiento: "",
     tratamientoDatos: false
 }

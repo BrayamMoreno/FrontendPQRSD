@@ -158,11 +158,11 @@ const GestionResponsablesPqs: React.FC = () => {
                     </div>
 
                     <Card className="mb-4">
-                        <CardContent className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <CardContent >
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <Input
                                     className="w-full"
-                                    placeholder="Buscar por nombre, correo o documento..."
+                                    placeholder="Buscar por nombre y apellido"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                 />
@@ -210,7 +210,7 @@ const GestionResponsablesPqs: React.FC = () => {
                                 <tbody>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={6} className="py-10">
+                                            <td colSpan={7} className="py-10">
                                                 <div className="flex justify-center items-center">
                                                     <LoadingSpinner />
                                                 </div>
@@ -218,7 +218,7 @@ const GestionResponsablesPqs: React.FC = () => {
                                         </tr>
                                     ) : responsablesPq.length === 0 ? (
                                         <tr>
-                                            <td colSpan={6} className="text-center py-6 text-gray-500">
+                                            <td colSpan={7} className="text-center py-6 text-gray-500">
                                                 No hay responsables disponibles
                                             </td>
                                         </tr>
