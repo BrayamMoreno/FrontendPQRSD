@@ -172,7 +172,7 @@ const GestionResponsablesPqs: React.FC = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="TODAS">Todas las areas</SelectItem>
-                                        {areas.filter(a => !a.eliminado).map((a) => (
+                                        {areas.map((a) => (
                                             <SelectItem key={a.id} value={a.id.toString()}>
                                                 {a.nombre}
                                             </SelectItem>

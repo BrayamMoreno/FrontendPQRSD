@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
                     <h3 className="text-lg font-semibold text-white mb-3">Datos de contacto</h3>
                     <ul className="space-y-2 text-sm text-gray-300">
                         <li><b>Dirección: </b> Carrera 11 No. 17 - Esquina, Palacio Municipal. Girardot - Cundinamarca</li>
-                        <li><b>Oficiona:</b> Cuarto Piso, Secretaria de Transito y Transporte</li>
+                        <li><b>Oficina:</b> Cuarto Piso, Secretaria de Transito y Transporte</li>
                         <li className="flex items-center gap-2">
                             <Mail className="w-4 h-4" />
                             transitoytransporte@girardot-cundinamarca.gov.co

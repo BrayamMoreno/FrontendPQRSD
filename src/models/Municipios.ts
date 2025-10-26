@@ -5,5 +5,4 @@ export type Municipios = {
     nombre: "" | string;
     codigoDane: "" | string;
     departamento: Departamentos | null;
-    eliminado: boolean;
 }

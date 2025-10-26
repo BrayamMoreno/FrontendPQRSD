@@ -15,7 +15,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "../../components/ui/alert-dialog"
-import { Edit3, Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
+import { Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
 
 import apiServiceWrapper from "../../api/ApiService"
 import UsuarioForm from "../../components/Formularios/UsuarioForm"
@@ -176,7 +176,7 @@ const GestionCuentas: React.FC = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="TODOS">Todos los roles</SelectItem>
-                                        {roles.filter(r => !r.eliminado).map((r) => (
+                                        {roles.map((r) => (
                                             <SelectItem key={r.id} value={r.id.toString()}>
                                                 {r.nombre}
                                             </SelectItem>
@@ -238,10 +238,7 @@ const GestionCuentas: React.FC = () => {
                                     </tr>
                                 ) : data.map((u) => (
                                     <tr key={u.id}
-                                        className={`border-b transition ${(u).eliminado
-                                            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                            : "hover:bg-blue-50"
-                                            }`}
+                                        className={`border-b transition hover:bg-blue-50`}
                                     >
                                         <td className="px-6 py-4">{u.id}</td>
                                         <td>
@@ -269,9 +266,7 @@ const GestionCuentas: React.FC = () => {
                                             <div className="flex justify-end gap-2">
                                                 {permisosAuth.some(p => p.accion === "modificar" && p.tabla === 'usuarios') && (
                                                     <Button
-                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
-                                                            ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
-                                                        }
+                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400`}
                                                         onClick={() => {
                                                             setEditing(u)
                                                             setReadOnly(false)
@@ -288,9 +283,7 @@ const GestionCuentas: React.FC = () => {
                                                         setEditing(u)
                                                         setFormOpen(true)
                                                     }}
-                                                    className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
-                                                        ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
-                                                    }
+                                                    className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500`}
                                                 >
                                                     <Eye className="h-4 w-4" />
 
@@ -302,9 +295,7 @@ const GestionCuentas: React.FC = () => {
                                                     >
                                                         <AlertDialogTrigger asChild>
                                                             <Button
-                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
-                                                                    ${u.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
-                                                                }
+                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm`}
                                                                 onClick={() => setToDelete(u)}
                                                             >
                                                                 <Trash2 size={16} />

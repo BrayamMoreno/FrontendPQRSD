@@ -43,13 +43,15 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
             tipoDoc: { id: "", nombre: "" },
             dni: "",
             tipoPersona: { id: "", nombre: "" },
+            fechaNacimiento: "",
             telefono: "",
             direccion: "",
             tratamientoDatos: false,
             genero: { id: "", nombre: "" },
             createdAt: "",
             updatedAt: "",
-            correoUsuario: ""
+            correoUsuario: "",
+            municipio: { id: "", nombre: "", codigoDane: "", departamento: null }
         },
         rol: {
             id: "",
@@ -82,9 +84,16 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                             apellido: usuario.persona?.apellido ?? "",
                             correoUsuario: usuario.persona?.correoUsuario ?? "",
                             dni: usuario.persona?.dni ?? "",
+                            fechaNacimiento: usuario.persona?.fechaNacimiento ?? "",
                             telefono: usuario.persona?.telefono ?? "",
                             direccion: usuario.persona?.direccion ?? "",
                             tratamientoDatos: usuario.persona?.tratamientoDatos ?? false,
+                            municipio: {
+                                id: usuario.persona?.municipio?.id ?? "",
+                                nombre: usuario.persona?.municipio?.nombre ?? "",
+                                codigoDane: usuario.persona?.municipio?.codigoDane ?? "",
+                                departamento: usuario.persona?.municipio?.departamento ?? null
+                            },
                             tipoDoc: {
                                 id: usuario.persona?.tipoDoc?.id ?? "",
                                 nombre: usuario.persona?.tipoDoc?.nombre ?? ""
@@ -141,6 +150,8 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
 
         if (!formData.persona.nombre.trim()) newErrors.nombre = "El nombre es obligatorio"
         if (!formData.persona.apellido.trim()) newErrors.apellido = "El apellido es obligatorio"
+        if (!formData.persona.fechaNacimiento.trim()) newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria"
+        if (!formData.persona.municipio.id) newErrors.municipio = "Debe seleccionar un municipio"
         if (!formData.persona.dni.trim()) newErrors.dni = "El documento es obligatorio"
         if (!formData.correo.trim()) newErrors.correo = "El correo es obligatorio"
         if (!usuario && !formData.contrasena.trim()) newErrors.contrasena = "La contraseña es obligatoria"
@@ -223,6 +234,7 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                                         <InputField label="Nombre" value={formData.persona.nombre} error={errors.nombre} onChange={(val: string) => handleChange("persona.nombre", val)} readOnly={readOnly} />
                                         <InputField label="Apellido" value={formData.persona.apellido} error={errors.apellido} onChange={(val: string) => handleChange("persona.apellido", val)} readOnly={readOnly} />
                                         <InputField label="Número de Documento" value={formData.persona.dni} error={errors.dni} onChange={(val: string) => handleChange("persona.dni", val)} readOnly={readOnly} />
+                                        <InputField label="Fecha de Nacimiento" type="date" value={formData.persona.fechaNacimiento} error={errors.fechaNacimiento} onChange={(val: string) => handleChange("persona.fechaNacimiento", val)} readOnly={readOnly} />
                                         <SelectField
                                             label="Tipo de Documento"
                                             value={String(formData.persona.tipoDoc.id || "")}

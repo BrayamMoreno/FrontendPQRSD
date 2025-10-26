@@ -22,8 +22,6 @@ const HistorialEstados: React.FC = () => {
 
     const [data, setData] = useState<HistorialEstado[]>([]);
     const [loading, setLoading] = useState(true);
-    const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const [formData, setFormData] = useState<Partial<HistorialEstado>>({});
     const [editingItem, setEditingItem] = useState<HistorialEstado | null>(null);
     const [readOnly, setReadOnly] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -62,14 +60,12 @@ const HistorialEstados: React.FC = () => {
 
     const handleEdit = (item: HistorialEstado) => {
         setEditingItem(item);
-        setFormData(item);
         setReadOnly(false);
         setShowForm(true);
     };
 
     const handleView = (item: HistorialEstado) => {
         setEditingItem(item);
-        setFormData(item);
         setReadOnly(true);
         setShowForm(true);
     };
@@ -114,8 +110,6 @@ const HistorialEstados: React.FC = () => {
                                     onClick={() => {
                                         setShowForm(true);
                                         setEditingItem(null);
-                                        setFormData({});
-                                        setErrors({});
                                         setReadOnly(false);
                                     }}
                                     className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
@@ -278,16 +272,13 @@ const HistorialEstados: React.FC = () => {
                                 const response = await api.put(`/historial_estados/update/${editingItem.id}`, formData);
 
                                 if (response.status === 200) {
-                                    // Éxito
                                     showAlert("Historial actualizado correctamente", "success");
                                     console.log("Historial actualizado correctamente");
                                     return true;
                                 } else if (response.status === 404) {
-                                    // No se encontró PQ
                                     showAlert("No se encontró el PQ con ID: " + formData.numeroRadicado, "error");
                                     return false;
                                 } else {
-                                    // Otro error
                                     showAlert("Error al crear historial: " + (response.data?.error || "Error desconocido"), "error");
                                     return false;
                                 }
@@ -301,16 +292,13 @@ const HistorialEstados: React.FC = () => {
                                 const response = await api.post(`/historial_estados/create`, formData);
 
                                 if (response.status === 200) {
-                                    // Éxito
                                     showAlert("Historial creado correctamente", "success");
                                     console.log("Historial creado correctamente");
                                     return true;
                                 } else if (response.status === 404) {
-                                    // No se encontró PQ
                                     showAlert("No se encontró el PQ con ID: " + formData.numeroRadicado, "error");
                                     return false;
                                 } else {
-                                    // Otro error
                                     showAlert("Error al crear historial: " + (response.data?.error || "Error desconocido"), "error");
                                     return false;
                                 }
@@ -327,8 +315,6 @@ const HistorialEstados: React.FC = () => {
                     }
                 }}
             />
-
-
         </div>
     );
 };

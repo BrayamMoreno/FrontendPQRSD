@@ -7,5 +7,4 @@ export interface Rol {
   createdAt: string;
   updatedAt: string;
   permisos: Permiso[];
-  eliminado: boolean;
 }

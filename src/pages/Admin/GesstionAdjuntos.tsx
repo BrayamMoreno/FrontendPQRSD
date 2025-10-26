@@ -19,11 +19,11 @@ import { Eye, Pencil, PlusCircleIcon, Trash2 } from "lucide-react"
 import apiServiceWrapper from "../../api/ApiService"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import type { Adjunto } from "../../models/Adjunto"
-import config from "../../config"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import { useAuth } from "../../context/AuthProvider"
 import { useAlert } from "../../context/AlertContext"
+import { useDownloadFile } from "../../utils/useDownloadFile"
 
 type AdjuntoFormData = Adjunto & {
     lista_documentos: File[]
@@ -35,8 +35,8 @@ type FormErrors = Partial<Record<keyof AdjuntoFormData, string>> & {
 
 const GestionAdjuntos: React.FC = () => {
     const api = apiServiceWrapper
-    const API_URL = config.apiBaseUrl;
     const { showAlert } = useAlert();
+    const { downloadFile } = useDownloadFile();
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
@@ -62,7 +62,6 @@ const GestionAdjuntos: React.FC = () => {
         respuesta: false,
         createdAt: "",
         lista_documentos: [],
-        eliminado: false
     })
 
     const [errors, setErrors] = useState<FormErrors>({})
@@ -75,7 +74,6 @@ const GestionAdjuntos: React.FC = () => {
     const fetchAdjuntos = async () => {
         setLoading(true);
         try {
-
             if (fechaInicio && fechaFin) {
                 const inicio = new Date(fechaInicio);
                 const fin = new Date(fechaFin);
@@ -101,8 +99,6 @@ const GestionAdjuntos: React.FC = () => {
             );
 
             setAdjuntos(response.data || []);
-
-
             if (totalAdjuntosInicial.current === null) {
                 totalAdjuntosInicial.current = response.total_count ?? 0;
             }
@@ -114,10 +110,6 @@ const GestionAdjuntos: React.FC = () => {
             setLoading(false);
         }
     }
-
-    useEffect(() => {
-        fetchAdjuntos();
-    }, []);
 
     useEffect(() => {
         fetchAdjuntos();
@@ -190,8 +182,6 @@ const GestionAdjuntos: React.FC = () => {
             respuesta: false,
             createdAt: "",
             lista_documentos: [],
-            eliminado: false
-
         });
         setErrors({});
     };
@@ -362,6 +352,7 @@ const GestionAdjuntos: React.FC = () => {
         return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
     }
 
+
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
@@ -380,7 +371,6 @@ const GestionAdjuntos: React.FC = () => {
                             </div>
                         )}
                     </div>
-
 
                     <Card className="mb-4">
                         <CardContent>
@@ -481,25 +471,25 @@ const GestionAdjuntos: React.FC = () => {
                                     ) : adjuntos.map((a) => (
                                         <tr
                                             key={a.id}
-                                            className={`border-b transition ${(a).eliminado
-                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                                : "hover:bg-blue-50"
-                                                }`}
+                                            className={"border-b transition hover:bg-blue-50"}
                                         >
                                             <td className="px-4 py-4">{a.id}</td>
                                             <td className="px-4 py-4">{a.pqRadicado || "Sin Radicado"}</td>
                                             <td className="px-4 py-4">
-
-                                                {a.eliminado ? (
-                                                    <span className="text-gray-400">{a.nombreArchivo}</span>
-                                                ) : (
+                                                {permisosAuth.some(p => p.accion === 'descargar' && p.tabla === 'adjuntos_pq') ? (
                                                     <a
-                                                        href={`${API_URL}/adjuntos_pq/${a.id}/download`}
-                                                        download
-                                                        className="hover:underline break-all text-blue-600 underline"
+                                                        href="#"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            downloadFile(a.id, a.nombreArchivo);
+                                                        }}
+                                                        className="text-blue-600 hover:underline cursor-pointer"
                                                     >
                                                         {a.nombreArchivo}
-                                                    </a>)}
+                                                    </a>
+                                                ) : (
+                                                    <span>{a.nombreArchivo}</span>
+                                                )}
                                             </td>
                                             <td className="px-4 py-4">
                                                 {a.createdAt
@@ -508,61 +498,57 @@ const GestionAdjuntos: React.FC = () => {
                                             </td>
                                             <td className="px-4 py-4 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    {/* Editar */}
-                                                    <Button
-                                                        className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
-                                                                            ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
-                                                        }
-                                                        onClick={() => handleEdit(a)}
-                                                    >
-                                                        <Pencil className="h-4 w-4 mr-1" />
-                                                    </Button>
-
+                                                    {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === 'adjuntos_pq') && (
+                                                        <Button
+                                                            className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400`}
+                                                            onClick={() => handleEdit(a)}
+                                                        >
+                                                            <Pencil className="h-4 w-4 mr-1" />
+                                                        </Button>
+                                                    )}
                                                     {/* Ver */}
                                                     <Button
                                                         onClick={() => handleView(a)}
-                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
-                                                                        ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
-                                                        }
+                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500`}
                                                     >
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
 
-                                                    <AlertDialog
-                                                        open={toDelete?.id === a.id}
-                                                        onOpenChange={(open: any) => !open && setToDelete(null)}
-                                                    >
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button
-                                                                className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
-                                                                                    ${a.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
-                                                                }
-                                                                onClick={() => setToDelete(a)}
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle>¿Eliminar adjunto?</AlertDialogTitle>
-                                                                <AlertDialogDescription>
-                                                                    Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                                                <AlertDialogAction
-                                                                    className="bg-red-600 hover:bg-red-700 text-white flex items-center"
-                                                                    onClick={() => deleteAdjunto(a.id)}
+                                                    {permisosAuth.some(p => p.accion === 'eliminar' && p.tabla === 'adjuntos_pq') && (
+                                                        <AlertDialog
+                                                            open={toDelete?.id === a.id}
+                                                            onOpenChange={(open: any) => !open && setToDelete(null)}
+                                                        >
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button
+                                                                    className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm`}
+                                                                    onClick={() => setToDelete(a)}
                                                                 >
-                                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                                    Eliminar
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
+                                                                    <Trash2 size={16} />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                    <AlertDialogTitle>¿Eliminar adjunto?</AlertDialogTitle>
+                                                                    <AlertDialogDescription>
+                                                                        Esta acción no se puede deshacer. Se eliminará permanentemente el registro.
+                                                                    </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+
+                                                                <AlertDialogFooter>
+                                                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                    <AlertDialogAction
+                                                                        className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                        onClick={() => deleteAdjunto(a.id)}
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                                        Eliminar
+                                                                    </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

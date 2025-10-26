@@ -168,7 +168,6 @@ function GestionRoles() {
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
                     {/* Encabezado */}
-
                     <Breadcrumbs />
                     <div className="flex items-center justify-between">
                         <h1 className="text-3xl font-bold text-blue-900 mb-6">Gestión de Roles</h1>
@@ -220,10 +219,7 @@ function GestionRoles() {
                                     roles.map((rol) => (
                                         <tr
                                             key={rol.id}
-                                            className={`border-b transition ${(rol).eliminado
-                                                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                                : "hover:bg-blue-50"
-                                                }`}
+                                            className={`border-b transition hover:bg-blue-50"`}
                                         >
                                             <td className="px-6 py-3">
                                                 <div className="flex items-center gap-2">
@@ -257,18 +253,14 @@ function GestionRoles() {
                                                     {permisosAuth.some(p => p.accion === 'modificar' && p.tabla === 'roles') && (
                                                         <Button
                                                             onClick={() => handleEdit(rol)}
-                                                            className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400
-                                                                ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-yellow-500" : ""}`
-                                                            }
+                                                            className={`btn bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400`}
                                                         >
                                                             <Pencil size={16} />
                                                         </Button>
                                                     )}
                                                     <Button
                                                         onClick={() => handleView(rol)}
-                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500
-                                                            ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-blue-600" : ""}`
-                                                        }
+                                                        className={`btn bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500`}
                                                     >
                                                         <Eye size={16} />
                                                     </Button>
@@ -282,9 +274,7 @@ function GestionRoles() {
                                                             <AlertDialogTrigger asChild>
                                                                 <Button
                                                                     onClick={() => setToDelete(rol)}
-                                                                    className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm
-                                                                        ${rol.eliminado ? "opacity-50 cursor-not-allowed hover:bg-red-400" : ""}`
-                                                                    }
+                                                                    className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm`}
                                                                 >
                                                                     <Trash2 size={16} />
                                                                 </Button>
@@ -512,8 +502,6 @@ function GestionRoles() {
                                             </Button>
                                         </>
                                     )}
-
-
                                 </div>
                             </form>
                         </div>

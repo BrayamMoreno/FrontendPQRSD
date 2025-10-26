@@ -7,7 +7,6 @@ const Breadcrumbs = () => {
   return (
     <nav className="w-full text-sm text-gray-600">
       <ol className="flex items-center gap-1">
-        {/* 👇 Home siempre al inicio */}
         <li className="flex items-center gap-1">
           <Link to="/" className="text-blue-600 hover:text-blue-700">
             Home

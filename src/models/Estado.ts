@@ -3,5 +3,4 @@ export interface Estado {
     nombre: string;
     color: string;
     descripcion: string;
-    eliminado: boolean;
 }

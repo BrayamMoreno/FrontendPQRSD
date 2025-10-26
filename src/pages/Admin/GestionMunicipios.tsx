@@ -50,15 +50,15 @@ const GestionMunicipios: React.FC = () => {
 
 
     useEffect(() => {
-		if (isModalOpen) {
-			document.body.style.overflow = "hidden";
-		} else {
-			document.body.style.overflow = "auto";
-		}
-		return () => {
-			document.body.style.overflow = "auto";
-		};
-	}, [isModalOpen]);
+        if (isModalOpen) {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "auto";
+        }
+        return () => {
+            document.body.style.overflow = "auto";
+        };
+    }, [isModalOpen]);
 
     // 🔹 Función genérica para obtener datos
     const fetchData = async <T,>(
@@ -191,10 +191,7 @@ const GestionMunicipios: React.FC = () => {
                                         municipios.map((m) => (
                                             <tr
                                                 key={m.id}
-                                                className={`border-b transition ${m.eliminado
-                                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                                    : "hover:bg-blue-50"
-                                                    }`}
+                                                className={"border-b transition hover:bg-blue-50"}
                                             >
                                                 <td className="px-4 py-4">{m.id}</td>
                                                 <td className="px-4 py-4">{m.codigoDane || "Sin código DANE"}</td>
@@ -205,10 +202,8 @@ const GestionMunicipios: React.FC = () => {
                                                         {/* Editar */}
                                                         {permisosAuth.some(p => p.accion === "modificar" && p.tabla === "municipios") && (
                                                             <Button
-                                                                className={`bg-yellow-500 text-white hover:bg-yellow-600 ${m.eliminado ? "opacity-50 cursor-not-allowed" : ""
-                                                                    }`}
+                                                                className={`bg-yellow-500 text-white hover:bg-yellow-600`}
                                                                 onClick={() => handleEdit(m)}
-                                                                disabled={m.eliminado}
                                                             >
                                                                 <Pencil className="h-4 w-4 mr-1" />
                                                             </Button>
@@ -217,8 +212,7 @@ const GestionMunicipios: React.FC = () => {
                                                         {/* Ver */}
                                                         <Button
                                                             onClick={() => handleView(m)}
-                                                            className={`bg-blue-600 text-white hover:bg-blue-700 ${m.eliminado ? "opacity-50 cursor-not-allowed" : ""
-                                                                }`}
+                                                            className={`bg-blue-600 text-white hover:bg-blue-700`}
                                                         >
                                                             <Eye className="h-4 w-4" />
                                                         </Button>
@@ -231,10 +225,8 @@ const GestionMunicipios: React.FC = () => {
                                                             >
                                                                 <AlertDialogTrigger asChild>
                                                                     <Button
-                                                                        className={`bg-red-500 hover:bg-red-600 text-white ${m.eliminado ? "opacity-50 cursor-not-allowed" : ""
-                                                                            }`}
+                                                                        className={`bg-red-500 hover:bg-red-600 text-white`}
                                                                         onClick={() => setToDelete(m)}
-                                                                        disabled={m.eliminado}
                                                                     >
                                                                         <Trash2 size={16} />
                                                                     </Button>
@@ -383,7 +375,6 @@ const GestionMunicipios: React.FC = () => {
                                         }`}
                                 >
                                     {departamentos
-                                        .filter((d) => !d.eliminado)
                                         .filter((d) =>
                                             d.nombre.toLowerCase().includes(search.toLowerCase()),
                                         ).map((d) => (

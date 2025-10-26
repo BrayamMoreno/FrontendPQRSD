@@ -120,7 +120,7 @@ const NavbarAdmin: React.FC = () => {
                 <div className="max-w-7xl mx-auto flex justify-between items-center h-16">
                     <div className="flex items-center gap-2 font-bold text-white">
                         <img src={logo} alt="Logo" className="w-8 h-8" />
-                        <span className="text-lg sm:text-xl">Plataforma PQRSDF</span>
+                        <span className="text-lg sm:text-xl">Plataforma PQRSD</span>
                     </div>
 
                     <div className="hidden sm:flex items-center gap-2">

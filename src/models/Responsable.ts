@@ -7,5 +7,4 @@ export interface Responsable {
     area: AreaResponsable;
     fechaAsignacion: string;
     isActive: boolean;
-    eliminado: boolean;
 }

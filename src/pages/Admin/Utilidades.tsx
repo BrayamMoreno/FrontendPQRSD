@@ -7,6 +7,8 @@ import { useAuth } from "../../context/AuthProvider";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useAlert } from "../../context/AlertContext";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import { generarReporteXlsx } from "../../utils/generarReporteXlsx";
+
 
 interface BackupItem {
     fecha: string;
@@ -48,6 +50,11 @@ const Utilidades: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+
+    const [fechaInicioReporte, setFechaInicioReporte] = useState("");
+    const [fechaFinReporte, setFechaFinReporte] = useState("");
+    const [descargandoReporte, setDescargandoReporte] = useState(false);
+
 
     // ========================= BACKUPS =========================
     const fetchBackups = async () => {
@@ -215,6 +222,20 @@ const Utilidades: React.FC = () => {
         }
     };
 
+    const handleGenerarReporte = async () => {
+        try {
+            setDescargandoReporte(true);
+            await generarReporteXlsx(fechaInicioReporte, fechaFinReporte);
+            showAlert("Reporte generado correctamente.", "success");
+        } catch (error) {
+            console.error("Error al generar el reporte:", error);
+            showAlert("Error al generar el reporte. Intenta nuevamente.", "error");
+        } finally {
+            setDescargandoReporte(false);
+        }
+    };
+
+
     useEffect(() => {
         fetchBackups();
         fetchLogs(0, true);
@@ -238,7 +259,6 @@ const Utilidades: React.FC = () => {
 
                     {/* GRID PRINCIPAL */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-
                         {/* Backups */}
                         {permisos.some(p => p.tabla === "backups" && p.accion === "leer") && (
                             <div className="bg-white rounded-xl shadow p-6">
@@ -301,14 +321,52 @@ const Utilidades: React.FC = () => {
                         )}
 
                         {/* Reportes */}
-                        <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center">
+                        {/* Reportes */}
+                        <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
                             <BarChart3 className="w-12 h-12 text-blue-600 mb-3" />
-                            <h2 className="text-lg font-semibold text-gray-700 mb-2">Reportes del Sistema</h2>
-                            <p className="text-gray-600 text-center mb-4">
-                                Próximamente podrás generar reportes de actividad, rendimiento y análisis de datos.
+                            <h2 className="text-lg font-semibold text-gray-700 mb-4">Reportes de PQRS</h2>
+
+                            <div className="flex flex-col sm:flex-row space-x-20 w-full justify-center mb-4">
+                                <label className="flex flex-col text-sm text-gray-700">
+                                    Fecha Inicio
+                                    <input
+                                        type="date"
+                                        value={fechaInicioReporte}
+                                        onChange={(e) => setFechaInicioReporte(e.target.value)}
+                                        className="border border-gray-300 rounded px-2 py-1 text-gray-800"
+                                    />
+                                </label>
+                                <label className="flex flex-col text-sm text-gray-700">
+                                    Fecha Fin
+                                    <input
+                                        type="date"
+                                        value={fechaFinReporte}
+                                        onChange={(e) => setFechaFinReporte(e.target.value)}
+                                        className="border border-gray-300 rounded px-2 py-1 text-gray-800"
+                                    />
+                                </label>
+                            </div>
+
+                            <Button
+                                onClick={handleGenerarReporte}
+                                disabled={descargandoReporte}
+                                className={`bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 ${descargandoReporte ? "opacity-70" : ""
+                                    }`}
+                            >
+                                {descargandoReporte ? (
+                                    <LoadingSpinner />
+                                ) : (
+                                    <>
+                                        <Download className="w-4 h-4" /> Generar Reporte Excel
+                                    </>
+                                )}
+                            </Button>
+
+                            <p className="text-gray-500 text-xs mt-3 text-center">
+                                Exporta todas las PQRS registradas entre las fechas seleccionadas.
                             </p>
-                            <Button disabled className="bg-gray-400 text-white">En desarrollo</Button>
                         </div>
+
 
                     </div>
 

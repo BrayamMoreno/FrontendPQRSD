@@ -10,6 +10,7 @@ export interface Persona {
     correoUsuario: string;
     dni: string;
     telefono: string;
+    fechaNacimiento: string;
     direccion: string;
     tratamientoDatos: boolean;
     municipio: Municipios;
@@ -18,5 +19,4 @@ export interface Persona {
     genero: Genero;
     createdAt: string;
     updatedAt: string;
-    eliminado: boolean;
 }

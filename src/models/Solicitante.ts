@@ -14,7 +14,6 @@ export interface Solicitante {
   codigoRadicador: string | null;
   tratamientoDatos: boolean;
   genero: Genero;
-  createdAt: string; // ISO Date string
+  createdAt: string;
   updatedAt: string | null;
-  eliminado: boolean;
 }
