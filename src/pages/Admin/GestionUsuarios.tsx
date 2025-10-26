@@ -29,7 +29,6 @@ import { useAuth } from "../../context/AuthProvider"
 const GestionCuentas: React.FC = () => {
 
     const api = apiServiceWrapper
-
     const { permisos: permisosAuth } = useAuth();
 
     const [data, setData] = useState<Usuario[]>([])
@@ -50,22 +49,8 @@ const GestionCuentas: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
-    const fetchUser = async () => {
-        setIsLoading(true)
-        try {
-            const params: Record<string, any> = {
-                page: currentPage - 1,
-                size: itemsPerPage,
-            };
-            const response = await api.get<PaginatedResponse<Usuario>>('/usuarios', params)
-            setData(response.data || [])
-            setTotalPages(Math.ceil((response.total_count ?? 0) / itemsPerPage));
-        } finally {
-            setIsLoading(false)
-        }
-    }
 
-    const fetchSolicitudes = async () => {
+    const fetchUser = async () => {
         setIsLoading(true)
         try {
             const params: Record<string, any> = {
@@ -104,16 +89,12 @@ const GestionCuentas: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        fetchSolicitudes()
-    }, [currentPage, rolSeleccionado, estado]);
-
-    useEffect(() => {
         setCurrentPage(1);
-    }, [search, rolSeleccionado, estado]);
+    }, [rolSeleccionado, estado]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchSolicitudes();
+            fetchUser();
         }, 1500);
 
         return () => clearTimeout(delayDebounceFn);
@@ -134,7 +115,7 @@ const GestionCuentas: React.FC = () => {
 
     const deleteUser = async (id: number) => {
         try {
-            await api.patch(`/usuarios/disable-account/${id}`, {});
+            await api.delete(`/usuarios/${id}`, {});
             await fetchUser()
         } catch (e) {
             console.error(e)
