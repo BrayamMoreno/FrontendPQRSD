@@ -34,7 +34,7 @@ const GestionCuentas: React.FC = () => {
     const [data, setData] = useState<Usuario[]>([])
     const [search, setSearch] = useState("")
 
-    const [isLoading, setIsLoading] = useState<boolean>(false)
+    const [isLoading, setIsLoading] = useState<boolean>(true)
 
     const [roles, setRoles] = useState<Rol[]>([])
     const [rolSeleccionado, setRolSeleccionado] = useState<string>("TODOS")
@@ -89,8 +89,8 @@ const GestionCuentas: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        setCurrentPage(1);
-    }, [rolSeleccionado, estado]);
+        fetchUser();
+    }, [rolSeleccionado, currentPage]);
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -143,8 +143,8 @@ const GestionCuentas: React.FC = () => {
                     </div>
 
                     <Card className="mb-4">
-                        <CardContent className="p-4">
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                        <CardContent>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                 <Input
                                     className="w-full"
                                     placeholder="Buscar por nombre, correo o documento..."
@@ -162,17 +162,6 @@ const GestionCuentas: React.FC = () => {
                                                 {r.nombre}
                                             </SelectItem>
                                         ))}
-                                    </SelectContent>
-                                </Select>
-
-                                <Select onValueChange={(v) => setEstado(v)} value={estado}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue placeholder="Estado" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="TODOS">Todos los estados</SelectItem>
-                                        <SelectItem value="true">Activa</SelectItem>
-                                        <SelectItem value="false">Inactiva</SelectItem>
                                     </SelectContent>
                                 </Select>
 

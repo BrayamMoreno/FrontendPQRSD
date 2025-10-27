@@ -438,13 +438,13 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                                     <>
                                         <div>
                                             <label htmlFor="comentarioRechazar" className="block text-sm font-medium text-gray-700 mb-2">
-                                                Comentario
+                                                Motivo del Rechazo <span className="text-red-500">*</span>
                                             </label>
                                             <textarea
                                                 id="comentarioRechazar"
                                                 value={formdata.comentario}
                                                 onChange={(e) => handleChange("comentario", e.target.value)}
-                                                placeholder="Indique la razón del rechazo..."
+                                                placeholder="Indique brevemente el motivo del rechazo..."
                                                 rows={3}
                                                 className="w-full border bg-white border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
                                             />
@@ -452,7 +452,7 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
 
                                         <div className="space-y-2 pb-10">
                                             <label htmlFor="descripcion" className="text-sm font-medium">
-                                                Motivo del Rechazo <span className="text-red-500">*</span>
+                                                Descripción del Motivo del Rechazo <span className="text-red-500">*</span>
                                             </label>
                                             <ReactQuill
                                                 theme="snow"
@@ -461,7 +461,7 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                                                     setFormdata((prev) => ({ ...prev, motivoRechazo: value }))
                                                 }
                                                 className="bg-white rounded-lg mb-3 h-36"
-                                                placeholder="Escribe la descripción aquí..."
+                                                placeholder="Escriba la descripción detallada del motivo del rechazo..."
                                                 modules={{
                                                     toolbar: [
                                                         [{ header: [1, 2, false] }],
@@ -489,9 +489,9 @@ export default function AceptarPeticon({ isOpen, selectedSolicitud, responsables
                                             <XCircle className="w-5 h-5" />
                                             Rechazar Petición
                                         </button>
-
                                     </>
                                 )}
+
                             </div>
                         </div>
                     </div>

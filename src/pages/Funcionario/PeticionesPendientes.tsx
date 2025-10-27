@@ -158,7 +158,7 @@ const PeticionesPendientes: React.FC = () => {
         try {
             const response = await api.get<PaginatedResponse<T>>(endpoint);
             const result = response.data ?? [];
-            setter(result);
+            setter(result || []);
         } catch (error) {
             console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
