@@ -25,11 +25,13 @@ import type { Rol } from "../../models/Rol"
 import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
 import { LoadingSpinner } from "../../components/LoadingSpinner"
 import { useAuth } from "../../context/AuthProvider"
+import { useAlert } from "../../context/AlertContext"
 
 const GestionCuentas: React.FC = () => {
 
     const api = apiServiceWrapper
     const { permisos: permisosAuth } = useAuth();
+    const { showAlert } = useAlert();
 
     const [data, setData] = useState<Usuario[]>([])
     const [search, setSearch] = useState("")
@@ -49,9 +51,7 @@ const GestionCuentas: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
 
-
     const fetchUser = async () => {
-        setIsLoading(true)
         try {
             const params: Record<string, any> = {
                 page: currentPage - 1,
@@ -124,6 +124,17 @@ const GestionCuentas: React.FC = () => {
         }
     }
 
+    useEffect(() => {
+        if (formOpen === true) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        }
+    }, [formOpen]);
+
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
@@ -189,7 +200,6 @@ const GestionCuentas: React.FC = () => {
                                     <th className="px-6 py-3">Numero de Documento</th>
                                     <th className="px-6 py-3">Correo</th>
                                     <th className="px-6 py-3">Rol</th>
-                                    <th className="px-6 py-3">Estado de Cuenta</th>
                                     <th className="px-6 py-3">Acciones</th>
                                 </tr>
                             </thead>
@@ -223,13 +233,6 @@ const GestionCuentas: React.FC = () => {
                                         <td className="px-6 py-4">
                                             <Badge variant="outline">
                                                 {u.rol.nombre}
-                                            </Badge>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <Badge
-                                                className={`w-[80px] justify-center ${u.isEnable ? "bg-green-600" : "bg-gray-400"}`}
-                                            >
-                                                {u.isEnable ? "Activo" : "Inactivo"}
                                             </Badge>
                                         </td>
                                         <td className="px-6 py-4">
@@ -339,33 +342,37 @@ const GestionCuentas: React.FC = () => {
                 </div>
             </div>
 
-            {
-                formOpen && (
-                    <UsuarioForm
-                        usuario={editing ?? undefined}
-                        readOnly={readOnly}
-                        onClose={() => {
+            {formOpen && (
+                <UsuarioForm
+                    usuario={editing ?? undefined}
+                    readOnly={readOnly}
+                    onClose={() => {
+                        setFormOpen(false)
+                        setEditing(null)
+                        setReadOnly(false)
+                    }}
+                    onSave={async (payload: any) => {
+                        try {
+                            if (editing) {
+                                await api.put(`/usuarios/${editing.id}`, payload)
+                            } else {
+                                const response = await api.post(`/usuarios`, payload)
+
+                                if (response.status === 201) {
+                                    showAlert("Usuario creado exitosamente.", "success")
+                                } else {
+                                    showAlert("Error al crear usuario.", "error")
+                                }
+                            }
+                            await fetchUser()
                             setFormOpen(false)
                             setEditing(null)
-                        }}
-                        onSave={async (payload: any) => {
-                            try {
-                                if (editing) {
-                                    console.error("Actualizando usuario:", payload)
-                                    await api.put(`/usuarios/${editing.id}`, payload)
-                                } else {
-                                    await api.post(`/usuarios`, payload)
-                                }
-                                await fetchUser()
-                                setFormOpen(false)
-                                setEditing(null)
-                            } catch (e) {
-                                console.error("Error guardando usuario:", e)
-                            }
-                        }}
-                    />
-                )
-            }
+                        } catch (e) {
+                            console.error("Error guardando usuario:", e)
+                        }
+                    }}
+                />
+            )}
         </div >
     )
 }

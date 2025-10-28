@@ -29,7 +29,7 @@ const DashboardAdmin = lazy(() => import("./pages/Admin/DashboardAdmin"));
 
 const PeticionesPendientes = lazy(() => import("./pages/Funcionario/PeticionesPendientes"));
 const HistorialPeticiones = lazy(() => import("./pages/Funcionario/HistorialPeticiones"));
-import HistorialPeticionesUsuario from "./pages/Asignador/HistorialPeticionesUsuario";
+import HistorialPeticionesUsuario from "./pages/Asignador/HistorialReasignacion";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
 

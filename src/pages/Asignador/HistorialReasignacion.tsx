@@ -1,172 +1,181 @@
-import { CheckCircle2, FileText, FileTextIcon } from "lucide-react"
-import { useEffect, useState } from "react"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import apiServiceWrapper from "../../api/ApiService"
-import type { PaginatedResponse } from "../../models/PaginatedResponse"
-import type { PqItem } from "../../models/PqItem"
-
-import Breadcrumbs from "../../components/Navegacion/Breadcrumbs"
-
-import { useAuth } from "../../context/AuthProvider"
-import { Input } from "../../components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
-import type { TipoPQ } from "../../models/TipoPQ"
-import { LoadingSpinner } from "../../components/LoadingSpinner"
-import type { Estado } from "../../models/Estado"
-import type { Adjunto } from "../../models/Adjunto"
-import { useAlert } from "../../context/AlertContext"
-import { generarInformePDF } from "../../utils/generarInformePDF"
-import { useDownloadFile } from "../../utils/useDownloadFile"
-import { motion } from "framer-motion"
+import { useEffect, useState } from "react";
+import { Card } from "../../components/ui/card";
+import { CardContent } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { FileText, Search, UndoIcon } from "lucide-react";
+import Breadcrumbs from "../../components/Navegacion/Breadcrumbs";
+import apiServiceWrapper from "../../api/ApiService";
+import { Input } from "../../components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
+import type { TipoPQ } from "../../models/TipoPQ";
+import type { PqItem } from "../../models/PqItem";
+import { useAlert } from "../../context/AlertContext";
+import type { PaginatedResponse } from "../../models/PaginatedResponse";
+import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { Badge } from "../../components/ui/badge";
+import type { Estado } from "../../models/Estado";
+import type { Adjunto } from "../../models/Adjunto";
+import { useDownloadFile } from "../../utils/useDownloadFile";
+import { motion } from "framer-motion";
 
 
-const HistorialPeticiones: React.FC = () => {
+const HistorialPeticionesUsuario: React.FC = () => {
 
-    const api = apiServiceWrapper
-
-    const { user } = useAuth()
+    const api = apiServiceWrapper;
     const { showAlert } = useAlert();
     const { downloadFile } = useDownloadFile();
 
+    const [dni, setDni] = useState("");
     const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
-
-    const [modalOpen, setModalOpen] = useState(false)
-    const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
+    const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
+    const [isLoading, setIsLoading] = useState<boolean>(false)
 
-    const [fechaInicio, setFechaInicio] = useState<string | null>(null)
-    const [fechaFin, setFechaFin] = useState<string | null>(null)
-    const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([])
+    const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
     const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
-    const [numeroRadicado, setNumeroRadicado] = useState<String | null>(null)
+    const [estados, setEstados] = useState<Estado[]>([]);
+    const [estadoSeleccionado, setEstadoSeleccionado] = useState<number | null>(null)
 
-    const [estadosPq, setEstadosPq] = useState<Estado[]>([]);
+    const [numeroRadicado, setNumeroRadicado] = useState<string | null>(null)
 
-    const [isLoading, setIsLoading] = useState(true)
+    const [fechaInicio, setFechaInicio] = useState<string | null>(null);
+    const [fechaFin, setFechaFin] = useState<string | null>(null);
 
     const fetchSolicitudes = async () => {
-        setIsLoading(true);
+        setIsLoading(true)
         try {
-            const rawId = user?.persona.id
-            const responsableId = rawId ? Number(rawId) : null;
+            const params: Record<string, any> = {
+                page: currentPage - 1,
+                size: itemsPerPage
+            };
+
+            if (!dni) {
+                showAlert("Por favor ingrese un numero de identificación para buscar.", "warning");
+                setIsLoading(false);
+                return;
+            } else {
+                params.dniSolicitante = dni
+            }
 
             if (fechaInicio && fechaFin && fechaInicio > fechaFin) {
-                showAlert("La fecha de inicio no puede ser mayor a la fecha fin.", "error");
-                setIsLoading(false);
+                showAlert("La fecha de inicio no puede ser mayor a la fecha fin.", "warning");
                 return;
             }
 
-            const params: Record<string, any> = {
-                responsableId,
-                page: currentPage - 1,
-                size: itemsPerPage,
-                sortDir: 'desc',
-            };
-
-            if (tipoPqSeleccionado !== null) {
-                params.tipoId = tipoPqSeleccionado;
-            }
-
-            if (numeroRadicado && numeroRadicado.trim() !== "") {
+            if (estadoSeleccionado !== null) params.estadoId = estadoSeleccionado;
+            if (tipoPqSeleccionado !== null) params.tipoId = tipoPqSeleccionado;
+            if (numeroRadicado && numeroRadicado.trim() !== "")
                 params.numeroRadicado = numeroRadicado;
-            }
-            if (fechaInicio) {
-                params.fechaInicio = fechaInicio;
-            }
+            if (fechaInicio) params.fechaInicio = fechaInicio;
+            if (fechaFin) params.fechaFin = fechaFin;
 
-            if (fechaFin) {
-                params.fechaFin = fechaFin;
-            }
-
-            const response = await api.get<PaginatedResponse<PqItem>>("/pqs/mis_pqs_funcionario", params);
+            const response = await api.get<PaginatedResponse<PqItem>>(
+                "/pqs/all_pqs",
+                params
+            );
             setSolicitudes(response.data || []);
-            const totalPages = Math.ceil((response.total_count ?? 0) / itemsPerPage);
-            setTotalPages(totalPages);
+            setTotalPages(Math.ceil((response.total_count ?? 0) / itemsPerPage));
         } catch (error) {
-            console.error("Error al obtener las solicitudes:", error);
+            console.error("Error al obtener las solicitudes:", error)
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    };
-
-    useEffect(() => {
-        const delayDebounce = setTimeout(() => {
-            fetchSolicitudes()
-            fetchAllData()
-        }, 2500)
-
-        return () => clearTimeout(delayDebounce)
-    }, [currentPage, fechaFin, fechaInicio, tipoPqSeleccionado, numeroRadicado])
-
-
-    const handleCloseModal = () => {
-        setSelectedSolicitud(null)
-        setModalOpen(false)
     }
-
-    const fetchData = async <T,>(
-        endpoint: string,
-        setter: React.Dispatch<React.SetStateAction<T[]>>
-    ): Promise<void> => {
-        try {
-            const response = await api.get<PaginatedResponse<T>>(endpoint);
-            const result = response.data ?? [];
-            setter(result);
-        } catch (error) {
-            console.error(`Error al obtener los datos de ${endpoint}:`, error);
-        }
-    };
 
     const fetchAllData = async () => {
         try {
             await Promise.all([
                 fetchData<TipoPQ>("tipos_pqs", setTipoPQ),
-                fetchData<Estado>("estados_pqs", setEstadosPq)
+                fetchData<Estado>("estados_pqs", setEstados)
             ])
         } catch (error) {
             console.error("Error al cargar datos iniciales:", error)
         }
     }
 
+    const fetchData = async <T,>(
+        endpoint: string,
+        setter: React.Dispatch<React.SetStateAction<T[]>>,
+    ) => {
+        try {
+            const params: Record<string, any> = {
+                size: 100,
+            };
+            const response = await api.get<PaginatedResponse<T>>(endpoint, params);
+            setter(response.data || []);
+        } catch (error) {
+            console.error(`Error al obtener los datos de ${endpoint}:`, error);
+        }
+    };
+
     useEffect(() => {
-        if (modalOpen === true) {
+        fetchAllData();
+    }, []);
+
+    useEffect(() => {
+        if (dni) {
+            setCurrentPage(1);
+            fetchSolicitudes();
+        }
+    }, [tipoPqSeleccionado, numeroRadicado, fechaInicio, fechaFin, estadoSeleccionado]);
+
+    useEffect(() => {
+        if (dni) {
+            fetchSolicitudes();
+        }
+    }, [currentPage]);
+
+    useEffect(() => {
+        if(modalOpen) {
             document.body.style.overflow = 'hidden';
         } else {
             document.body.style.overflow = 'auto';
         }
         return () => {
             document.body.style.overflow = 'auto';
-        }
+        };
     }, [modalOpen]);
 
+    const handleVerClick = (solicitud: PqItem) => {
+        setSelectedSolicitud(solicitud);
+        setModalOpen(true);
+    }
 
-    const handleVerClick = async (solicitud: PqItem) => {
-        setModalOpen(true)
-        setSelectedSolicitud(solicitud)
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setSelectedSolicitud(null);
     }
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
             <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
                 <div className="max-w-7xl mx-auto">
-                    <div className="mb-6">
-                        {/* Breadcrumbs arriba */}
-                        <Breadcrumbs />
-                        {/* Contenedor de título y botón */}
-                        <div className="flex items-center justify-between mt-2">
-                            <h1 className="text-2xl font-bold text-blue-900">Historial de Penticiones Resueltas</h1>
+                    <Breadcrumbs />
+                    <div className="flex justify-between items-center mb-6">
+                        <h1 className="text-2xl font-bold text-blue-900">
+                            Historial de Peticiones por Usuario
+                        </h1>
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Buscar por identificacion del solicitante..."
+                                value={dni}
+                                onChange={(e) => setDni(e.target.value)}
+                                className="w-72"
+                            />
+                            <Button onClick={fetchSolicitudes} variant="outline">
+                                <Search className="w-4 h-4 mr-2" /> Buscar
+                            </Button>
                         </div>
                     </div>
 
                     <div className="max-w-7xl mx-auto">
                         <Card className="mb-4">
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-51 gap-4 items-end">
+                                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                                     {/* Numero Radicado */}
                                     <div className="flex flex-col">
                                         <label className="text-sm text-gray-600 mb-1">N° Radicado</label>
@@ -203,6 +212,28 @@ const HistorialPeticiones: React.FC = () => {
                                         </Select>
                                     </div>
 
+                                    {/* Estado de la PQ */}
+                                    <div className="flex flex-col">
+                                        <label className="text-sm text-gray-600 mb-1">Estado de la Solicitud</label>
+                                        <Select
+                                            value={estadoSeleccionado ? String(estadoSeleccionado) : "TODOS"}
+                                            onValueChange={(value) =>
+                                                setEstadoSeleccionado(value === "TODOS" ? null : Number(value))
+                                            }
+                                        >
+                                            <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Estado de la Solicitud" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="TODOS">Todos los Estados</SelectItem>
+                                                {estados.map((tipo) => (
+                                                    <SelectItem key={tipo.id} value={String(tipo.id)}>
+                                                        {tipo.nombre}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
                                     {/* Fecha Inicio */}
                                     <div className="flex flex-col">
@@ -243,19 +274,18 @@ const HistorialPeticiones: React.FC = () => {
                             </CardContent>
                         </Card>
                     </div>
-
-                    {/* Listado */}
+                    {/* Listado de PQRSD */}
                     <Card className="bg-white shadow-sm">
                         <CardContent className="p-2">
-                            <h2 className="text-lg mb-2 font-semibold">Solicitudes Asignadas</h2>
+                            <h2 className="text-lg mb-2 font-semibold">Historial de Solicitudes por Usuario</h2>
 
                             {isLoading ? (
-                                <div className="flex items-center justify-center py-4">
+                                <div className="flex justify-center py-10">
                                     <LoadingSpinner />
                                 </div>
-                            ) : solicitudes && solicitudes.length > 0 ? (
+                            ) : solicitudes.length > 0 ? (
                                 <div className="divide-y divide-gray-200">
-                                    {solicitudes.map((solicitud: PqItem) => (
+                                    {solicitudes.map((solicitud: any) => (
                                         <div
                                             key={solicitud.id}
                                             className="flex items-center justify-between py-2 px-2 hover:bg-gray-50 transition"
@@ -265,15 +295,11 @@ const HistorialPeticiones: React.FC = () => {
                                                 <span className="font-semibold text-blue-800 text-sm">
                                                     #Radicado: {solicitud.numeroRadicado ?? solicitud.id}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
-                                                    {solicitud.tipoPQ?.nombre}
-                                                </span>
+                                                <span className="text-xs text-gray-500">{solicitud.tipoPQ?.nombre}</span>
                                             </div>
 
                                             {/* Columna 2 - Asunto */}
-                                            <div className="w-1/3 text-sm truncate">
-                                                <strong>Asunto:</strong> {solicitud.detalleAsunto}
-                                            </div>
+                                            <div className="w-1/3 text-sm truncate"><strong>Asunto:</strong> {solicitud.detalleAsunto}</div>
 
                                             {/* Columna 3 - Fecha */}
                                             <div className="w-1/6 text-xs text-gray-600">
@@ -281,27 +307,17 @@ const HistorialPeticiones: React.FC = () => {
                                             </div>
 
                                             {/* Columna 4 - Estado */}
-                                            <div className="min-w-0 flex-1 sm:basis-1/5">
+                                            <div className="w-1/6 badge">
                                                 <Badge
                                                     variant="secondary"
-                                                    className="text-white truncate"
+                                                    className="text-white"
                                                     style={{
                                                         backgroundColor:
-                                                            estadosPq.filter(estado => estado.nombre === solicitud.nombreUltimoEstado)[0]?.color || "#6B7280"
+                                                            estados.find(e => e.nombre === solicitud.nombreUltimoEstado)?.color || "#6B7280"
                                                     }}
                                                 >
                                                     {solicitud.nombreUltimoEstado}
                                                 </Badge>
-                                            </div>
-
-                                            <div className="w-1/6 badge">
-                                                <Button
-                                                    className="text-xs flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
-                                                    onClick={() => generarInformePDF(solicitud)}
-                                                >
-                                                    <FileTextIcon className="w-3 h-3 mr-1" />
-                                                    Generar Informe
-                                                </Button>
                                             </div>
 
                                             {/* Columna 5 - Botón */}
@@ -310,7 +326,7 @@ const HistorialPeticiones: React.FC = () => {
                                                     className="text-xs flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                                                     onClick={() => handleVerClick(solicitud)}
                                                 >
-                                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                                    <UndoIcon className="w-3 h-3 mr-1" />
                                                     Ver Detalles
                                                 </Button>
                                             </div>
@@ -319,13 +335,12 @@ const HistorialPeticiones: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="text-center py-10 text-gray-500">
-                                    No hay Solicitudes Asignadas.
+                                    No hay solicitudes registradas
                                 </div>
                             )}
 
                             {/* Paginación */}
                             <div className="flex justify-center mt-4 gap-2 items-center">
-                                {/* Ir al inicio */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === 1}
@@ -333,8 +348,6 @@ const HistorialPeticiones: React.FC = () => {
                                 >
                                     ⏮ Primero
                                 </Button>
-
-                                {/* Página anterior */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === 1}
@@ -342,12 +355,9 @@ const HistorialPeticiones: React.FC = () => {
                                 >
                                     ◀ Anterior
                                 </Button>
-
                                 <span className="text-sm px-3">
                                     Página {currentPage} de {totalPages}
                                 </span>
-
-                                {/* Página siguiente */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === totalPages}
@@ -355,8 +365,6 @@ const HistorialPeticiones: React.FC = () => {
                                 >
                                     Siguiente ▶
                                 </Button>
-
-                                {/* Ir al final */}
                                 <Button
                                     variant="outline"
                                     disabled={currentPage === totalPages}
@@ -365,6 +373,7 @@ const HistorialPeticiones: React.FC = () => {
                                     Último ⏭
                                 </Button>
                             </div>
+
                         </CardContent>
                     </Card>
                 </div>
@@ -439,6 +448,8 @@ const HistorialPeticiones: React.FC = () => {
                                             <p className="text-gray-900">{selectedSolicitud.solicitante?.tipoPersona.nombre || "No registrada"}</p>
                                         </div>
                                     </div>
+
+
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -475,7 +486,6 @@ const HistorialPeticiones: React.FC = () => {
                                                 />
                                             </div>
                                         </div>
-
                                     </div>
 
                                     {/* Información de Fechas */}
@@ -676,7 +686,7 @@ const HistorialPeticiones: React.FC = () => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default HistorialPeticiones
+export default HistorialPeticionesUsuario;

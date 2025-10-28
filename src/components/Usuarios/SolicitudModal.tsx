@@ -27,7 +27,7 @@ export default function SolicitudModal({ isOpen, solicitud, onClose }: Solicitud
                 className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto"
             >
                 {/* HEADER */}
-                <div className="bg-blue-900 text-white p-6  sticky top-0 z-20 shadow">
+                <div className="bg-blue-900 text-white p-6 sticky top-0 z-20 shadow">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
                         <div>
                             <h2 className="text-xl sm:text-2xl font-bold mb-1">

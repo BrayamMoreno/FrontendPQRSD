@@ -24,9 +24,9 @@ const DashboardAsignador: React.FC = () => {
     const { showAlert } = useAlert();
     const { user } = useAuth();
 
-    const [solicitudes, setSolicitudes] = useState<any[]>([])
+    const [solicitudes, setSolicitudes] = useState<PqItem[]>([])
     const [modalOpen, setModalOpen] = useState(false)
-    const [selectedSolicitud, setSelectedSolicitud] = useState<any | null>(null)
+    const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null)
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
     const [totalPages, setTotalPages] = useState(0)
@@ -35,8 +35,8 @@ const DashboardAsignador: React.FC = () => {
     const [responsables, setResponsables] = useState<Responsable[]>([]);
 
     const [tipoPQ, setTipoPQ] = useState<TipoPQ[]>([]);
-    const [tipoPqSeleccionado, setTipoPqSeleccdionado] = useState<number | null>(null)
-    const [numeroRadicado, SetNumeroRadicado] = useState<String | null>(null)
+    const [tipoPqSeleccionado, setTipoPqSeleccionado] = useState<number | null>(null)
+    const [numeroRadicado, setNumeroRadicado] = useState<string | null>(null)
 
     const [fechaInicio, setFechaInicio] = useState<string | null>(null);
     const [fechaFin, setFechaFin] = useState<string | null>(null);
@@ -119,7 +119,6 @@ const DashboardAsignador: React.FC = () => {
             const params: Record<string, any> = {
                 size: 100,
             };
-
             const response = await api.get<PaginatedResponse<T>>(endpoint, params);
             setter(response.data || []);
         } catch (error) {
@@ -168,7 +167,7 @@ const DashboardAsignador: React.FC = () => {
                                             value={numeroRadicado ? String(numeroRadicado) : ""}
                                             onChange={(e) => {
                                                 const value = e.target.value.trim();
-                                                SetNumeroRadicado(value === "" ? null : value);
+                                                setNumeroRadicado(value === "" ? null : value);
                                             }}
                                         />
                                     </div>
@@ -179,7 +178,7 @@ const DashboardAsignador: React.FC = () => {
                                         <Select
                                             value={tipoPqSeleccionado ? String(tipoPqSeleccionado) : "TODOS"}
                                             onValueChange={(value) =>
-                                                setTipoPqSeleccdionado(value === "TODOS" ? null : Number(value))
+                                                setTipoPqSeleccionado(value === "TODOS" ? null : Number(value))
                                             }
                                         >
                                             <SelectTrigger className="w-full">
@@ -222,8 +221,8 @@ const DashboardAsignador: React.FC = () => {
                                         <Button
                                             className="w-full border border-gray-300 bg-white text-gray-700 hover:bg-gray-100"
                                             onClick={() => {
-                                                setTipoPqSeleccdionado(null);
-                                                SetNumeroRadicado(null);
+                                                setTipoPqSeleccionado(null);
+                                                setNumeroRadicado(null);
                                                 setFechaInicio(null);
                                                 setFechaFin(null);
                                             }}

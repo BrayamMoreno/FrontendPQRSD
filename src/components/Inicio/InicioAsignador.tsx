@@ -9,6 +9,7 @@ import apiServiceWrapper from "../../api/ApiService";
 import { useAuth } from "../../context/AuthProvider";
 
 interface stats {
+    radicadas: number;
     asignadas: number;
     rechazadas: number;
     por_asignar: number;
@@ -23,6 +24,7 @@ const InicioAsignador: React.FC = () => {
     const personaId = user?.persona?.id || 0
 
     const [stats, setStats] = useState<stats>({
+        radicadas: 0,
         asignadas: 0,
         rechazadas: 0,
         por_asignar: 0,
@@ -31,10 +33,11 @@ const InicioAsignador: React.FC = () => {
     const fetchResumen = async () => {
         try {
             const response = await api.getAll(`/pqs/conteo-asignador/${personaId}`);
-
+            console.log("Respuesta del conteo Asignador:", response.data)
             const conteo = response.data as stats
 
             setStats({
+                radicadas: conteo.radicadas ?? 0,
                 asignadas: conteo.asignadas ?? 0,
                 rechazadas: conteo.rechazadas ?? 0,
                 por_asignar: conteo.por_asignar ?? 0,

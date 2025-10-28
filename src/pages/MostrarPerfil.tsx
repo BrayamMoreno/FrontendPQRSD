@@ -86,6 +86,9 @@ const MostrarPerfil: React.FC = () => {
 			tipoDocumento: persona.tipoDoc?.id ?? null,
 			cedula: persona.dni,
 			telefono: persona.telefono,
+			fechaNacimiento: persona.fechaNacimiento
+				? new Date(persona.fechaNacimiento).toLocaleDateString()
+				: "No disponible",
 			direccion: persona.direccion,
 			genero: persona.genero?.id ?? null,
 			departamento: departamentoId,
@@ -169,6 +172,7 @@ const MostrarPerfil: React.FC = () => {
 		{ label: "Apellido", field: "apellido" },
 		{ label: "Tipo de persona", field: "tipoPersona" },
 		{ label: "Tipo de documento", field: "tipoDocumento" },
+		{ label: "Fecha de nacimiento", field: "fechaNacimiento" },
 		{ label: "Cédula", field: "cedula" },
 		{ label: "Correo electrónico", field: "email" },
 		{ label: "Teléfono", field: "telefono" },
@@ -177,6 +181,7 @@ const MostrarPerfil: React.FC = () => {
 		{ label: "Departamento de residencia", field: "departamento" },
 		{ label: "Municipio de residencia", field: "municipio" },
 		{ label: "Fecha de creación", field: "fechaCreacion" }
+
 	];
 
 	if (isLoading) {
@@ -264,7 +269,9 @@ const MostrarPerfil: React.FC = () => {
 														municipios.map((m) => (
 															<option key={m.id} value={m.id}>{m.nombre}</option>
 														))}
+
 												</select>
+
 											) : (
 												<input
 													type="text"
@@ -275,15 +282,16 @@ const MostrarPerfil: React.FC = () => {
 													}
 													readOnly={
 														!isEditing ||
-														["cedula", "tipoDocumento", "email", "fechaCreacion"].includes(item.field)
+														["cedula", "tipoDocumento", "email", "fechaCreacion", "fechaNacimiento"].includes(item.field)
 													}
 													onChange={(e) => handleChange(item.field, e.target.value)}
 													className={`w-full border rounded-md px-3 py-2 text-sm transition ${isEditing &&
-															!["cedula", "tipoDocumento", "email", "fechaCreacion"].includes(item.field)
-															? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
-															: "border-gray-300 bg-gray-50"
+														!["cedula", "tipoDocumento", "email", "fechaCreacion",].includes(item.field)
+														? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
+														: "border-gray-300 bg-gray-50"
 														}`}
 												/>
+
 											)}
 										</div>
 									))}

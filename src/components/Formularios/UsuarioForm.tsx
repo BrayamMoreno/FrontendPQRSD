@@ -10,6 +10,8 @@ import type { Usuario } from "../../models/Usuario"
 import type { PaginatedResponse } from "../../models/PaginatedResponse"
 import type { Rol } from "../../models/Rol"
 import { LoadingSpinner } from "../LoadingSpinner"
+import type { Departamentos } from "../../models/Departamentos"
+import type { Municipios } from "../../models/Municipios"
 
 interface UsuarioFormProps {
     usuario?: Usuario;
@@ -24,11 +26,15 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
     const [tipoDoc, setTiposDoc] = useState<TipoDoc[]>([])
     const [generos, setGeneros] = useState<Genero[]>([])
     const [roles, setRoles] = useState<Rol[]>([])
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const [tiposPersonas, setTiposPersonas] = useState<TipoPersona[]>([])
+    const [departamentos, setDepartamentos] = useState<Departamentos[]>([])
+    const [municipios, setMunicipios] = useState<Municipios[]>([])
 
     const [errors, setErrors] = useState<Record<string, string>>({})
 
-    const [isLoading, setIsLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
 
     const [formData, setFormData] = useState<Usuario>({
         id: 0,
@@ -67,7 +73,6 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
 
     useEffect(() => {
         const loadCatalogosYUser = async () => {
-            setIsLoading(true);
             try {
                 await fetchAllData();
 
@@ -75,7 +80,7 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                     setFormData({
                         id: usuario.id ?? 0,
                         correo: usuario.correo ?? "",
-                        contrasena: "",
+                        contrasena: usuario.contrasena ?? "",
                         isEnable: usuario.isEnable ?? true,
                         resetToken: usuario.resetToken ?? null,
                         persona: {
@@ -84,7 +89,10 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                             apellido: usuario.persona?.apellido ?? "",
                             correoUsuario: usuario.persona?.correoUsuario ?? "",
                             dni: usuario.persona?.dni ?? "",
-                            fechaNacimiento: usuario.persona?.fechaNacimiento ?? "",
+                            fechaNacimiento: usuario.persona?.fechaNacimiento
+                                ? new Date(usuario.persona.fechaNacimiento).toISOString().split("T")[0]
+                                : "",
+
                             telefono: usuario.persona?.telefono ?? "",
                             direccion: usuario.persona?.direccion ?? "",
                             tratamientoDatos: usuario.persona?.tratamientoDatos ?? false,
@@ -120,6 +128,12 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                         createdAt: usuario.createdAt ?? "",
                         updatedAt: usuario.updatedAt ?? null
                     });
+
+                    const depId = usuario.persona?.municipio?.departamento?.id;
+                    if (depId) {
+                        await fetchMunicipiosByDepartamento(depId);
+                    }
+
                 }
             } catch (error) {
                 console.error("Error al cargar usuario y catálogos:", error);
@@ -160,6 +174,18 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         if (!formData.persona.genero.id) newErrors.genero = "Debe seleccionar un género"
         if (!formData.rol.id) newErrors.rol = "Debe seleccionar un rol"
 
+        if (!formData.persona.fechaNacimiento) {
+            newErrors.fechaNacimiento = "La fecha de nacimiento es obligatoria"
+        }
+
+        if (new Date(formData.persona.fechaNacimiento) > new Date()) {
+            newErrors.fechaNacimiento = "La fecha de nacimiento no puede ser futura"
+        }
+
+        if (!formData.persona.municipio.id) {
+            newErrors.municipio = "Debe seleccionar un municipio"
+        }
+
         if (!formData.isEnable) {
             newErrors.isEnable = "El usuario debe estar habilitado"
         }
@@ -172,13 +198,20 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
         return Object.keys(newErrors).length === 0
     }
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
-        if (!validateForm()) {
-            return
+        if (!validateForm()) return
+
+        try {
+            setIsSubmitting(true)
+            await onSave(formData)
+        } catch (error) {
+            console.error("Error al guardar el usuario:", error)
+        } finally {
+            setIsSubmitting(false)
         }
-        onSave(formData)
     }
+
 
     const fetchData = async <T,>(
         endpoint: string,
@@ -198,9 +231,23 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
             fetchData<TipoDoc>("/tipos_documentos", setTiposDoc),
             fetchData<TipoPersona>("/tipos_personas", setTiposPersonas),
             fetchData<Genero>("/generos", setGeneros),
-            fetchData<Rol>("/roles", setRoles)
+            fetchData<Rol>("/roles", setRoles),
+            fetchData<Departamentos>("/departamentos", setDepartamentos)
         ])
     }
+
+    const fetchMunicipiosByDepartamento = async (departamentoId: number | string) => {
+        try {
+            const response = await api.get<PaginatedResponse<Municipios>>(
+                `/municipios/municipios_departamento?departamentoId=${departamentoId}&page=0&size=1000`
+            );
+            setMunicipios(response.data || []);
+        } catch (error) {
+            console.error("Error al obtener los municipios del departamento:", error);
+            setMunicipios([]);
+        }
+    };
+
 
     return (
         <div className="fixed w-screen inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
@@ -247,7 +294,47 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                                         <SelectField label="Tipo de Persona" value={String(formData.persona.tipoPersona.id)} error={errors.tipoPersona} onChange={(val: string) => handleChange("persona.tipoPersona.id", parseInt(val))} options={tiposPersonas} readOnly={readOnly} />
                                         <SelectField label="Género" value={String(formData.persona.genero.id)} error={errors.genero} onChange={(val: string) => handleChange("persona.genero.id", parseInt(val))} options={generos} readOnly={readOnly} />
                                         <InputField label="Teléfono" value={formData.persona.telefono} onChange={(val: string) => handleChange("persona.telefono", val)} readOnly={readOnly} />
+
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 mb-4">Datos de Ubicacion</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <InputField label="Dirección" value={formData.persona.direccion} onChange={(val: string) => handleChange("persona.direccion", val)} readOnly={readOnly} />
+                                        <SelectField
+                                            label="Departamento"
+                                            value={String(formData.persona.municipio.departamento?.id || "")}
+                                            error={errors.departamento}
+                                            readOnly={readOnly}
+                                            onChange={async (val: string) => {
+                                                const departamentoId = val ? parseInt(val) : null
+                                                handleChange("persona.municipio.departamento.id", departamentoId)
+                                                handleChange("persona.municipio.id", "")
+
+                                                if (departamentoId) {
+                                                    await fetchMunicipiosByDepartamento(departamentoId)
+                                                } else {
+                                                    setMunicipios([])
+                                                }
+                                            }}
+                                            options={departamentos}
+                                            displayKey="nombre"
+                                            valueKey="id"
+                                        />
+
+                                        <SelectField
+                                            label="Municipio"
+                                            value={String(formData.persona.municipio.id || "")}
+                                            error={errors.municipio}
+                                            readOnly={readOnly}
+                                            onChange={(val: string) => handleChange("persona.municipio.id", val ? parseInt(val) : null)}
+                                            options={municipios}
+                                            displayKey="nombre"
+                                            valueKey="id"
+                                        />
+
+
                                     </div>
                                 </div>
 
@@ -299,8 +386,23 @@ export default function UsuarioForm({ usuario, onClose, onSave, readOnly = false
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-4">
-                                    <Button variant="outline" type="button" className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition" onClick={onClose}>Cerrar</Button>
-                                    {!readOnly && <Button type="submit" className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700 focus:ring-green-500">{usuario ? "Actualizar" : "Crear"}</Button>}
+                                    <Button variant="outline" type="button" className="px-6 py-2 border bg-white border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition" onClick={onClose}>Cerrar</Button><Button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className={`flex items-center gap-2 text-white ${isSubmitting
+                                            ? "bg-green-400 cursor-not-allowed"
+                                            : "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                                            }`}
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                {usuario ? "Actualizando..." : "Creando..."}
+                                            </>
+                                        ) : (
+                                            usuario ? "Actualizar" : "Crear"
+                                        )}
+                                    </Button>
+
                                 </div>
                             </>
                         )}
