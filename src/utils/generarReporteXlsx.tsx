@@ -84,8 +84,6 @@ export const useGenerarReporteXlsx = () => {
                 Respuesta: item.respuesta ? getPlainTextFromHtml(item.respuesta) : "Sin respuesta",
             }));
 
-            console.log("Datos formateados para Excel:", datosFormateados);
-
             const ws = XLSX.utils.json_to_sheet(datosFormateados);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Reporte PQRS");

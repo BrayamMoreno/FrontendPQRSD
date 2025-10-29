@@ -244,6 +244,10 @@ const Utilidades: React.FC = () => {
     const handleGenerarReporte = async () => {
         try {
             setDescargandoReporte(true);
+            if(fechaInicioReporte > fechaFinReporte ) {
+                showAlert("La fecha de inicio no puede ser mayor que la fecha de fin.", "error");
+                return;
+            }
             await generarReporteXlsx(fechaInicioReporte, fechaFinReporte);
         } catch (error) {
             console.error("Error al generar el reporte:", error);
@@ -252,7 +256,6 @@ const Utilidades: React.FC = () => {
             setDescargandoReporte(false);
         }
     };
-
 
     useEffect(() => {
         fetchBackups();

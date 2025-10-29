@@ -114,7 +114,6 @@ const ReasignarPeticiones: React.FC = () => {
                 <div className="max-w-7xl mx-auto">
                     <Breadcrumbs />
 
-                    {/* 🔍 Búsqueda */}
                     <div className="flex justify-between items-center mb-6">
                         <h1 className="text-2xl font-bold text-blue-900">Reasignar Petición</h1>
                         <div className="flex gap-2">
@@ -154,7 +153,6 @@ const ReasignarPeticiones: React.FC = () => {
                                 </span>
                             </div>
 
-                            {/* 👤 Información del Solicitante */}
                             <section>
                                 <h3 className="text-lg font-semibold text-gray-900 mb-3 border-b pb-2">
                                     Información del Solicitante
