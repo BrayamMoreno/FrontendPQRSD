@@ -19,7 +19,7 @@ import { useDownloadFile } from "../../utils/useDownloadFile";
 import { motion } from "framer-motion";
 
 
-const HistorialPeticionesUsuario: React.FC = () => {
+const HistorialPorUsuario: React.FC = () => {
 
     const api = apiServiceWrapper;
     const { showAlert } = useAlert();
@@ -689,4 +689,4 @@ const HistorialPeticionesUsuario: React.FC = () => {
     );
 };
 
-export default HistorialPeticionesUsuario;
+export default HistorialPorUsuario;

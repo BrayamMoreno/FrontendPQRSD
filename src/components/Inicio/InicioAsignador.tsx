@@ -33,7 +33,6 @@ const InicioAsignador: React.FC = () => {
     const fetchResumen = async () => {
         try {
             const response = await api.getAll(`/pqs/conteo-asignador/${personaId}`);
-            console.log("Respuesta del conteo Asignador:", response.data)
             const conteo = response.data as stats
 
             setStats({

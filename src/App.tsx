@@ -29,9 +29,11 @@ const DashboardAdmin = lazy(() => import("./pages/Admin/DashboardAdmin"));
 
 const PeticionesPendientes = lazy(() => import("./pages/Funcionario/PeticionesPendientes"));
 const HistorialPeticiones = lazy(() => import("./pages/Funcionario/HistorialPeticiones"));
-import HistorialPeticionesUsuario from "./pages/Asignador/HistorialReasignacion";
+import HistorialPorUsuario from "./pages/Asignador/HistorialPorUsuario";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
+
+const ReasignarPeticiones = lazy(() => import("./pages/Asignador/ReasignarPeticiones"));
 
 const GestionUsuarios = lazy(() => import("./pages/Admin/GestionUsuarios"));
 const GestionRoles = lazy(() => import("./pages/Admin/GestionRoles"));
@@ -65,7 +67,6 @@ export default function App() {
                         {/* Rutas privadas */}
                         <Route element={<PrivateRoute />}>
                             {/* Usuario */}
-                            {/* Usuario */}
                             <Route element={<PrivateRoute required={[{ tabla: "usuario", accion: "dashboard" }]} />}>
                                 <Route path="/usuario" element={<DashboardLayoutUsuarios />}>
                                     <Route index element={<Navigate to="inicio" />} />
@@ -81,7 +82,8 @@ export default function App() {
                                     <Route index element={<Navigate to="inicio" />} />
                                     <Route path="inicio" element={<InicioAsignador />} />
                                     <Route path="peticiones" element={<DashboardAsignador />} />
-                                    <Route path="historial_peticiones_usuario" element={<HistorialPeticionesUsuario />} />
+                                    <Route path="reasignar_peticiones" element={<ReasignarPeticiones />} />
+                                    <Route path="historial_peticiones_usuario" element={<HistorialPorUsuario />} />
                                     <Route path="responsables_pqs" element={<GestionResponsablesPqs />} />
                                     <Route path="perfil" element={<MostrarPerfil />} />
                                 </Route>

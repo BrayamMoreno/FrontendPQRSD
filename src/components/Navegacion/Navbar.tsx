@@ -13,6 +13,7 @@ import {
     AppWindow,
     Menu,
     X,
+    ArrowLeftRight,
 } from "lucide-react"
 import logo from "../../assets/Logo.webp"
 import {
@@ -104,7 +105,6 @@ const Navbar: React.FC = () => {
         })
     }
 
-    // asignador
     if (
         permisosRol.find((p) => p.accion === "dashboard" && p.tabla === "asignador")
     ) {
@@ -120,6 +120,11 @@ const Navbar: React.FC = () => {
             (p) => p.accion === "dashboard" && p.tabla === "asignador"
         )?.accion
     ) {
+        acciones.push({
+            label: "Reasignar Peticiones",
+            icon: <ArrowLeftRight size={14} />,
+            action: () => navigate(`/asignador/reasignar_peticiones`),
+        })
         acciones.push({
             label: "Historial Peticiones",
             icon: <Archive size={14} />,
