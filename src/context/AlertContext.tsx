@@ -3,7 +3,7 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 type AlertType = "success" | "error" | "info" | "warning";
 
 interface Alert {
-    id: number;
+    id: string;
     message: string;
     type: AlertType;
 }
@@ -22,8 +22,13 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
 
     const showAlert = (message: string, type: AlertType = "info") => {
-        const id = Date.now();
+        const id =
+            typeof crypto !== "undefined" && crypto.randomUUID
+                ? crypto.randomUUID()
+                : `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+
         setAlerts((prev) => [...prev, { id, message, type }]);
+
         setTimeout(() => {
             setAlerts((prev) => prev.filter((a) => a.id !== id));
         }, 4000);

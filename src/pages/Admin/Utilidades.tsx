@@ -7,7 +7,8 @@ import { useAuth } from "../../context/AuthProvider";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useAlert } from "../../context/AlertContext";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
-import { generarReporteXlsx } from "../../utils/generarReporteXlsx";
+import { useGenerarReporteXlsx } from "../../utils/generarReporteXlsx";
+import { apiService } from "../../api/ApiService";
 
 
 interface BackupItem {
@@ -32,6 +33,7 @@ const Utilidades: React.FC = () => {
     const api = apiServiceWrapper;
     const { permisos } = useAuth();
     const { showAlert } = useAlert();
+    const { generarReporteXlsx } = useGenerarReporteXlsx();
 
     const [backups, setBackups] = useState<BackupItem[]>([]);
     const [loading, setLoading] = useState(false);
@@ -103,28 +105,45 @@ const Utilidades: React.FC = () => {
 
     const handleDownload = async (fileName: string) => {
         try {
-            const response = await api.get(`/download/${fileName}`);
-            console.log(response);
+            const response = await apiService.get(`/backups/download/${fileName}`, {
+                responseType: "blob",
+            });
+
+            const blob = new Blob([response.data], { type: "application/octet-stream" });
+            const url = window.URL.createObjectURL(blob);
+
             const link = document.createElement("a");
-            link.setAttribute("download", fileName);
+            link.href = url;
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             link.remove();
+
+            window.URL.revokeObjectURL(url);
+            showAlert("Backup descargado correctamente.", "success");
         } catch (error) {
-            alert("❌ Error al descargar el backup.");
+            console.error("Error al descargar el backup:", error);
+            showAlert(" Error al descargar el backup.", "error");
         }
     };
 
+
     const handleDelete = async (fileName: string) => {
-        if (!window.confirm(`¿Seguro que deseas eliminar ${fileName}?`)) return;
         try {
-            await api.delete(`/api/backups/${fileName}`);
-            await fetchBackups();
-            alert("🗑️ Backup eliminado correctamente.");
+            const response = await api.delete(`/backups/${fileName}`);
+
+            if (response.status === 200) {
+                showAlert("Backup eliminado correctamente.", "success");
+                await fetchBackups();
+            } else {
+                showAlert(`Error al eliminar el backup: ${response.data || response.status}`, "error");
+            }
         } catch (error) {
-            alert("❌ Error al eliminar el backup.");
+            console.error("Error al eliminar el backup:", error);
+            showAlert("Error al eliminar el backup.", "error");
         }
     };
+
 
     function toLocalISOString(dateString: string) {
         const date = new Date(dateString);
@@ -226,7 +245,6 @@ const Utilidades: React.FC = () => {
         try {
             setDescargandoReporte(true);
             await generarReporteXlsx(fechaInicioReporte, fechaFinReporte);
-            showAlert("Reporte generado correctamente.", "success");
         } catch (error) {
             console.error("Error al generar el reporte:", error);
             showAlert("Error al generar el reporte. Intenta nuevamente.", "error");
@@ -283,44 +301,55 @@ const Utilidades: React.FC = () => {
                                 ) : backups.length === 0 ? (
                                     <p className="text-gray-500">No hay backups registrados.</p>
                                 ) : (
-                                    <table className="w-full text-sm">
-                                        <thead className="bg-blue-100 text-blue-800">
-                                            <tr>
-                                                <th className="p-2 text-left">Nombre</th>
-                                                <th className="p-2 text-left">Tamaño</th>
-                                                <th className="p-2 text-left">Fecha</th>
-                                                <th className="p-2 text-left">Hora</th>
-                                                <th className="p-2 text-center">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {backups.map((backup) => (
-                                                <tr key={backup.nombre} className="border-b hover:bg-blue-50 transition">
-                                                    <td className="p-2">{backup.nombre}</td>
-                                                    <td className="p-2">{backup.tamaño}</td>
-                                                    <td className="p-2">{backup.fecha}</td>
-                                                    <td className="p-2">{backup.hora}</td>
-                                                    <td className="p-2 text-center space-x-6">
-                                                        {permisos.some(p => p.tabla === "backups" && p.accion === "descargar") && (
-                                                            <Button variant="outline" size="sm" onClick={() => handleDownload(backup.nombre || "")}>
-                                                                <Download className="w-4 h-4" />
-                                                            </Button>
-                                                        )}
-                                                        {permisos.some(p => p.tabla === "backups" && p.accion === "eliminar") && (
-                                                            <Button variant="destructive" size="sm" onClick={() => handleDelete(backup.nombre)}>
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        )}
-                                                    </td>
+                                    // 🔹 Aquí agregamos el contenedor con scroll
+                                    <div className="max-h-80 overflow-y-auto border rounded-lg">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-blue-100 text-blue-800 sticky top-0">
+                                                <tr>
+                                                    <th className="p-2 text-left">Nombre</th>
+                                                    <th className="p-2 text-left">Tamaño</th>
+                                                    <th className="p-2 text-left">Fecha</th>
+                                                    <th className="p-2 text-left">Hora</th>
+                                                    <th className="p-2 text-center">Acciones</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {backups.map((backup) => (
+                                                    <tr key={backup.nombre} className="border-b hover:bg-blue-50 transition">
+                                                        <td className="p-2">{backup.nombre}</td>
+                                                        <td className="p-2">{backup.tamaño}</td>
+                                                        <td className="p-2">{backup.fecha}</td>
+                                                        <td className="p-2">{backup.hora}</td>
+                                                        <td className="p-2 text-center space-x-6">
+                                                            {permisos.some(p => p.tabla === "backups" && p.accion === "descargar") && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => handleDownload(backup.nombre || "")}
+                                                                >
+                                                                    <Download className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                            {permisos.some(p => p.tabla === "backups" && p.accion === "eliminar") && (
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    onClick={() => handleDelete(backup.nombre)}
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 )}
                             </div>
+
                         )}
 
-                        {/* Reportes */}
                         {/* Reportes */}
                         <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center">
                             <BarChart3 className="w-12 h-12 text-blue-600 mb-3" />
@@ -366,8 +395,6 @@ const Utilidades: React.FC = () => {
                                 Exporta todas las PQRS registradas entre las fechas seleccionadas.
                             </p>
                         </div>
-
-
                     </div>
 
                     {/* Logs - Terminal (modo claro) */}

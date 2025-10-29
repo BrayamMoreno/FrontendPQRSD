@@ -159,4 +159,5 @@ const apiServiceWrapper = {
         >,
 };
 
+export { apiService };
 export default apiServiceWrapper;
