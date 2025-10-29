@@ -124,7 +124,7 @@ const ReasignarPeticiones: React.FC = () => {
                                 onChange={(e) => setNumeroRadicado(e.target.value)}
                                 className="w-72"
                             />
-                            <Button onClick={fetchSolicitud} variant="outline" disabled={isFinding}>
+                            <Button onClick={fetchSolicitud} variant="outline" disabled={isFinding || !numeroRadicado.trim()}>
                                 <Search className="w-4 h-4 mr-2" />
                                 {!isFinding ? "Buscar" : "Buscando..."}
                             </Button>

@@ -301,7 +301,6 @@ const Utilidades: React.FC = () => {
                                 ) : backups.length === 0 ? (
                                     <p className="text-gray-500">No hay backups registrados.</p>
                                 ) : (
-                                    // 🔹 Aquí agregamos el contenedor con scroll
                                     <div className="max-h-80 overflow-y-auto border rounded-lg">
                                         <table className="w-full text-sm">
                                             <thead className="bg-blue-100 text-blue-800 sticky top-0">
@@ -320,7 +319,7 @@ const Utilidades: React.FC = () => {
                                                         <td className="p-2">{backup.tamaño}</td>
                                                         <td className="p-2">{backup.fecha}</td>
                                                         <td className="p-2">{backup.hora}</td>
-                                                        <td className="p-2 text-center space-x-6">
+                                                        <td className="space-x-2 p-2 flex justify-center">
                                                             {permisos.some(p => p.tabla === "backups" && p.accion === "descargar") && (
                                                                 <Button
                                                                     variant="outline"
