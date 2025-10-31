@@ -9,6 +9,7 @@ import { useAlert } from "../../context/AlertContext";
 import type { PaginatedResponse } from "../../models/PaginatedResponse";
 import { useGenerarReporteXlsx } from "../../utils/generarReporteXlsx";
 import { apiService } from "../../api/ApiService";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../../components/ui/alert-dialog";
 
 
 interface BackupItem {
@@ -57,6 +58,7 @@ const Utilidades: React.FC = () => {
     const [fechaFinReporte, setFechaFinReporte] = useState("");
     const [descargandoReporte, setDescargandoReporte] = useState(false);
 
+    const [toDelete, setToDelete] = useState<BackupItem | null>(null);
 
     // ========================= BACKUPS =========================
     const fetchBackups = async () => {
@@ -244,7 +246,7 @@ const Utilidades: React.FC = () => {
     const handleGenerarReporte = async () => {
         try {
             setDescargandoReporte(true);
-            if(fechaInicioReporte > fechaFinReporte ) {
+            if (fechaInicioReporte > fechaFinReporte) {
                 showAlert("La fecha de inicio no puede ser mayor que la fecha de fin.", "error");
                 return;
             }
@@ -333,13 +335,44 @@ const Utilidades: React.FC = () => {
                                                                 </Button>
                                                             )}
                                                             {permisos.some(p => p.tabla === "backups" && p.accion === "eliminar") && (
-                                                                <Button
-                                                                    variant="destructive"
-                                                                    size="sm"
-                                                                    onClick={() => handleDelete(backup.nombre)}
+                                                                <AlertDialog
+                                                                    open={toDelete?.nombre === backup.nombre}
+                                                                    onOpenChange={(open: boolean) => {
+                                                                        if (!open) setToDelete(null);
+                                                                    }}
                                                                 >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
+                                                                    <AlertDialogTrigger asChild>
+                                                                        <Button
+                                                                            onClick={() => setToDelete(backup)}
+                                                                            className={`bg-red-400 hover:bg-red-600 text-white p-2 rounded-lg shadow-sm`}
+                                                                        >
+                                                                            <Trash2 size={16} />
+                                                                        </Button>
+                                                                    </AlertDialogTrigger>
+
+                                                                    <AlertDialogContent>
+                                                                        <AlertDialogHeader>
+                                                                            <AlertDialogTitle>¿Eliminar backup?</AlertDialogTitle>
+                                                                            <AlertDialogDescription>
+                                                                                Esta acción no se puede deshacer. Se eliminará permanentemente el backup:
+                                                                                <strong> {backup.nombre}</strong>.
+                                                                            </AlertDialogDescription>
+                                                                        </AlertDialogHeader>
+                                                                        <AlertDialogFooter>
+                                                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                                            <AlertDialogAction
+                                                                                className="bg-red-600 hover:bg-red-700 text-white flex items-center"
+                                                                                onClick={async () => {
+                                                                                    handleDelete(backup.nombre || "");
+                                                                                    setToDelete(null);
+                                                                                }}
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4 mr-1" />
+                                                                                Eliminar
+                                                                            </AlertDialogAction>
+                                                                        </AlertDialogFooter>
+                                                                    </AlertDialogContent>
+                                                                </AlertDialog>
                                                             )}
                                                         </td>
                                                     </tr>

@@ -157,11 +157,20 @@ function GestionRoles() {
     };
 
     const handleDelete = async (id: string) => {
-
         await api.delete(`/roles/${id}`, { method: 'DELETE' });
         loadData();
-
     };
+
+    useEffect(() => {
+        if(showForm === false) {
+            document.body.style.overflow = 'auto';
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
+        return () => {
+            document.body.style.overflow = 'auto';
+        }
+    }, [showForm]);
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
@@ -392,66 +401,99 @@ function GestionRoles() {
                                             </p>
                                         )}
                                     </div>
-
-                                    {/* Selección de Permisos */}
+                                    {/* Selección de Permisos Mejorada */}
                                     <div>
                                         <label className="block text-sm font-medium mb-3 text-gray-700">
                                             Permisos Asignados
                                         </label>
-                                        <div className="border border-gray-300 rounded-lg p-4 max-h-60 overflow-y-auto bg-gray-50">
-                                            {permisos.length > 0 ? (
-                                                <div className="space-y-4">
-                                                    {/* Agrupar permisos alfabéticamente por la primera letra */}
-                                                    {Object.entries(
-                                                        [...permisos]
-                                                            .sort((a, b) => a.tabla.localeCompare(b.tabla))
-                                                            .reduce((acc, permiso) => {
-                                                                const letra = permiso.tabla[0].toUpperCase();
-                                                                if (!acc[letra]) acc[letra] = [];
-                                                                acc[letra].push(permiso);
-                                                                return acc;
-                                                            }, {} as Record<string, Permiso[]>)
-                                                    ).map(([letra, grupo]) => (
-                                                        <div key={letra}>
-                                                            {/* Encabezado de letra */}
-                                                            <h3 className="text-blue-800 font-bold text-lg mb-2">{letra}</h3>
 
-                                                            <div className="grid grid-cols-4 gap-3">
-                                                                {grupo.map((permiso) => (
-                                                                    <div
-                                                                        key={permiso.id}
-                                                                        className="flex items-start space-x-3 p-3 bg-white rounded-lg border hover:bg-blue-50 transition"
-                                                                    >
+                                        <div className="border border-gray-200 rounded-xl bg-gray-50 p-4 max-h-80 overflow-y-auto">
+                                            {permisos.length > 0 ? (
+                                                Object.entries(
+                                                    permisos.reduce((acc, permiso) => {
+                                                        if (!acc[permiso.tabla]) acc[permiso.tabla] = [];
+                                                        acc[permiso.tabla].push(permiso);
+                                                        return acc;
+                                                    }, {} as Record<string, Permiso[]>)
+                                                )
+                                                    .sort(([a], [b]) => a.localeCompare(b))
+                                                    .map(([tabla, grupo]) => {
+                                                        const allSelected = grupo.every(p =>
+                                                            formData.permisos.includes(Number(p.id))
+                                                        );
+                                                        const someSelected =
+                                                            grupo.some(p => formData.permisos.includes(Number(p.id))) &&
+                                                            !allSelected;
+
+                                                        return (
+                                                            <div key={tabla} className="mb-4 border-b pb-3 last:border-none">
+                                                                {/* Encabezado del módulo */}
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-2">
                                                                         <Checkbox
-                                                                            id={`permiso-${permiso.id}`}
-                                                                            checked={formData.permisos.includes(Number(permiso.id))}
-                                                                            onCheckedChange={() => handlePermisoToggle(permiso.id)}
+                                                                            id={`grupo-${tabla}`}
+                                                                            checked={allSelected}
+                                                                            onCheckedChange={() => {
+                                                                                const permisosIds = grupo.map(p => Number(p.id));
+                                                                                const nuevosPermisos = allSelected
+                                                                                    ? formData.permisos.filter(p => !permisosIds.includes(p))
+                                                                                    : [...new Set([...formData.permisos, ...permisosIds])];
+                                                                                setFormData({ ...formData, permisos: nuevosPermisos });
+                                                                            }}
                                                                             disabled={readOnly}
-                                                                            className="mt-1"
+                                                                            className={`${someSelected ? "indeterminate" : ""}`}
                                                                         />
-                                                                        <div className="flex-1">
-                                                                            <label
-                                                                                htmlFor={`permiso-${permiso.id}`}
-                                                                                className="text-sm font-medium text-gray-900 cursor-pointer"
-                                                                            >
-                                                                                {permiso.tabla}
-                                                                            </label>
-                                                                            <p className="text-xs text-gray-500 mt-1">
-                                                                                {permiso.descripcion}
-                                                                            </p>
-                                                                        </div>
+                                                                        <label
+                                                                            htmlFor={`grupo-${tabla}`}
+                                                                            className="font-semibold text-blue-800 text-sm cursor-pointer"
+                                                                        >
+                                                                            {tabla.toUpperCase()}
+                                                                        </label>
                                                                     </div>
-                                                                ))}
+                                                                    <span className="text-xs text-gray-500">
+                                                                        {grupo.filter(p => formData.permisos.includes(Number(p.id))).length} / {grupo.length} seleccionados
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Permisos individuales */}
+                                                                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                                                    {grupo.map(permiso => (
+                                                                        <div
+                                                                            key={permiso.id}
+                                                                            className="flex flex-col gap-1 bg-white border rounded-lg p-3 hover:bg-blue-50 transition"
+                                                                        >
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Checkbox
+                                                                                    id={`permiso-${permiso.id}`}
+                                                                                    checked={formData.permisos.includes(Number(permiso.id))}
+                                                                                    onCheckedChange={() => handlePermisoToggle(permiso.id)}
+                                                                                    disabled={readOnly}
+                                                                                />
+                                                                                <label
+                                                                                    htmlFor={`permiso-${permiso.id}`}
+                                                                                    className="text-sm font-medium text-gray-800 cursor-pointer"
+                                                                                >
+                                                                                    {permiso.accion}
+                                                                                </label>
+                                                                            </div>
+                                                                            {permiso.descripcion && (
+                                                                                <p className="text-xs text-gray-500 pl-6">
+                                                                                    {permiso.descripcion}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                        );
+                                                    })
                                             ) : (
                                                 <p className="text-gray-500 text-center py-4">
                                                     No hay permisos disponibles
                                                 </p>
                                             )}
                                         </div>
+
                                         {errors.permisos && (
                                             <p className="text-red-500 text-sm mt-1">{errors.permisos}</p>
                                         )}
@@ -459,8 +501,6 @@ function GestionRoles() {
                                             Seleccionados: {formData.permisos.length} de {permisos.length}
                                         </p>
                                     </div>
-
-
                                 </div>
 
                                 <div className="flex justify-end gap-3 mt-8">
