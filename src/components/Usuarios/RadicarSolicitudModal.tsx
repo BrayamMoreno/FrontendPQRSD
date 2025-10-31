@@ -16,6 +16,7 @@ import type { RequestPq } from "../../models/RequestPq"
 import apiServiceWrapper from "../../api/ApiService"
 import { useAuth } from "../../context/AuthProvider"
 import { useAlert } from "../../context/AlertContext"
+import { motion } from "framer-motion"
 
 interface FormPeticion {
     tipo_pq_id: string
@@ -254,8 +255,14 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-2xl md:max-w-3xl lg:max-w-4xl max-h-[95vh] overflow-y-auto transition-all duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.25 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto"
+            >
 
                 {/* Header */}
                 <div className="bg-blue-900 text-white p-4 sm:p-5 md:p-6 sticky top-0 z-10">
@@ -487,7 +494,7 @@ export default function RadicarSolicitudModal({ isOpen, tipoPq, onClose, onSucce
                         </div>
                     </form>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

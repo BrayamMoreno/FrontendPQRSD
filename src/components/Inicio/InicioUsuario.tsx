@@ -43,7 +43,7 @@ const InicioUsuario: React.FC = () => {
 
     return (
         <div className="min-h-screen w-full bg-gray-50">
-            <div className="w-full px-4 sm:px-6 lg:px-8 pt-32 pb-8 ">
+		<div className=" px-4 sm:px-6 lg:px-8 pt-20 lg:pt-32 pb-8">
                 <div className="max-w-7xl mx-auto">
                     {/* Breadcrumbs */}
                     <div className="mb-6">
@@ -110,7 +110,7 @@ const InicioUsuario: React.FC = () => {
                         </Card>
                         <Card className="text-center shadow hover:shadow-lg transition">
                             <CardContent className="p-6">
-                                <p className="text-3xl font-bold text-green-600">{resumen?.rechazadas || 0}</p>
+                                <p className="text-3xl font-bold text-red-600">{resumen?.rechazadas || 0}</p>
                                 <p className="text-gray-600">Solicitudes Rechazadas</p>
                             </CardContent>
                         </Card>

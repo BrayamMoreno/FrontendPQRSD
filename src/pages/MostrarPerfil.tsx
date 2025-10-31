@@ -181,7 +181,6 @@ const MostrarPerfil: React.FC = () => {
 		{ label: "Departamento de residencia", field: "departamento" },
 		{ label: "Municipio de residencia", field: "municipio" },
 		{ label: "Fecha de creación", field: "fechaCreacion" }
-
 	];
 
 	if (isLoading) {
@@ -193,13 +192,13 @@ const MostrarPerfil: React.FC = () => {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 pt-24 pb-8">
+		<div className="min-h-[100dvh] bg-gray-50 px-4 sm:px-6 lg:px-8 pt-20 lg:pt-32 pb-8">
 			<div className="max-w-7xl mx-auto space-y-8">
 				<Breadcrumbs />
-				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 					{/* Lado izquierdo */}
 					<div className="space-y-6">
-						<Card className="rounded-2xl shadow-md">
+						<Card className="rounded-2xl shadow-md bg-white">
 							<CardContent className="flex flex-col items-center p-6 space-y-4">
 								<div className="w-20 h-20 rounded-full bg-blue-800 text-white flex items-center justify-center text-2xl font-bold shadow">
 									{iniciales}
@@ -214,7 +213,7 @@ const MostrarPerfil: React.FC = () => {
 							</CardContent>
 						</Card>
 
-						<Card className="rounded-2xl shadow-md">
+						<Card className="rounded-2xl shadow-md bg-white">
 							<CardContent className="flex flex-col space-y-3 p-4">
 								<h3 className="text-lg font-semibold text-blue-900">Opciones de Perfil</h3>
 								<Button
@@ -229,8 +228,8 @@ const MostrarPerfil: React.FC = () => {
 					</div>
 
 					{/* Lado derecho */}
-					<div className="col-span-2">
-						<Card className="rounded-2xl shadow-md">
+					<div className="lg:col-span-2">
+						<Card className="rounded-2xl shadow-md bg-white">
 							<CardContent className="p-4 sm:p-6 space-y-6">
 								<h3 className="text-lg sm:text-xl font-semibold text-blue-900">
 									Información del Perfil
@@ -269,9 +268,7 @@ const MostrarPerfil: React.FC = () => {
 														municipios.map((m) => (
 															<option key={m.id} value={m.id}>{m.nombre}</option>
 														))}
-
 												</select>
-
 											) : (
 												<input
 													type="text"
@@ -286,12 +283,11 @@ const MostrarPerfil: React.FC = () => {
 													}
 													onChange={(e) => handleChange(item.field, e.target.value)}
 													className={`w-full border rounded-md px-3 py-2 text-sm transition ${isEditing &&
-														!["cedula", "tipoDocumento", "email", "fechaCreacion",].includes(item.field)
-														? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
-														: "border-gray-300 bg-gray-50"
+															!["cedula", "tipoDocumento", "email", "fechaCreacion", "fechaNacimiento"].includes(item.field)
+															? "border-blue-600 focus:ring focus:ring-blue-200 bg-white"
+															: "border-gray-300 bg-gray-50"
 														}`}
 												/>
-
 											)}
 										</div>
 									))}

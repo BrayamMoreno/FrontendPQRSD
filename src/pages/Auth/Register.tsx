@@ -588,7 +588,7 @@ const Register: React.FC = () => {
                                                             <FormLabel className="font-normal text-gray-700 cursor-pointer">
                                                                 Acepto el
                                                                 <a
-                                                                    href="/politica"
+                                                                    href="https://www.girardot-cundinamarca.gov.co/Documents/POLITICAS%20DE%20PRIVACIDAD%20Y%20CONDICIONES%20DE%20USO.pdf"
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
                                                                     className="font-medium underline text-[#173A5E] hover:text-[#0A192F] transition-colors"

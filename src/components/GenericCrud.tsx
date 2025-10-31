@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent } from "react";
-import { Pencil, Trash2, PlusCircle, Eye, ShipWheel } from "lucide-react";
+import { Pencil, Trash2, PlusCircle, Eye } from "lucide-react";
 import { type CrudProps } from "../models/CrudProps";
 import apiServiceWrapper from "../api/ApiService";
 import { Button } from "./ui/button";

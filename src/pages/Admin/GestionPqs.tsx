@@ -17,6 +17,7 @@ import type { Adjunto } from "../../models/Adjunto";
 import config from "../../config";
 import { useAuth } from "../../context/AuthProvider";
 import RadicarModalAdmin from "../../components/Admin/RadicarModalAdmin";
+import { useAlert } from "../../context/AlertContext";
 
 const GestionPqs: React.FC = () => {
 
@@ -24,6 +25,7 @@ const GestionPqs: React.FC = () => {
     const API_URL = config.apiBaseUrl
 
     const { permisos: permisosAuth } = useAuth();
+    const {showAlert} = useAlert();
 
     const itemsPerPage = 10
     const [currentPage, setCurrentPage] = useState(1)
@@ -45,9 +47,6 @@ const GestionPqs: React.FC = () => {
 
     const totalSolicitudesInicial = useRef<number | null>(null);
 
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState("");
-
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedSolicitud, setSelectedSolicitud] = useState<PqItem | null>(null);
 
@@ -62,7 +61,7 @@ const GestionPqs: React.FC = () => {
                 const fin = new Date(fechaFin);
 
                 if (inicio > fin) {
-                    handleOpenToast("La fecha de inicio no puede ser mayor que la fecha de fin");
+                    showAlert("La fecha de inicio no puede ser mayor que la fecha de fin", "warning");
                     setIsLoading(false);
                     return;
                 }
@@ -148,16 +147,6 @@ const GestionPqs: React.FC = () => {
         } catch (error) {
             console.error(`Error al obtener los datos de ${endpoint}:`, error);
         }
-    };
-
-    const handleOpenToast = (message: string) => {
-        setToastMessage(message);
-        setShowToast(true);
-    }
-
-    const handleCloseToast = () => {
-        setShowToast(false);
-        setToastMessage("");
     };
 
     const handleSelectSolicitud = (solicitud: PqItem) => {
