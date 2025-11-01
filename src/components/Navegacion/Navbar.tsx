@@ -152,7 +152,7 @@ const Navbar: React.FC = () => {
                     {/* Logo y título */}
                     <div className="flex items-center gap-2 font-bold text-white">
                         <img src={logo} alt="Logo" className="w-8 h-8" />
-                        <span className="text-lg sm:text-xl">Plataforma PQRSD</span>
+                        <span className="text-lg sm:text-xl">Sistema PQRSD</span>
                     </div>
 
                     {/* Menú usuario (solo en escritorio) */}
