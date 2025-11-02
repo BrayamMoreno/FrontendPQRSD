@@ -13,7 +13,6 @@ import HistorialEstados from "./pages/Admin/HistorialEstados";
 import Utilidades from "./pages/Admin/Utilidades";
 import Municipios from "./pages/Admin/GestionMunicipios";
 
-// 📌 Lazy imports
 const LandingPage = lazy(() => import("./pages/Auth/LandingPage"));
 const Login = lazy(() => import("./pages/Auth/Login"));
 const Register = lazy(() => import("./pages/Auth/Register"));
@@ -159,8 +158,6 @@ export default function App() {
                                             />
                                         </Route>
                                     ))}
-
-
                                 </Route>
                             </Route>
 
